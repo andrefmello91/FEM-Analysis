@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.0</TargetFrameworks>
+        <LangVersion>9.0</LangVersion>
+        <Nullable>enable</Nullable>
+        <PackageId>andrefmello91.FEMAnalysis</PackageId>
+        <Version>0.1.0</Version>
+        <Authors>andrefmello91</Authors>
+        <PackageDescription>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</PackageDescription>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageVersion>0.1.0</PackageVersion>
+        <Description>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</Description>
+        <RepositoryUrl>https://github.com/andrefmello91/FEMAnalysis</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/andrefmello91/FEMAnalysis</PackageProjectUrl>
+        <PackageReleaseNotes>Initial release.</PackageReleaseNotes>
+        <AssemblyName>andrefmello91.FEMAnalysis</AssemblyName>
+        <RootNamespace>andrefmello91.FEMAnalysis</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
+        <PackageReference Include="MathNet.Numerics.Data.Text" Version="4.1.0" />
+        <PackageReference Include="UnitsNet" Version="4.86.0" />
+        <PackageReference Include="andrefmello91.Extensions" Version="1.0.0" />
+        <PackageReference Include="andrefmello91.OnPlaneComponents" Version="1.0.0" />
+    </ItemGroup>
+
+</Project>
