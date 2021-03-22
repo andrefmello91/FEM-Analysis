@@ -54,9 +54,14 @@ namespace andrefmello91.FEMAnalysis
 	    PlaneForce Force { get; }
 	    
 	    /// <summary>
+	    ///		Get the <see cref="PlaneForce"/> reaction in this grip, in case it's constrained.
+	    /// </summary>
+	    PlaneForce Reaction { get; set; }
+	    
+	    /// <summary>
 	    ///		Get the <see cref="PlaneDisplacement"/> in this grip.
 	    /// </summary>
-	    PlaneDisplacement Displacement { get; }
+	    PlaneDisplacement Displacement { get; set; }
     }
 
 	/// <summary>
@@ -70,7 +75,7 @@ namespace andrefmello91.FEMAnalysis
 		IGrip[] Grips { get; }
 
 		/// <summary>
-		/// Get the local displacement <see cref="Vector"/>.
+		/// Get the displacement <see cref="Vector"/>, in local coordinate system.
 		/// </summary>
 		/// <remarks>
 		///		Components in <see cref="LengthUnit.Millimeter"/>.
@@ -78,13 +83,13 @@ namespace andrefmello91.FEMAnalysis
 		Vector<double> LocalDisplacements { get; }
 
 		/// <summary>
-		/// Get the global displacement <see cref="Vector"/>.
+		/// Get the displacement <see cref="Vector"/>, in global coordinate system.
 		/// </summary>
 		/// <inheritdoc cref="LocalDisplacements"/>
 		Vector<double> Displacements { get; }
 
 		/// <summary>
-		/// Get the local force <see cref="Vector"/>.
+		/// Get the force <see cref="Vector"/>, in local coordinate system.
 		/// </summary>
 		/// <remarks>
 		///		Components in <see cref="ForceUnit.Newton"/>.
@@ -92,15 +97,10 @@ namespace andrefmello91.FEMAnalysis
 		Vector<double> LocalForces { get; }
 
 		/// <summary>
-		/// Get the global force <see cref="Vector"/>.
+		/// Get the force <see cref="Vector"/> in this element, in global coordinate system.
 		/// </summary>
 		/// <inheritdoc cref="LocalForces"/>
 		Vector<double> Forces { get; }
-
-		/// <summary>
-		/// Get the absolute maximum force in this element.
-		/// </summary>
-		Force MaxForce { get; }
 
 		/// <summary>
 		/// Get the transformation <see cref="Matrix"/>.
@@ -118,15 +118,8 @@ namespace andrefmello91.FEMAnalysis
 		Matrix<double> Stiffness { get; }
 
 		/// <summary>
-		/// Set displacements from global displacement <see cref="Vector"/>.
+		/// Calculate forces in this element after updating displacements at each grip.
 		/// </summary>
-		/// <param name="globalDisplacements">The global displacement <see cref="Vector"/>, with components in <see cref="LengthUnit.Millimeter"/>.</param>
-		void SetDisplacements(Vector<double> globalDisplacements);
-
-		/// <summary>
-		/// Analyze and calculate forces in this element.
-		/// </summary>
-		/// <inheritdoc cref="SetDisplacements"/>
-		void Analysis(Vector<double> globalDisplacements);
+		void CalculateForces();
 	}
 }

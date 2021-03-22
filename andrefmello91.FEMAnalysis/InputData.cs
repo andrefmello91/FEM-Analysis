@@ -63,7 +63,7 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
-		#region  Methods
+		#region Methods
 
 		/// <summary>
 		///     Get the force <see cref="Vector" /> from a collection of grips.
@@ -111,10 +111,12 @@ namespace andrefmello91.FEMAnalysis
 				var constraint = node.Constraint;
 
 				if (constraint.X)
+
 					// There is a support in X direction
 					constraintList.Add(i);
 
 				if (constraint.Y)
+
 					// There is a support in Y direction
 					constraintList.Add(j);
 			}
@@ -126,7 +128,7 @@ namespace andrefmello91.FEMAnalysis
 			$"Number of grips: {Grips.Length}\n" +
 			$"Number of elements: {Elements.Length}\n" +
 			$"Force vector: \n{ForceVector}\n" +
-			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i,f) => $"{i} - {f}")}";
+			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
 
 		#endregion
 	}

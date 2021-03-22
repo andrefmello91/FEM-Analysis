@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using andrefmello91.OnPlaneComponents;
+using andrefmello91.OnPlaneComponents.Displacement;
+using andrefmello91.OnPlaneComponents.Force;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+using UnitsNet.Units;
 
 #nullable enable
 
@@ -38,7 +42,7 @@ namespace andrefmello91.FEMAnalysis
 			yield return n - 2;
 			yield return n - 1;
 		}
-		
+
 		/// <summary>
 		///     Add the stiffness of an <see cref="IFiniteElement"/> to global stiffness <see cref="Matrix" />.
 		/// </summary>
@@ -97,11 +101,73 @@ namespace andrefmello91.FEMAnalysis
 		///     Add the internal forces of a collection of <see cref="IFiniteElement"/>'s to the global internal force <see cref="Vector" />.
 		/// </summary>
 		/// <param name="elements">The <see cref="IFiniteElement" />'s to add to <paramref name="internalForceVector" />.</param>
-		/// <inheritdoc cref="AddToInternalForces" />
+		/// <inheritdoc cref="AddToInternalForces(IFiniteElement, Vector{double})" />
 		public static void AddToInternalForces([NotNull] this IEnumerable<IFiniteElement> elements, [NotNull] Vector<double> internalForceVector)
 		{
 			foreach (var element in elements)
 				element.AddToInternalForces(internalForceVector);
+		}
+
+		/// <summary>
+		/// Calculate forces in each element in this collection after updating displacements in grips.
+		/// </summary>
+		/// <inheritdoc cref="IFiniteElement.CalculateForces"/>
+		public static void CalculateForces(this IEnumerable<IFiniteElement> elements)
+		{
+			foreach (var element in elements)
+				element.CalculateForces();
+		}
+
+		/// <summary>
+		///     Set displacements to an <see cref="IGrip"/> from the global displacement <see cref="Vector"/>.
+		/// </summary>
+		/// <param name="grip">The <see cref="IGrip"/> to set displacements.</param>
+		/// <param name="globalDisplacementVector">The global displacement vector, with components in <see cref="LengthUnit.Millimeter"/>.</param>
+		public static void SetDisplacements([NotNull] this IGrip grip, [NotNull] Vector<double> globalDisplacementVector)
+		{
+			var x = globalDisplacementVector[grip.DoFIndex[0]];
+			var y = globalDisplacementVector[grip.DoFIndex[1]];
+
+			grip.Displacement = new PlaneDisplacement(x, y);
+		}
+
+		/// <summary>
+		///     Set displacements to a collection of <see cref="IGrip"/>'s from the global displacement <see cref="Vector"/>.
+		/// </summary>
+		/// <param name="grips">The collection of <see cref="IGrip"/>'s to set displacements.</param>
+		/// <inheritdoc cref="SetDisplacements(IGrip, Vector{double})"/>
+		public static void SetDisplacements([NotNull] this IEnumerable<IGrip> grips, [NotNull] Vector<double> globalDisplacementVector)
+		{
+			foreach (var grip in grips)
+				grip.SetDisplacements(globalDisplacementVector);
+		}
+
+		/// <summary>
+		///     Set support reactions to an <see cref="IGrip"/> from the global reaction <see cref="Vector"/>.
+		/// </summary>
+		/// <param name="grip">The <see cref="IGrip"/> to set support reactions.</param>
+		/// <param name="globalReactionVector">The global reaction <see cref="Vector"/>, with components in <see cref="ForceUnit.Newton"/>.</param>
+		public static void SetReactions([NotNull] this IGrip grip, [NotNull] Vector<double> globalReactionVector)
+		{
+			// Verify if grip is free
+			if (grip.Constraint.Direction is ComponentDirection.None)
+				return;
+
+			var x = globalReactionVector[grip.DoFIndex[0]];
+			var y = globalReactionVector[grip.DoFIndex[1]];
+
+			grip.Reaction = new PlaneForce(x, y);
+		}
+
+		/// <summary>
+		///     Set support reactions to a collection of <see cref="IGrip"/>'s from the global reaction <see cref="Vector"/>.
+		/// </summary>
+		/// <param name="grips">The collection of <see cref="IGrip"/>'s to set support reactions.</param>
+		/// <inheritdoc cref="SetReactions(IGrip, Vector{double})"/>
+		public static void SetReactions([NotNull] this IEnumerable<IGrip> grips, [NotNull] Vector<double> globalReactionVector)
+		{
+			foreach (var grip in grips)
+				grip.SetReactions(globalReactionVector);
 		}
 	}
 }
