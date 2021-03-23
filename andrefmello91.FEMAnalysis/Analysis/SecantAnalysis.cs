@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
@@ -84,12 +85,12 @@ namespace andrefmello91.FEMAnalysis
 		///     Get/set values of displacements monitored.
 		/// </summary>
 		/// <inheritdoc cref="Analysis.DisplacementVector" />
-		public List<double> MonitoredDisplacements { get; private set; }
+		public List<double>? MonitoredDisplacements { get; private set; }
 
 		/// <summary>
 		///     Get/set values of load factor associated to <see cref="MonitoredDisplacements" />.
 		/// </summary>
-		public List<double> MonitoredLoadFactor { get; private set; }
+		public List<double>? MonitoredLoadFactor { get; private set; }
 
 		/// <summary>
 		///     Get/set the number of load steps to execute.
@@ -147,27 +148,31 @@ namespace andrefmello91.FEMAnalysis
 		#region Constructors
 
 		/// <summary>
-		///     Secant analysis object
+		///     Secant analysis constructor.
 		/// </summary>
+		/// <param name="numLoadSteps">The number of load steps to perform (default: 50).</param>
+		/// <param name="tolerance">The convergence tolerance (default: 1E-6).</param>
+		/// <param name="maxIterations">Maximum number of iterations for each load step (default: 10000).</param>
+		/// <param name="minIterations">Minimum number of iterations for each load step (default: 2).</param>
 		/// <inheritdoc />
-		public SecantAnalysis(InputData inputData)
+		public SecantAnalysis(InputData inputData, int numLoadSteps = 50, double tolerance = 1E-6, int maxIterations = 10000, int minIterations = 2)
 			: base(inputData)
 		{
+			NumLoadSteps  = numLoadSteps;
+			Tolerance     = tolerance;
+			MaxIterations = maxIterations;
+			MinIterations = minIterations;
 		}
 
 		#endregion
 		#region Methods
 
 		/// <summary>
-		///     Do the analysis.
+		///     Execute the analysis.
 		/// </summary>
-		/// <param name="monitoredIndex">The DoF index to monitor, if wanted.</param>
+		/// <param name="monitoredIndex">The index of a degree of freedom to monitor, if wanted.</param>
 		/// <param name="loadFactor">The load factor to multiply <see cref="Analysis.ForceVector" /> (default: 1).</param>
-		/// <param name="numLoadSteps">The number of load steps to perform (default: 50).</param>
-		/// <param name="tolerance">The convergence tolerance (default: 1E-6).</param>
-		/// <param name="maxIterations">Maximum number of iterations for each load step (default: 10000).</param>
-		/// <param name="minIterations">Minimum number of iterations for each load step (default: 2).</param>
-		public void Do(int? monitoredIndex = null, double loadFactor = 1, int numLoadSteps = 50, double tolerance = 1E-6, int maxIterations = 10000, int minIterations = 2)
+		public void Execute(int? monitoredIndex = null, double loadFactor = 1)
 		{
 			// Get force vector
 			ForceVector = InputData.ForceVector * loadFactor;
@@ -176,7 +181,7 @@ namespace andrefmello91.FEMAnalysis
 			UpdateStiffness();
 
 			// Initiate lists
-			Initiate(monitoredIndex, numLoadSteps, tolerance, maxIterations, minIterations);
+			Initiate(monitoredIndex);
 
 			// Analysis by load steps
 			StepAnalysis();
@@ -184,7 +189,9 @@ namespace andrefmello91.FEMAnalysis
 			// Set displacements
 			DisplacementVector = _currentDisplacements;
 			GlobalStiffness    = _currentStiffness;
-			NodalDisplacements(_currentDisplacements);
+			
+			// Set Reactions
+			InputData.Grips.SetReactions(GetReactions());
 		}
 
 		/// <summary>
@@ -197,27 +204,26 @@ namespace andrefmello91.FEMAnalysis
 
 			// Increment displacements
 			_currentDisplacements += _currentStiffness.Solve(-_currentResidual);
+			
+			// Update displacements in grips
+			InputData.Grips.SetDisplacements(_currentDisplacements);
 		}
 
 		/// <summary>
 		///     Initiate fields.
 		/// </summary>
-		/// <param name="monitoredIndex">The DoF index to monitor, if wanted.</param>
-		/// <param name="numLoadSteps">The number of load steps to perform.</param>
-		/// <param name="tolerance">The convergence tolerance.</param>
-		/// <param name="maxIterations">Maximum number of iterations for each load step.</param>
-		/// <param name="minIterations">Minimum number of iterations for each load step.</param>
-		private void Initiate(int? monitoredIndex, int numLoadSteps, double tolerance, int maxIterations, int minIterations)
+		/// <inheritdoc cref="Execute"/>
+		private void Initiate(int? monitoredIndex)
 		{
 			_monitoredIndex = monitoredIndex;
 
-			MonitoredDisplacements = _monitoredIndex.HasValue ? new List<double>() : null;
-			MonitoredLoadFactor    = _monitoredIndex.HasValue ? new List<double>() : null;
-
-			NumLoadSteps  = numLoadSteps;
-			Tolerance     = tolerance;
-			MaxIterations = maxIterations;
-			MinIterations = minIterations;
+			MonitoredDisplacements = _monitoredIndex.HasValue 
+				? new List<double>() 
+				: null;
+			
+			MonitoredLoadFactor    = _monitoredIndex.HasValue 
+				? new List<double>() 
+				: null;
 
 			// Calculate initial stiffness
 			_currentStiffness = GlobalStiffness;
@@ -228,9 +234,9 @@ namespace andrefmello91.FEMAnalysis
 
 			// Initiate solution values
 			_lastStiffness     = _currentStiffness.Clone();
-			_lastDisplacements = Vector<double>.Build.Dense(NumberOfDoFs);
-			_lastResidual      = Vector<double>.Build.Dense(NumberOfDoFs);
-			_currentResidual   = Vector<double>.Build.Dense(NumberOfDoFs);
+			_lastDisplacements = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
+			_lastResidual      = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
+			_currentResidual   = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
 		}
 
 		/// <summary>
@@ -238,22 +244,29 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private void Iterate()
 		{
-			for (_iteration = 1; _iteration <= MaxIterations; _iteration++)
+			// Initiate first iteration
+			_iteration = 1;
+			
+			do
 			{
-				// Calculate element displacements and forces
-				ElementAnalysis(_currentDisplacements);
+				// Calculate element forces
+				InputData.Elements.CalculateForces();
 
 				// Update residual
 				ResidualUpdate();
 
 				// Check convergence or if analysis must stop
 				if (ConvergenceReached || StopCheck())
-					break;
+					return;
 
 				// Update stiffness and displacements
 				SecantStiffnessUpdate();
 				DisplacementUpdate();
-			}
+				
+				// Increase iteration count
+				_iteration++;
+				
+			} while (_iteration <= MaxIterations);
 		}
 
 		/// <summary>
@@ -279,8 +292,8 @@ namespace andrefmello91.FEMAnalysis
 			if (!_monitoredIndex.HasValue)
 				return;
 
-			MonitoredDisplacements.Add(_currentDisplacements[_monitoredIndex.Value]);
-			MonitoredLoadFactor.Add(LoadFactor);
+			MonitoredDisplacements!.Add(_currentDisplacements[_monitoredIndex.Value]);
+			MonitoredLoadFactor!.Add(LoadFactor);
 		}
 
 		/// <summary>
@@ -306,27 +319,18 @@ namespace andrefmello91.FEMAnalysis
 
 			// Simplify
 			if (simplify)
-				SimplifyStiffness();
+				Simplify();
 		}
 
 		/// <summary>
-		///     Simplify the secant stiffness <see cref="Matrix" /> of current iteration.
-		/// </summary>
-		private void SimplifyStiffness()
-		{
-			_currentStiffness.ClearRows(ConstraintIndex);
-			_currentStiffness.ClearColumns(ConstraintIndex);
-
-			foreach (var i in ConstraintIndex)
-				_currentStiffness[i, i] = 1;
-		}
-
-		/// <summary>
-		///     Do analysis by load steps.
+		///     Execute step by step analysis.
 		/// </summary>
 		private void StepAnalysis()
 		{
-			for (_loadStep = 1; _loadStep <= NumLoadSteps; _loadStep++)
+			// Initiate first load step
+			_loadStep = 1;
+
+			do
 			{
 				// Get the force vector
 				_currentForces = LoadFactor * ForceVector;
@@ -336,11 +340,15 @@ namespace andrefmello91.FEMAnalysis
 
 				// Verify if convergence was not reached
 				if (Stop)
-					break;
+					return;
 
 				// Set load step results
 				SaveLoadStepResults();
-			}
+
+				// Increment load step
+				_loadStep++;
+				
+			} while (_loadStep <= NumLoadSteps);
 		}
 
 		/// <summary>
@@ -349,7 +357,8 @@ namespace andrefmello91.FEMAnalysis
 		private bool StopCheck()
 		{
 			// Check if one stop condition is reached
-			Stop = _iteration == MaxIterations || _currentResidual.ContainsNaN() || _currentDisplacements.ContainsNaN() || _currentStiffness.ContainsNaN();
+			Stop = _iteration == MaxIterations         || _currentResidual.ContainsNaN() || 
+			       _currentDisplacements.ContainsNaN() || _currentStiffness.ContainsNaN();
 
 			// Check if maximum number of iterations is reached
 			if (Stop)

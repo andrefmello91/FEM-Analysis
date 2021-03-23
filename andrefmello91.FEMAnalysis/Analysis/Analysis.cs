@@ -103,6 +103,18 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
+		///     Get the internal force <see cref="Vector" />.
+		/// </summary>
+		public Vector<double> InternalForces()
+		{
+			var iForces = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
+
+			InputData.Elements.AddToInternalForces(iForces);
+
+			return iForces;
+		}
+
+		/// <summary>
 		///     Assemble the global stiffness <see cref="Matrix" />.
 		/// </summary>
 		protected Matrix<double> AssembleStiffness()
@@ -123,20 +135,20 @@ namespace andrefmello91.FEMAnalysis
 		protected void Simplify(bool simplifyByConstraints = true, bool simplifyZeroRows = true)
 		{
 			if (simplifyByConstraints)
+			{
+				// Clear the rows and columns in the stiffness matrix
+				GlobalStiffness.ClearRows(InputData.ConstraintIndex.ToArray());
+				GlobalStiffness.ClearColumns(InputData.ConstraintIndex.ToArray());
+
 				foreach (var i in InputData.ConstraintIndex)
 				{
-					// Clear the row and column [i] in the stiffness matrix (all elements will be zero)
-					GlobalStiffness.ClearRow(i);
-					GlobalStiffness.ClearColumn(i);
-
 					// Set the diagonal element to 1
 					GlobalStiffness[i, i] = 1;
 
 					// Clear the row in the force vector
 					ForceVector[i] = 0;
-
-					// So ui = 0
 				}
+			}
 
 			if (simplifyZeroRows)
 				foreach (var grip in InputData.Grips)
