@@ -63,33 +63,53 @@ namespace andrefmello91.FEMAnalysis
 		private int _loadStep;
 
 		/// <summary>
-		///     Field to store the maximum number of iterations.
-		/// </summary>
-		private int _maxIterations;
-
-		/// <summary>
-		///     Field to store the minimum number of iterations.
-		/// </summary>
-		private int _minIterations;
-
-		/// <summary>
 		///     Field to store the DoF index for <see cref="MonitoredDisplacements" />.
 		/// </summary>
 		private int? _monitoredIndex;
 
-		/// <summary>
-		///     Field to store the number of load steps to perform.
-		/// </summary>
-		private int _numLoadSteps;
-
-		/// <summary>
-		///     Field to store convergence tolerance.
-		/// </summary>
-		private double _tolerance;
-
 		#endregion
-
 		#region Properties
+
+		/// <summary>
+		///     Get/set the maximum number of iterations.
+		/// </summary>
+		public int MaxIterations { get; set; }
+
+		/// <summary>
+		///     Get/set the minimum number of iterations.
+		/// </summary>
+		public int MinIterations { get; set; }
+
+		/// <summary>
+		///     Get/set values of displacements monitored.
+		/// </summary>
+		/// <inheritdoc cref="Analysis.DisplacementVector" />
+		public List<double> MonitoredDisplacements { get; private set; }
+
+		/// <summary>
+		///     Get/set values of load factor associated to <see cref="MonitoredDisplacements" />.
+		/// </summary>
+		public List<double> MonitoredLoadFactor { get; private set; }
+
+		/// <summary>
+		///     Get/set the number of load steps to execute.
+		/// </summary>
+		public int NumLoadSteps { get; set; }
+
+		/// <summary>
+		///     Get/set when to stop analysis.
+		/// </summary>
+		public bool Stop { get; private set; }
+
+		/// <summary>
+		///     Get/set the stop message.
+		/// </summary>
+		public string StopMessage { get; private set; }
+
+		/// <summary>
+		///     Get/set the convergence tolerance.
+		/// </summary>
+		public double Tolerance { get; set; }
 
 		/// <summary>
 		///     Get current convergence.
@@ -121,31 +141,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get current load factor.
 		/// </summary>
-		private double LoadFactor => (double) _loadStep / _numLoadSteps;
-
-		/// <summary>
-		///     Get/set values of displacements monitored.
-		/// </summary>
-		/// <inheritdoc cref="Analysis.DisplacementVector" />
-		public List<double> MonitoredDisplacements { get; private set; }
-
-		/// <summary>
-		///     Get/set values of load factor associated to <see cref="MonitoredDisplacements" />.
-		/// </summary>
-		public List<double> MonitoredLoadFactor { get; private set; }
-
-		/// <summary>
-		///     Get/set when to stop analysis.
-		/// </summary>
-		public bool Stop { get; private set; }
-
-		/// <summary>
-		///     Get/set the stop message.
-		/// </summary>
-		public string StopMessage { get; private set; }
+		private double LoadFactor => (double) _loadStep / NumLoadSteps;
 
 		#endregion
-
 		#region Constructors
 
 		/// <summary>
@@ -158,8 +156,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		#endregion
-
-		#region  Methods
+		#region Methods
 
 		/// <summary>
 		///     Do the analysis.
@@ -186,8 +183,20 @@ namespace andrefmello91.FEMAnalysis
 
 			// Set displacements
 			DisplacementVector = _currentDisplacements;
-			GlobalStiffness = _currentStiffness;
+			GlobalStiffness    = _currentStiffness;
 			NodalDisplacements(_currentDisplacements);
+		}
+
+		/// <summary>
+		///     Update displacements.
+		/// </summary>
+		private void DisplacementUpdate()
+		{
+			// Set last displacements
+			_lastDisplacements = _currentDisplacements.Clone();
+
+			// Increment displacements
+			_currentDisplacements += _currentStiffness.Solve(-_currentResidual);
 		}
 
 		/// <summary>
@@ -205,16 +214,16 @@ namespace andrefmello91.FEMAnalysis
 			MonitoredDisplacements = _monitoredIndex.HasValue ? new List<double>() : null;
 			MonitoredLoadFactor    = _monitoredIndex.HasValue ? new List<double>() : null;
 
-			_numLoadSteps  = numLoadSteps;
-			_tolerance     = tolerance;
-			_maxIterations = maxIterations;
-			_minIterations = minIterations;
+			NumLoadSteps  = numLoadSteps;
+			Tolerance     = tolerance;
+			MaxIterations = maxIterations;
+			MinIterations = minIterations;
 
 			// Calculate initial stiffness
 			_currentStiffness = GlobalStiffness;
 
 			// Calculate initial displacements
-			var lf0 = (double) 1 / _numLoadSteps;
+			var lf0 = (double) 1 / NumLoadSteps;
 			_currentDisplacements = _currentStiffness.Solve(lf0 * ForceVector);
 
 			// Initiate solution values
@@ -225,33 +234,11 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Do analysis by load steps.
-		/// </summary>
-		private void StepAnalysis()
-		{
-			for (_loadStep = 1; _loadStep <= _numLoadSteps; _loadStep++)
-			{
-				// Get the force vector
-				_currentForces = LoadFactor * ForceVector;
-
-				// Iterate
-				Iterate();
-
-				// Verify if convergence was not reached
-				if (Stop)
-					break;
-
-				// Set load step results
-				SaveLoadStepResults();
-			}
-		}
-
-		/// <summary>
 		///     Iterate to find solution.
 		/// </summary>
 		private void Iterate()
 		{
-			for (_iteration = 1; _iteration <= _maxIterations; _iteration++)
+			for (_iteration = 1; _iteration <= MaxIterations; _iteration++)
 			{
 				// Calculate element displacements and forces
 				ElementAnalysis(_currentDisplacements);
@@ -270,19 +257,9 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Check if analysis must stop.
+		///     Calculate residual force <see cref="Vector" />.
 		/// </summary>
-		private bool StopCheck()
-		{
-			// Check if one stop condition is reached
-			Stop = _iteration == _maxIterations || _currentResidual.ContainsNaN() || _currentDisplacements.ContainsNaN() || _currentStiffness.ContainsNaN();
-
-			// Check if maximum number of iterations is reached
-			if (Stop)
-				StopMessage = $"Convergence not reached at load step {_loadStep}";
-
-			return Stop;
-		}
+		private Vector<double> ResidualForces() => InternalForces() - _currentForces;
 
 		/// <summary>
 		///     Update residual force <see cref="Vector" />.
@@ -295,9 +272,16 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Calculate residual force <see cref="Vector" />.
+		///     Save load step results after achieving convergence.
 		/// </summary>
-		private Vector<double> ResidualForces() => InternalForces() - _currentForces;
+		private void SaveLoadStepResults()
+		{
+			if (!_monitoredIndex.HasValue)
+				return;
+
+			MonitoredDisplacements.Add(_currentDisplacements[_monitoredIndex.Value]);
+			MonitoredLoadFactor.Add(LoadFactor);
+		}
 
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix" /> of current iteration.
@@ -338,37 +322,51 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Update displacements.
+		///     Do analysis by load steps.
 		/// </summary>
-		private void DisplacementUpdate()
+		private void StepAnalysis()
 		{
-			// Set last displacements
-			_lastDisplacements = _currentDisplacements.Clone();
+			for (_loadStep = 1; _loadStep <= NumLoadSteps; _loadStep++)
+			{
+				// Get the force vector
+				_currentForces = LoadFactor * ForceVector;
 
-			// Increment displacements
-			_currentDisplacements += _currentStiffness.Solve(-_currentResidual);
+				// Iterate
+				Iterate();
+
+				// Verify if convergence was not reached
+				if (Stop)
+					break;
+
+				// Set load step results
+				SaveLoadStepResults();
+			}
+		}
+
+		/// <summary>
+		///     Check if analysis must stop.
+		/// </summary>
+		private bool StopCheck()
+		{
+			// Check if one stop condition is reached
+			Stop = _iteration == MaxIterations || _currentResidual.ContainsNaN() || _currentDisplacements.ContainsNaN() || _currentStiffness.ContainsNaN();
+
+			// Check if maximum number of iterations is reached
+			if (Stop)
+				StopMessage = $"Convergence not reached at load step {_loadStep}";
+
+			return Stop;
 		}
 
 
 		/// <summary>
 		///     Returns true if achieved convergence.
 		/// </summary>
-		/// <param name="convergence">Calculated convergence.
+		/// <param name="convergence">
+		///     Calculated convergence.
 		///     <para>See: <see cref="Convergence" />.</para>
 		/// </param>
-		private bool VerifyConvergence(double convergence) => convergence <= _tolerance && _iteration >= _minIterations;
-
-		/// <summary>
-		///     Save load step results after achieving convergence.
-		/// </summary>
-		private void SaveLoadStepResults()
-		{
-			if (!_monitoredIndex.HasValue)
-				return;
-
-			MonitoredDisplacements.Add(_currentDisplacements[_monitoredIndex.Value]);
-			MonitoredLoadFactor.Add(LoadFactor);
-		}
+		private bool VerifyConvergence(double convergence) => convergence <= Tolerance && _iteration >= MinIterations;
 
 		#endregion
 	}

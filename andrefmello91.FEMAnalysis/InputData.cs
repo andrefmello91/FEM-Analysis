@@ -4,7 +4,6 @@ using Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
-
 #nullable disable
 
 namespace andrefmello91.FEMAnalysis
@@ -20,6 +19,11 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the index of constrained degrees of freedom.
 		/// </summary>
 		public List<int> ConstraintIndex { get; }
+
+		/// <summary>
+		///     Get the elements of the finite element model.
+		/// </summary>
+		public IFiniteElement[] Elements { get; }
 
 		/// <summary>
 		///     Get the external force <see cref="Vector" />.
@@ -39,13 +43,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public int NumberOfDoFs { get; }
 
-		/// <summary>
-		///     Get the elements of the finite element model.
-		/// </summary>
-		public IFiniteElement[] Elements { get; }
-
 		#endregion
-
 		#region Constructors
 
 		/// <summary>
@@ -62,40 +60,12 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		#endregion
-
 		#region Methods
-
-		/// <summary>
-		///     Get the force <see cref="Vector" /> from a collection of grips.
-		/// </summary>
-		/// <param name="grips">The collection of distinct grips of the finite element model.</param>
-		/// <inheritdoc cref="ForceVector"/>
-		public static Vector<double> GetForceVector(IEnumerable<IGrip> grips)
-		{
-			// Initialize the force vector
-			var f = new double[2 * grips.Count()];
-
-			// Read the nodes data
-			foreach (var grip in grips)
-			{
-				// Get DoF indexes
-				var index = grip.DoFIndex;
-				int
-					i = index[0],
-					j = index[1];
-
-				// Set to force vector
-				f[i] = grip.Force.X.Newtons;
-				f[j] = grip.Force.Y.Newtons;
-			}
-
-			return f.ToVector();
-		}
 
 		/// <summary>
 		///     Get the indexes of constrained degrees of freedom from a collection of grips.
 		/// </summary>
-		/// <inheritdoc cref="GetForceVector"/>
+		/// <inheritdoc cref="GetForceVector" />
 		public static List<int> GetConstraintIndex(IEnumerable<IGrip> grips)
 		{
 			var constraintList = new List<int>();
@@ -122,6 +92,33 @@ namespace andrefmello91.FEMAnalysis
 			}
 
 			return constraintList;
+		}
+
+		/// <summary>
+		///     Get the force <see cref="Vector" /> from a collection of grips.
+		/// </summary>
+		/// <param name="grips">The collection of distinct grips of the finite element model.</param>
+		/// <inheritdoc cref="ForceVector" />
+		public static Vector<double> GetForceVector(IEnumerable<IGrip> grips)
+		{
+			// Initialize the force vector
+			var f = new double[2 * grips.Count()];
+
+			// Read the nodes data
+			foreach (var grip in grips)
+			{
+				// Get DoF indexes
+				var index = grip.DoFIndex;
+				int
+					i = index[0],
+					j = index[1];
+
+				// Set to force vector
+				f[i] = grip.Force.X.Newtons;
+				f[j] = grip.Force.Y.Newtons;
+			}
+
+			return f.ToVector();
 		}
 
 		public override string ToString() =>

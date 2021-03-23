@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Extensions;
+﻿using Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
-using UnitsNet;
 using UnitsNet.Units;
-using static Extensions.UnitExtensions;
-
 #nullable enable
 
 namespace andrefmello91.FEMAnalysis
@@ -17,15 +11,6 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class Analysis
 	{
-		#region Fields
-
-		/// <summary>
-		///     Get the <see cref="FEMAnalysis.InputData" />.
-		/// </summary>
-		public InputData InputData { get; }
-
-		#endregion
-
 		#region Properties
 
 		/// <summary>
@@ -44,8 +29,12 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public Matrix<double> GlobalStiffness { get; protected set; }
 
-		#endregion
+		/// <summary>
+		///     Get the <see cref="FEMAnalysis.InputData" />.
+		/// </summary>
+		public InputData InputData { get; }
 
+		#endregion
 		#region Constructors
 
 		/// <summary>
@@ -55,16 +44,17 @@ namespace andrefmello91.FEMAnalysis
 		public Analysis(InputData inputData) => InputData = inputData;
 
 		#endregion
-
 		#region Methods
 
 		/// <summary>
-		///     Calculate the displacement <see cref="Vector" /> from an external force <see cref="Vector"/> and a global stiffness matrix.
+		///     Calculate the displacement <see cref="Vector" /> from an external force <see cref="Vector" /> and a global
+		///     stiffness matrix.
 		/// </summary>
 		/// <param name="globalStiffness">Current global stiffness <see cref="Matrix" />.</param>
 		/// <param name="forceVector">Current force <see cref="Vector" />.</param>
 		/// <returns>
-		///		The resultant displacement <see cref="Vector"/> or null if <paramref name="globalStiffness"/> and <paramref name="forceVector"/> sizes don't match.
+		///     The resultant displacement <see cref="Vector" /> or null if <paramref name="globalStiffness" /> and
+		///     <paramref name="forceVector" /> sizes don't match.
 		/// </returns>
 		public static Vector<double>? CalculateDisplacements(Matrix<double> globalStiffness, Vector<double> forceVector) =>
 			globalStiffness.IsSquare() && globalStiffness.RowCount == forceVector.Count
@@ -97,7 +87,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Calculate the <see cref="Vector"/> of support reactions.
+		///     Calculate the <see cref="Vector" /> of support reactions.
 		/// </summary>
 		public Vector<double> GetReactions()
 		{
@@ -110,20 +100,6 @@ namespace andrefmello91.FEMAnalysis
 			f.CoerceZero(1E-9);
 
 			return f;
-		}
-
-		/// <summary>
-		///     Update <see cref="GlobalStiffness" />.
-		/// </summary>
-		/// <param name="simplify">Simplify stiffness and force vector? (default: true)</param>
-		protected void UpdateStiffness(bool simplify = true)
-		{
-			// Initialize the global stiffness matrix
-			GlobalStiffness = AssembleStiffness();
-
-			// Simplify stiffness matrix
-			if (simplify)
-				Simplify();
 		}
 
 		/// <summary>
@@ -186,6 +162,20 @@ namespace andrefmello91.FEMAnalysis
 
 			// Approximate small numbers to zero
 			GlobalStiffness.CoerceZero(1E-9);
+		}
+
+		/// <summary>
+		///     Update <see cref="GlobalStiffness" />.
+		/// </summary>
+		/// <param name="simplify">Simplify stiffness and force vector? (default: true)</param>
+		protected void UpdateStiffness(bool simplify = true)
+		{
+			// Initialize the global stiffness matrix
+			GlobalStiffness = AssembleStiffness();
+
+			// Simplify stiffness matrix
+			if (simplify)
+				Simplify();
 		}
 
 		public override string ToString() =>
