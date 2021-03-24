@@ -5,17 +5,17 @@
         <LangVersion>9.0</LangVersion>
         <Nullable>enable</Nullable>
         <PackageId>andrefmello91.FEMAnalysis</PackageId>
-        <Version>0.1.2</Version>
+        <Version>0.1.3</Version>
         <Authors>andrefmello91</Authors>
         <PackageDescription>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</PackageDescription>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-        <PackageVersion>0.1.2</PackageVersion>
+        <PackageVersion>0.1.3</PackageVersion>
         <Description>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</Description>
         <RepositoryUrl>https://github.com/andrefmello91/FEMAnalysis</RepositoryUrl>
         <PackageProjectUrl>https://github.com/andrefmello91/FEMAnalysis</PackageProjectUrl>
-        <PackageReleaseNotes>Initial release.</PackageReleaseNotes>
+        <PackageReleaseNotes>Removed unused properties.</PackageReleaseNotes>
         <AssemblyName>andrefmello91.FEMAnalysis</AssemblyName>
         <RootNamespace>andrefmello91.FEMAnalysis</RootNamespace>
     </PropertyGroup>
