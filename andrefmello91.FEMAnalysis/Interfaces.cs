@@ -80,13 +80,17 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the displacement <see cref="Vector" />, in global coordinate system.
 		/// </summary>
-		/// <inheritdoc cref="LocalDisplacements" />
+		/// <remarks>
+		///     Components in <see cref="LengthUnit.Millimeter" />.
+		/// </remarks>
 		Vector<double> Displacements { get; }
 
 		/// <summary>
 		///     Get the force <see cref="Vector" /> in this element, in global coordinate system.
 		/// </summary>
-		/// <inheritdoc cref="LocalForces" />
+		/// <remarks>
+		///     Components in <see cref="ForceUnit.Newton" />.
+		/// </remarks>
 		Vector<double> Forces { get; }
 
 		/// <summary>
@@ -95,35 +99,12 @@ namespace andrefmello91.FEMAnalysis
 		IGrip[] Grips { get; }
 
 		/// <summary>
-		///     Get the displacement <see cref="Vector" />, in local coordinate system.
+		///     Get stiffness <see cref="Matrix" /> in the global coordinate system.
 		/// </summary>
 		/// <remarks>
-		///     Components in <see cref="LengthUnit.Millimeter" />.
+		///     Components in units compatible to <see cref="ForceUnit.Newton" /> and <see cref="LengthUnit.Millimeter" />.
 		/// </remarks>
-		Vector<double> LocalDisplacements { get; }
-
-		/// <summary>
-		///     Get the force <see cref="Vector" />, in local coordinate system.
-		/// </summary>
-		/// <remarks>
-		///     Components in <see cref="ForceUnit.Newton" />.
-		/// </remarks>
-		Vector<double> LocalForces { get; }
-
-		/// <summary>
-		///     Get local stiffness <see cref="Matrix" />.
-		/// </summary>
-		Matrix<double> LocalStiffness { get; }
-
-		/// <summary>
-		///     Get global stiffness <see cref="Matrix" />.
-		/// </summary>
 		Matrix<double> Stiffness { get; }
-
-		/// <summary>
-		///     Get the transformation <see cref="Matrix" />.
-		/// </summary>
-		Matrix<double> TransformationMatrix { get; }
 
 		#endregion
 		#region Methods
