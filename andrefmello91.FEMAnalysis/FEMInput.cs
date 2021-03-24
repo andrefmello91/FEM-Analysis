@@ -11,7 +11,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Input Data class.
 	/// </summary>
-	public class InputData
+	public class FEMInput
 	{
 		#region Properties
 
@@ -50,7 +50,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Input Data constructor.
 		/// </summary>
 		/// <param name="elements">The collection containing all distinct <see cref="IFiniteElement" />'s in the model.</param>
-		public InputData(IEnumerable<IFiniteElement> elements)
+		public FEMInput(IEnumerable<IFiniteElement> elements)
 		{
 			Elements        = elements.OrderBy(e => e.Number).ToArray();
 			Grips           = elements.SelectMany(e => e.Grips).Distinct().OrderBy(g => g.Number).ToArray();

@@ -21,7 +21,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </remarks>
 		public Vector<double> DisplacementVector { get; protected set; }
 
-		/// <inheritdoc cref="InputData.ForceVector" />
+		/// <inheritdoc cref="FemInput.ForceVector" />
 		public Vector<double> ForceVector { get; protected set; }
 
 		/// <summary>
@@ -30,9 +30,9 @@ namespace andrefmello91.FEMAnalysis
 		public Matrix<double> GlobalStiffness { get; protected set; }
 
 		/// <summary>
-		///     Get the <see cref="FEMAnalysis.InputData" />.
+		///     Get the <see cref="FEMInput" />.
 		/// </summary>
-		public InputData InputData { get; }
+		public FEMInput FemInput { get; }
 
 		#endregion
 		#region Constructors
@@ -40,8 +40,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Analysis base object.
 		/// </summary>
-		/// <param name="inputData">The <see cref="FEMAnalysis.InputData" /> for SPM analysis.</param>
-		public Analysis(InputData inputData) => InputData = inputData;
+		/// <param name="femInput">The <see cref="FEMInput" /> for SPM analysis.</param>
+		public Analysis(FEMInput femInput) => FemInput = femInput;
 
 		#endregion
 		#region Methods
@@ -68,7 +68,7 @@ namespace andrefmello91.FEMAnalysis
 		public void Execute(double loadFactor = 1)
 		{
 			// Set force vector
-			ForceVector = InputData.ForceVector * loadFactor;
+			ForceVector = FemInput.ForceVector * loadFactor;
 
 			// Assemble and simplify global stiffness and force vector
 			UpdateStiffness();
@@ -77,13 +77,13 @@ namespace andrefmello91.FEMAnalysis
 			DisplacementVector = CalculateDisplacements(GlobalStiffness, ForceVector)!;
 
 			// Set displacements to grips
-			InputData.Grips.SetDisplacements(DisplacementVector);
+			FemInput.Grips.SetDisplacements(DisplacementVector);
 
 			// Calculate element forces
-			InputData.Elements.CalculateForces();
+			FemInput.Elements.CalculateForces();
 
 			// Set Reactions
-			InputData.Grips.SetReactions(GetReactions());
+			FemInput.Grips.SetReactions(GetReactions());
 		}
 
 		/// <summary>
@@ -107,9 +107,9 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public Vector<double> InternalForces()
 		{
-			var iForces = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
+			var iForces = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
 
-			InputData.Elements.AddToInternalForces(iForces);
+			FemInput.Elements.AddToInternalForces(iForces);
 
 			return iForces;
 		}
@@ -119,10 +119,10 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		protected Matrix<double> AssembleStiffness()
 		{
-			var n         = InputData.NumberOfDoFs;
+			var n         = FemInput.NumberOfDoFs;
 			var stiffness = Matrix<double>.Build.Dense(n, n);
 
-			InputData.Elements.AddToGlobalStiffness(stiffness);
+			FemInput.Elements.AddToGlobalStiffness(stiffness);
 
 			return stiffness;
 		}
@@ -137,10 +137,10 @@ namespace andrefmello91.FEMAnalysis
 			if (simplifyByConstraints)
 			{
 				// Clear the rows and columns in the stiffness matrix
-				GlobalStiffness.ClearRows(InputData.ConstraintIndex.ToArray());
-				GlobalStiffness.ClearColumns(InputData.ConstraintIndex.ToArray());
+				GlobalStiffness.ClearRows(FemInput.ConstraintIndex.ToArray());
+				GlobalStiffness.ClearColumns(FemInput.ConstraintIndex.ToArray());
 
-				foreach (var i in InputData.ConstraintIndex)
+				foreach (var i in FemInput.ConstraintIndex)
 				{
 					// Set the diagonal element to 1
 					GlobalStiffness[i, i] = 1;
@@ -151,7 +151,7 @@ namespace andrefmello91.FEMAnalysis
 			}
 
 			if (simplifyZeroRows)
-				foreach (var grip in InputData.Grips)
+				foreach (var grip in FemInput.Grips)
 				{
 					// Get DoF indexes
 					var index = grip.DoFIndex;
@@ -191,7 +191,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		public override string ToString() =>
-			$"{InputData}\n" +
+			$"{FemInput}\n" +
 			"Global Stiffness:\n" +
 			$"{GlobalStiffness}\n" +
 			"Displacement Vector:\n" +

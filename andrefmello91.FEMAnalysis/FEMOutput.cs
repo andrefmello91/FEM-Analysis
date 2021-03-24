@@ -12,7 +12,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///		Output data class.
 	/// </summary>
-	public class OutputData
+	public class FEMOutput
 	{
 		/// <summary>
 		///     Get the values of monitored displacements.
@@ -23,7 +23,7 @@ namespace andrefmello91.FEMAnalysis
 		///		Output data constructor.
 		/// </summary>
 		/// <param name="monitoredDisplacements">The values of monitored displacements.</param>
-		public OutputData([NotNull] IEnumerable<MonitoredDisplacement> monitoredDisplacements) =>
+		public FEMOutput([NotNull] IEnumerable<MonitoredDisplacement> monitoredDisplacements) =>
 			MonitoredDisplacements = monitoredDisplacements.ToList();
 
 		///  <summary>

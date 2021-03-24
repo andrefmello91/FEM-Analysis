@@ -150,8 +150,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="maxIterations">Maximum number of iterations for each load step (default: 10000).</param>
 		/// <param name="minIterations">Minimum number of iterations for each load step (default: 2).</param>
 		/// <inheritdoc />
-		public SecantAnalysis(InputData inputData, int numLoadSteps = 50, double tolerance = 1E-6, int maxIterations = 10000, int minIterations = 2)
-			: base(inputData)
+		public SecantAnalysis(FEMInput femInput, int numLoadSteps = 50, double tolerance = 1E-6, int maxIterations = 10000, int minIterations = 2)
+			: base(femInput)
 		{
 			NumLoadSteps  = numLoadSteps;
 			Tolerance     = tolerance;
@@ -170,7 +170,7 @@ namespace andrefmello91.FEMAnalysis
 		public void Execute(int? monitoredIndex = null, double loadFactor = 1)
 		{
 			// Get force vector
-			ForceVector = InputData.ForceVector * loadFactor;
+			ForceVector = FemInput.ForceVector * loadFactor;
 
 			// Get the initial stiffness and force vector simplified
 			UpdateStiffness();
@@ -186,19 +186,19 @@ namespace andrefmello91.FEMAnalysis
 			GlobalStiffness    = _currentStiffness;
 
 			// Set Reactions
-			InputData.Grips.SetReactions(GetReactions());
+			FemInput.Grips.SetReactions(GetReactions());
 		}
 
 
 		/// <summary>
-		///     Generate an <see cref="OutputData" /> from analysis results.
+		///     Generate an <see cref="FEMOutput" /> from analysis results.
 		/// </summary>
 		/// <returns>
 		///     null if no monitored index was provided.
 		/// </returns>
-		public OutputData? GenerateOutput() => _monitoredDisplacements is null
+		public FEMOutput? GenerateOutput() => _monitoredDisplacements is null
 			? null
-			: new OutputData(_monitoredDisplacements);
+			: new FEMOutput(_monitoredDisplacements);
 
 		/// <summary>
 		///     Update displacements.
@@ -212,7 +212,7 @@ namespace andrefmello91.FEMAnalysis
 			_currentDisplacements += _currentStiffness.Solve(-_currentResidual);
 
 			// Update displacements in grips
-			InputData.Grips.SetDisplacements(_currentDisplacements);
+			FemInput.Grips.SetDisplacements(_currentDisplacements);
 		}
 
 		/// <summary>
@@ -235,9 +235,9 @@ namespace andrefmello91.FEMAnalysis
 
 			// Initiate solution values
 			_lastStiffness     = _currentStiffness.Clone();
-			_lastDisplacements = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
-			_lastResidual      = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
-			_currentResidual   = Vector<double>.Build.Dense(InputData.NumberOfDoFs);
+			_lastDisplacements = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
+			_lastResidual      = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
+			_currentResidual   = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
 		}
 
 		/// <summary>
@@ -251,7 +251,7 @@ namespace andrefmello91.FEMAnalysis
 			do
 			{
 				// Calculate element forces
-				InputData.Elements.CalculateForces();
+				FemInput.Elements.CalculateForces();
 
 				// Update residual
 				ResidualUpdate();
