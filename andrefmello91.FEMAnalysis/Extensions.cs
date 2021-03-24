@@ -103,21 +103,18 @@ namespace andrefmello91.FEMAnalysis
 		public static INumberedElement? GetByNumber(this IEnumerable<INumberedElement> elements, int number) => elements.First(element => number == element.Number);
 
 		/// <summary>
-		///     Get global indexes of the degrees of freedom af a collection of grips.
+		///     Get global indexes of the degrees of freedom of a collection of grips.
 		/// </summary>
 		/// <param name="grips">A collection of <see cref="IGrip" />'s.</param>
-		public static IEnumerable<int> GlobalIndexes(IEnumerable<IGrip> grips) => grips.SelectMany(GlobalIndexes);
-
-		/// <summary>
-		///     Get global indexes of the degrees of freedom af a grip.
-		/// </summary>
-		/// <param name="grip">An <see cref="IGrip" />.</param>
-		public static IEnumerable<int> GlobalIndexes(IGrip grip)
+		public static IEnumerable<int> GlobalIndexes(params IGrip[] grips)
 		{
-			var n = 2 * grip.Number;
+			foreach (var grip in grips)
+			{
+				var n = 2 * grip.Number;
 
-			yield return n - 2;
-			yield return n - 1;
+				yield return n - 2;
+				yield return n - 1;
+			}
 		}
 
 		/// <summary>
