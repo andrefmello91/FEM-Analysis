@@ -4,6 +4,7 @@ using System.Linq;
 using andrefmello91.OnPlaneComponents;
 using andrefmello91.OnPlaneComponents.Displacement;
 using andrefmello91.OnPlaneComponents.Force;
+using Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
@@ -144,6 +145,17 @@ namespace andrefmello91.FEMAnalysis
 				grip.SetDisplacements(globalDisplacementVector);
 		}
 
+		/// <summary>
+		///		Get the displacement <see cref="Vector"/> from this element's grips.
+		/// </summary>
+		/// <returns>
+		///		The displacement <see cref="Vector"/>, with components in <see cref="LengthUnit.Millimeter"/>.
+		/// </returns>
+		public static Vector<double> GetDisplacementsFromGrips([NotNull] this IFiniteElement element) =>
+			element.Grips
+				.SelectMany(g => new[] { g.Displacement.X.Millimeters, g.Displacement.Y.Millimeters })
+				.ToVector();
+		
 		/// <summary>
 		///     Set support reactions to an <see cref="IGrip" /> from the global reaction <see cref="Vector" />.
 		/// </summary>
