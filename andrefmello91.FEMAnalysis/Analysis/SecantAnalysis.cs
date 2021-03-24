@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+using UnitsNet;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -17,24 +17,24 @@ namespace andrefmello91.FEMAnalysis
 		///     The displacement <see cref="Vector" /> of current iteration
 		/// </summary>
 		/// <inheritdoc cref="Analysis.DisplacementVector" />
-		private Vector<double> _currentDisplacements;
+		private Vector<double> _currentDisplacements = null!;
 
 		/// <summary>
 		///     Field to store each iteration force <see cref="Vector" />
 		/// </summary>
 		/// <inheritdoc cref="Analysis.ForceVector" />
-		private Vector<double> _currentForces;
+		private Vector<double> _currentForces = null!;
 
 		/// <summary>
 		///     The residual force <see cref="Vector" /> of current iteration
 		/// </summary>
 		/// <inheritdoc cref="Analysis.ForceVector" />
-		private Vector<double> _currentResidual;
+		private Vector<double> _currentResidual = null!;
 
 		/// <summary>
 		///     The secant stiffness <see cref="Matrix" /> of current iteration
 		/// </summary>
-		private Matrix<double> _currentStiffness;
+		private Matrix<double> _currentStiffness = null!;
 
 		/// <summary>
 		///     Field to store current iteration.
@@ -45,18 +45,18 @@ namespace andrefmello91.FEMAnalysis
 		///     The displacement <see cref="Vector" /> of last iteration
 		/// </summary>
 		/// <inheritdoc cref="Analysis.DisplacementVector" />
-		private Vector<double> _lastDisplacements;
+		private Vector<double> _lastDisplacements = null!;
 
 		/// <summary>
 		///     The residual <see cref="Vector" /> of last iteration
 		/// </summary>
 		/// <inheritdoc cref="Analysis.ForceVector" />
-		private Vector<double> _lastResidual;
+		private Vector<double> _lastResidual = null!;
 
 		/// <summary>
 		///     The secant stiffness <see cref="Matrix" /> of last iteration
 		/// </summary>
-		private Matrix<double> _lastStiffness;
+		private Matrix<double> _lastStiffness = null!;
 
 		/// <summary>
 		///     Field to store current load step.
@@ -64,7 +64,13 @@ namespace andrefmello91.FEMAnalysis
 		private int _loadStep;
 
 		/// <summary>
-		///     Field to store the DoF index for <see cref="MonitoredDisplacements" />.
+		///     Monitored displacements list.
+		/// </summary>
+		/// <inheritdoc cref="Analysis.DisplacementVector" />
+		private List<MonitoredDisplacement>? _monitoredDisplacements;
+
+		/// <summary>
+		///     Field to store the DoF index for <see cref="_monitoredDisplacements" />.
 		/// </summary>
 		private int? _monitoredIndex;
 
@@ -82,17 +88,6 @@ namespace andrefmello91.FEMAnalysis
 		public int MinIterations { get; set; }
 
 		/// <summary>
-		///     Get/set values of displacements monitored.
-		/// </summary>
-		/// <inheritdoc cref="Analysis.DisplacementVector" />
-		public List<double>? MonitoredDisplacements { get; private set; }
-
-		/// <summary>
-		///     Get/set values of load factor associated to <see cref="MonitoredDisplacements" />.
-		/// </summary>
-		public List<double>? MonitoredLoadFactor { get; private set; }
-
-		/// <summary>
 		///     Get/set the number of load steps to execute.
 		/// </summary>
 		public int NumLoadSteps { get; set; }
@@ -105,7 +100,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get/set the stop message.
 		/// </summary>
-		public string StopMessage { get; private set; }
+		public string StopMessage { get; private set; } = null!;
 
 		/// <summary>
 		///     Get/set the convergence tolerance.
@@ -189,10 +184,21 @@ namespace andrefmello91.FEMAnalysis
 			// Set displacements
 			DisplacementVector = _currentDisplacements;
 			GlobalStiffness    = _currentStiffness;
-			
+
 			// Set Reactions
 			InputData.Grips.SetReactions(GetReactions());
 		}
+
+
+		/// <summary>
+		///     Generate an <see cref="OutputData" /> from analysis results.
+		/// </summary>
+		/// <returns>
+		///     null if no monitored index was provided.
+		/// </returns>
+		public OutputData? GenerateOutput() => _monitoredDisplacements is null
+			? null
+			: new OutputData(_monitoredDisplacements);
 
 		/// <summary>
 		///     Update displacements.
@@ -204,7 +210,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Increment displacements
 			_currentDisplacements += _currentStiffness.Solve(-_currentResidual);
-			
+
 			// Update displacements in grips
 			InputData.Grips.SetDisplacements(_currentDisplacements);
 		}
@@ -212,18 +218,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Initiate fields.
 		/// </summary>
-		/// <inheritdoc cref="Execute"/>
+		/// <inheritdoc cref="Execute" />
 		private void Initiate(int? monitoredIndex)
 		{
 			_monitoredIndex = monitoredIndex;
 
-			MonitoredDisplacements = _monitoredIndex.HasValue 
-				? new List<double>() 
-				: null;
-			
-			MonitoredLoadFactor    = _monitoredIndex.HasValue 
-				? new List<double>() 
-				: null;
+			if (_monitoredIndex.HasValue)
+				_monitoredDisplacements = new List<MonitoredDisplacement>();
 
 			// Calculate initial stiffness
 			_currentStiffness = GlobalStiffness;
@@ -246,7 +247,7 @@ namespace andrefmello91.FEMAnalysis
 		{
 			// Initiate first iteration
 			_iteration = 1;
-			
+
 			do
 			{
 				// Calculate element forces
@@ -262,10 +263,9 @@ namespace andrefmello91.FEMAnalysis
 				// Update stiffness and displacements
 				SecantStiffnessUpdate();
 				DisplacementUpdate();
-				
+
 				// Increase iteration count
 				_iteration++;
-				
 			} while (_iteration <= MaxIterations);
 		}
 
@@ -292,8 +292,11 @@ namespace andrefmello91.FEMAnalysis
 			if (!_monitoredIndex.HasValue)
 				return;
 
-			MonitoredDisplacements!.Add(_currentDisplacements[_monitoredIndex.Value]);
-			MonitoredLoadFactor!.Add(LoadFactor);
+			// Get displacement
+			var disp = Length.FromMillimeters(_currentDisplacements[_monitoredIndex.Value]);
+
+			// Add to list
+			_monitoredDisplacements!.Add(new MonitoredDisplacement(disp, LoadFactor));
 		}
 
 		/// <summary>
@@ -347,7 +350,6 @@ namespace andrefmello91.FEMAnalysis
 
 				// Increment load step
 				_loadStep++;
-				
 			} while (_loadStep <= NumLoadSteps);
 		}
 
@@ -357,7 +359,7 @@ namespace andrefmello91.FEMAnalysis
 		private bool StopCheck()
 		{
 			// Check if one stop condition is reached
-			Stop = _iteration == MaxIterations         || _currentResidual.ContainsNaN() || 
+			Stop = _iteration == MaxIterations || _currentResidual.ContainsNaN() ||
 			       _currentDisplacements.ContainsNaN() || _currentStiffness.ContainsNaN();
 
 			// Check if maximum number of iterations is reached
@@ -366,7 +368,6 @@ namespace andrefmello91.FEMAnalysis
 
 			return Stop;
 		}
-
 
 		/// <summary>
 		///     Returns true if achieved convergence.
