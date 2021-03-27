@@ -1,7 +1,5 @@
 ﻿using System;
 using andrefmello91.OnPlaneComponents;
-using andrefmello91.OnPlaneComponents.Displacement;
-using andrefmello91.OnPlaneComponents.Force;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
@@ -13,8 +11,15 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public enum AnalysisType
 	{
+		/// <summary>
+		///		Linear-elastic analysis.
+		/// </summary>
 		Linear,
-		NonLinear
+		
+		/// <summary>
+		///		Nonlinear analysis.
+		/// </summary>
+		Nonlinear
 	}
 
 	/// <summary>
@@ -22,6 +27,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public interface INumberedElement
 	{
+
 		#region Properties
 
 		/// <summary>
@@ -38,6 +44,7 @@ namespace andrefmello91.FEMAnalysis
 		int Number { get; set; }
 
 		#endregion
+
 	}
 
 	/// <summary>
@@ -45,6 +52,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public interface IGrip : INumberedElement, IEquatable<IGrip>, IComparable<IGrip>
 	{
+
 		#region Properties
 
 		/// <summary>
@@ -68,6 +76,7 @@ namespace andrefmello91.FEMAnalysis
 		PlaneForce Reaction { get; set; }
 
 		#endregion
+
 	}
 
 	/// <summary>
@@ -75,6 +84,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public interface IFiniteElement : INumberedElement, IEquatable<IFiniteElement>, IComparable<IFiniteElement>
 	{
+
 		#region Properties
 
 		/// <summary>
@@ -107,6 +117,7 @@ namespace andrefmello91.FEMAnalysis
 		Matrix<double> Stiffness { get; }
 
 		#endregion
+
 		#region Methods
 
 		/// <summary>
@@ -115,5 +126,6 @@ namespace andrefmello91.FEMAnalysis
 		void CalculateForces();
 
 		#endregion
+
 	}
 }

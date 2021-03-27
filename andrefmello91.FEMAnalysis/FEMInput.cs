@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Extensions;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
@@ -13,6 +13,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class FEMInput
 	{
+
 		#region Properties
 
 		/// <summary>
@@ -44,6 +45,7 @@ namespace andrefmello91.FEMAnalysis
 		public int NumberOfDoFs { get; }
 
 		#endregion
+
 		#region Constructors
 
 		/// <summary>
@@ -60,6 +62,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		#endregion
+
 		#region Methods
 
 		/// <summary>
@@ -121,6 +124,7 @@ namespace andrefmello91.FEMAnalysis
 			return f.ToVector();
 		}
 
+		/// <inheritdoc />
 		public override string ToString() =>
 			$"Number of grips: {Grips.Length}\n" +
 			$"Number of elements: {Elements.Length}\n" +
@@ -128,5 +132,6 @@ namespace andrefmello91.FEMAnalysis
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
 
 		#endregion
+
 	}
 }

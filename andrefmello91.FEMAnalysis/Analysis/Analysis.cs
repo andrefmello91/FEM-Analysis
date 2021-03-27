@@ -1,4 +1,4 @@
-﻿using Extensions;
+﻿using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
@@ -11,6 +11,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class Analysis
 	{
+
 		#region Properties
 
 		/// <summary>
@@ -19,22 +20,23 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Components in <see cref="LengthUnit.Millimeter" />.
 		/// </remarks>
-		public Vector<double> DisplacementVector { get; protected set; }
-
-		/// <inheritdoc cref="FemInput.ForceVector" />
-		public Vector<double> ForceVector { get; protected set; }
-
-		/// <summary>
-		///     Get/set global stiffness <see cref="Matrix" />.
-		/// </summary>
-		public Matrix<double> GlobalStiffness { get; protected set; }
+		public Vector<double>? DisplacementVector { get; protected set; }
 
 		/// <summary>
 		///     Get the <see cref="FEMInput" />.
 		/// </summary>
 		public FEMInput FemInput { get; }
 
+		/// <inheritdoc cref="FEMInput.ForceVector" />
+		public Vector<double>? ForceVector { get; protected set; }
+
+		/// <summary>
+		///     Get/set global stiffness <see cref="Matrix" />.
+		/// </summary>
+		public Matrix<double>? GlobalStiffness { get; protected set; }
+
 		#endregion
+
 		#region Constructors
 
 		/// <summary>
@@ -44,6 +46,7 @@ namespace andrefmello91.FEMAnalysis
 		public Analysis(FEMInput femInput) => FemInput = femInput;
 
 		#endregion
+
 		#region Methods
 
 		/// <summary>
@@ -74,7 +77,7 @@ namespace andrefmello91.FEMAnalysis
 			UpdateStiffness();
 
 			// Solve
-			DisplacementVector = CalculateDisplacements(GlobalStiffness, ForceVector)!;
+			DisplacementVector = CalculateDisplacements(GlobalStiffness!, ForceVector)!;
 
 			// Set displacements to grips
 			FemInput.Grips.SetDisplacements(DisplacementVector);
@@ -137,8 +140,8 @@ namespace andrefmello91.FEMAnalysis
 			if (simplifyByConstraints)
 			{
 				// Clear the rows and columns in the stiffness matrix
-				GlobalStiffness.ClearRows(FemInput.ConstraintIndex.ToArray());
-				GlobalStiffness.ClearColumns(FemInput.ConstraintIndex.ToArray());
+				GlobalStiffness!.ClearRows(FemInput.ConstraintIndex.ToArray());
+				GlobalStiffness!.ClearColumns(FemInput.ConstraintIndex.ToArray());
 
 				foreach (var i in FemInput.ConstraintIndex)
 				{
@@ -146,7 +149,7 @@ namespace andrefmello91.FEMAnalysis
 					GlobalStiffness[i, i] = 1;
 
 					// Clear the row in the force vector
-					ForceVector[i] = 0;
+					ForceVector![i] = 0;
 				}
 			}
 
@@ -160,7 +163,7 @@ namespace andrefmello91.FEMAnalysis
 					foreach (var i in index)
 					{
 						// Verify what line of the matrix is composed of zeroes
-						if (GlobalStiffness.Row(i).Exists(num => !num.ApproxZero()))
+						if (GlobalStiffness!.Row(i).Exists(num => !num.ApproxZero()))
 							continue;
 
 						// The row is composed of only zeroes, so the displacement must be zero
@@ -168,12 +171,12 @@ namespace andrefmello91.FEMAnalysis
 						GlobalStiffness[i, i] = 1;
 
 						// Clear the row in the force vector
-						ForceVector[i] = 0;
+						ForceVector![i] = 0;
 					}
 				}
 
 			// Approximate small numbers to zero
-			GlobalStiffness.CoerceZero(1E-9);
+			GlobalStiffness!.CoerceZero(1E-9);
 		}
 
 		/// <summary>
@@ -190,6 +193,7 @@ namespace andrefmello91.FEMAnalysis
 				Simplify();
 		}
 
+		/// <inheritdoc />
 		public override string ToString() =>
 			$"{FemInput}\n" +
 			"Global Stiffness:\n" +
@@ -198,5 +202,6 @@ namespace andrefmello91.FEMAnalysis
 			$"{DisplacementVector}";
 
 		#endregion
+
 	}
 }
