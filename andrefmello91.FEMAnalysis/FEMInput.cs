@@ -24,7 +24,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the elements of the finite element model.
 		/// </summary>
-		public IFiniteElement[] Elements { get; }
+		public List<IFiniteElement> Elements { get; }
 
 		/// <summary>
 		///     Get the external force <see cref="Vector" />.
@@ -37,7 +37,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the grips of the finite element model.
 		/// </summary>
-		public IGrip[] Grips { get; }
+		public List<IGrip> Grips { get; }
 
 		/// <summary>
 		///     Get the number of degrees of freedom (DoFs).
@@ -48,17 +48,27 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Constructors
 
+		/// <inheritdoc cref="FEMInput(IEnumerable{IFiniteElement}, IEnumerable{IGrip})"/>
+		/// <remarks>
+		///		Grips are taken from <paramref name="elements"/>.
+		/// </remarks>
+		public FEMInput(IEnumerable<IFiniteElement> elements)
+			: this(elements, elements.SelectMany(e => e.Grips).Distinct().OrderBy(g => g.Number).ToList())
+		{
+		}
+
 		/// <summary>
 		///     Input Data constructor.
 		/// </summary>
 		/// <param name="elements">The collection containing all distinct <see cref="IFiniteElement" />'s in the model.</param>
-		public FEMInput(IEnumerable<IFiniteElement> elements)
+		/// <param name="grips">The collection containing all distinct <see cref="IGrip" />'s in the model.</param>
+		public FEMInput(IEnumerable<IFiniteElement> elements, IEnumerable<IGrip> grips)
 		{
-			Elements        = elements.OrderBy(e => e.Number).ToArray();
-			Grips           = elements.SelectMany(e => e.Grips).Distinct().OrderBy(g => g.Number).ToArray();
-			NumberOfDoFs    = 2 * Grips.Length;
+			Elements        = elements.ToList();
+			Grips           = grips.ToList();
+			NumberOfDoFs    = 2 * Grips.Count;
 			ForceVector     = GetForceVector(Grips);
-			ConstraintIndex = GetConstraintIndex(Grips);
+			ConstraintIndex = GetConstraintIndex(Grips).ToList();
 		}
 
 		#endregion
@@ -69,32 +79,28 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the indexes of constrained degrees of freedom from a collection of grips.
 		/// </summary>
 		/// <inheritdoc cref="GetForceVector" />
-		public static List<int> GetConstraintIndex(IEnumerable<IGrip> grips)
+		private static IEnumerable<int> GetConstraintIndex(IEnumerable<IGrip> grips)
 		{
-			var constraintList = new List<int>();
-
-			foreach (var node in grips)
+			foreach (var grip in grips)
 			{
 				// Get DoF indexes
-				var index = node.DoFIndex;
+				var index = grip.DoFIndex;
 				int
 					i = index[0],
 					j = index[1];
 
-				var constraint = node.Constraint;
+				var constraint = grip.Constraint;
 
 				if (constraint.X)
 
 					// There is a support in X direction
-					constraintList.Add(i);
+					yield return i;
 
 				if (constraint.Y)
 
 					// There is a support in Y direction
-					constraintList.Add(j);
+					yield return j;
 			}
-
-			return constraintList;
 		}
 
 		/// <summary>
@@ -126,8 +132,8 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public override string ToString() =>
-			$"Number of grips: {Grips.Length}\n" +
-			$"Number of elements: {Elements.Length}\n" +
+			$"Number of grips: {Grips.Count}\n" +
+			$"Number of elements: {Elements.Count}\n" +
 			$"Force vector: \n{ForceVector}\n" +
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
 
