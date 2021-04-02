@@ -4,28 +4,39 @@
         <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.0</TargetFrameworks>
         <LangVersion>9.0</LangVersion>
         <Nullable>enable</Nullable>
-        <PackageId>andrefmello91.FEMAnalysis</PackageId>
-        <Version>0.1.7</Version>
+        <Version>0.1.8</Version>
         <Authors>andrefmello91</Authors>
-        <PackageDescription>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</PackageDescription>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-        <PackageVersion>0.1.7</PackageVersion>
         <Description>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</Description>
         <RepositoryUrl>https://github.com/andrefmello91/FEMAnalysis</RepositoryUrl>
         <PackageProjectUrl>https://github.com/andrefmello91/FEMAnalysis</PackageProjectUrl>
-        <PackageReleaseNotes>Updated packages.</PackageReleaseNotes>
         <AssemblyName>andrefmello91.FEMAnalysis</AssemblyName>
         <RootNamespace>andrefmello91.FEMAnalysis</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <PackageId>andrefmello91.FEMAnalysis</PackageId>
+        <PackageDescription>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</PackageDescription>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageVersion>0.1.8</PackageVersion>
+        <PackageReleaseNotes>Updated packages.</PackageReleaseNotes>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
         <PackageReference Include="MathNet.Numerics.Data.Text" Version="4.1.0" />
         <PackageReference Include="UnitsNet" Version="4.87.0" />
-        <PackageReference Include="andrefmello91.Extensions" Version="1.0.3" />
-        <PackageReference Include="andrefmello91.OnPlaneComponents" Version="1.0.5" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(Configuration)'=='Release'">
+        <PackageReference Include="andrefmello91.Extensions" Version="1.0.4" />
+        <PackageReference Include="andrefmello91.OnPlaneComponents" Version="1.0.7" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(Configuration)'=='Debug'">
+        <ProjectReference Include="..\..\Extensions\andrefmello91.Extensions\andrefmello91.Extensions.csproj" />
+        <ProjectReference Include="..\..\OnPlaneComponents\andrefmello91.OnPlaneComponents\andrefmello91.OnPlaneComponents.csproj" />
     </ItemGroup>
 
 </Project>

@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "andrefmello91.FEMAnalysis", "andrefmello91.FEMAnalysis\andrefmello91.FEMAnalysis.csproj", "{FBB25E8B-B12F-44F2-8444-D4336D070E1B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "andrefmello91.Extensions", "..\Extensions\andrefmello91.Extensions\andrefmello91.Extensions.csproj", "{C50F69B3-9A34-423B-AE52-DF021D526C57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "andrefmello91.OnPlaneComponents", "..\OnPlaneComponents\andrefmello91.OnPlaneComponents\andrefmello91.OnPlaneComponents.csproj", "{0EEBACB8-3699-459E-B667-4450B0063CA6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{FBB25E8B-B12F-44F2-8444-D4336D070E1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBB25E8B-B12F-44F2-8444-D4336D070E1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBB25E8B-B12F-44F2-8444-D4336D070E1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C50F69B3-9A34-423B-AE52-DF021D526C57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C50F69B3-9A34-423B-AE52-DF021D526C57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C50F69B3-9A34-423B-AE52-DF021D526C57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C50F69B3-9A34-423B-AE52-DF021D526C57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0EEBACB8-3699-459E-B667-4450B0063CA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0EEBACB8-3699-459E-B667-4450B0063CA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0EEBACB8-3699-459E-B667-4450B0063CA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0EEBACB8-3699-459E-B667-4450B0063CA6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
