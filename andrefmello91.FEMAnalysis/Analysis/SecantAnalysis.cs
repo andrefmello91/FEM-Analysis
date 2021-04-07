@@ -252,7 +252,7 @@ namespace andrefmello91.FEMAnalysis
 			// Initiate first iteration
 			_iteration = 1;
 
-			do
+			while (_iteration <= MaxIterations)
 			{
 				// Calculate element forces
 				FemInput.Elements.CalculateForces();
@@ -270,7 +270,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Increase iteration count
 				_iteration++;
-			} while (_iteration <= MaxIterations);
+			}
 		}
 
 		/// <summary>
@@ -326,7 +326,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Simplify
 			if (simplify)
-				Simplify();
+				Simplify(simplify, false);
 		}
 
 		/// <summary>
@@ -337,7 +337,7 @@ namespace andrefmello91.FEMAnalysis
 			// Initiate first load step
 			_loadStep = 1;
 
-			do
+			while (_loadStep <= NumLoadSteps)
 			{
 				// Get the force vector
 				_currentForces = LoadFactor * ForceVector;
@@ -354,7 +354,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Increment load step
 				_loadStep++;
-			} while (_loadStep <= NumLoadSteps);
+			}
 		}
 
 		/// <summary>

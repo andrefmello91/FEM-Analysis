@@ -120,12 +120,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Assemble the global stiffness <see cref="Matrix" />.
 		/// </summary>
-		protected Matrix<double> AssembleStiffness()
+		/// <param name="femInput">The <see cref="FEMInput"/></param>
+		public static Matrix<double> AssembleStiffness(FEMInput femInput)
 		{
-			var n         = FemInput.NumberOfDoFs;
+			var n         = femInput.NumberOfDoFs;
 			var stiffness = Matrix<double>.Build.Dense(n, n);
 
-			FemInput.Elements.AddToGlobalStiffness(stiffness);
+			femInput.Elements.AddToGlobalStiffness(stiffness);
 
 			return stiffness;
 		}
@@ -154,25 +155,18 @@ namespace andrefmello91.FEMAnalysis
 			}
 
 			if (simplifyZeroRows)
-				foreach (var grip in FemInput.Grips)
+				for (int i = 0; i < GlobalStiffness!.RowCount; i++)
 				{
-					// Get DoF indexes
-					var index = grip.DoFIndex;
+					// Verify what line of the matrix is composed of zeroes
+					if (GlobalStiffness!.Row(i).Exists(num => !num.ApproxZero()))
+						continue;
 
-					// Verify rows
-					foreach (var i in index)
-					{
-						// Verify what line of the matrix is composed of zeroes
-						if (GlobalStiffness!.Row(i).Exists(num => !num.ApproxZero()))
-							continue;
+					// The row is composed of only zeroes, so the displacement must be zero
+					// Set the diagonal element to 1
+					GlobalStiffness[i, i] = 1;
 
-						// The row is composed of only zeroes, so the displacement must be zero
-						// Set the diagonal element to 1
-						GlobalStiffness[i, i] = 1;
-
-						// Clear the row in the force vector
-						ForceVector![i] = 0;
-					}
+					// Clear the row in the force vector
+					ForceVector![i] = 0;
 				}
 
 			// Approximate small numbers to zero
@@ -186,7 +180,7 @@ namespace andrefmello91.FEMAnalysis
 		protected void UpdateStiffness(bool simplify = true)
 		{
 			// Initialize the global stiffness matrix
-			GlobalStiffness = AssembleStiffness();
+			GlobalStiffness = AssembleStiffness(FemInput);
 
 			// Simplify stiffness matrix
 			if (simplify)
