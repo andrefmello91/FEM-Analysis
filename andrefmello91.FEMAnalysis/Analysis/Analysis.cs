@@ -108,11 +108,19 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the internal force <see cref="Vector" />.
 		/// </summary>
-		public Vector<double> InternalForces()
+		/// <param name="femInput">The <see cref="FemInput"/>.</param>
+		/// <param name="simplify">Simplify vector in constraint indexes?</param>
+		public static Vector<double> InternalForces(FEMInput femInput, bool simplify = true)
 		{
-			var iForces = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
+			var iForces = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
 
-			FemInput.Elements.AddToInternalForces(iForces);
+			femInput.Elements.AddToInternalForces(iForces);
+
+			if (!simplify)
+				return iForces;
+			
+			foreach (var i in femInput.ConstraintIndex)
+				iForces[i] = 0;
 
 			return iForces;
 		}

@@ -276,7 +276,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate residual force <see cref="Vector" />.
 		/// </summary>
-		private Vector<double> ResidualForces() => InternalForces() - _currentForces;
+		private Vector<double> ResidualForces() => InternalForces(FemInput) - _currentForces;
 
 		/// <summary>
 		///     Update residual force <see cref="Vector" />.
