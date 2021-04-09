@@ -24,7 +24,7 @@ namespace andrefmello91.FEMAnalysis
         ///     Field to store each iteration force <see cref="Vector" />
         /// </summary>
         /// <inheritdoc cref="Analysis.ForceVector" />
-        private Vector<double>? _currentForces;
+        protected Vector<double>? CurrentForces;
 
         /// <summary>
         ///     The residual force <see cref="Vector" /> of current iteration
@@ -62,7 +62,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Field to store current load step.
         /// </summary>
-        private int _loadStep;
+        protected int LoadStep;
 
         /// <summary>
         ///     Monitored displacements list.
@@ -123,7 +123,7 @@ namespace andrefmello91.FEMAnalysis
 				for (var i = 0; i < _currentResidual!.Count; i++)
 				{
 					num += _currentResidual[i] * _currentResidual[i];
-					den += _currentForces![i] * _currentForces[i];
+					den += CurrentForces![i] * CurrentForces[i];
 				}
 
 				return
@@ -139,7 +139,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Get current load factor.
         /// </summary>
-        private double LoadFactor => (double) _loadStep / NumLoadSteps;
+        protected double LoadFactor => (double) LoadStep / NumLoadSteps;
 
 		#endregion
 
@@ -252,7 +252,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Iterate to find solution.
         /// </summary>
-        private void Iterate()
+        protected void Iterate()
 		{
 			// Initiate first iteration
 			_iteration = 1;
@@ -281,7 +281,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Calculate residual force <see cref="Vector" />.
         /// </summary>
-        private Vector<double> ResidualForces() => InternalForces(FemInput) - _currentForces;
+        private Vector<double> ResidualForces() => InternalForces(FemInput) - CurrentForces;
 
         /// <summary>
         ///     Update residual force <see cref="Vector" />.
@@ -296,7 +296,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Save load step results after achieving convergence.
         /// </summary>
-        private void SaveLoadStepResults()
+        protected void SaveLoadStepResults()
 		{
 			if (!_monitoredIndex.HasValue)
 				return;
@@ -337,15 +337,15 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Execute step by step analysis.
         /// </summary>
-        private void StepAnalysis()
+        protected virtual void StepAnalysis()
 		{
 			// Initiate first load step
-			_loadStep = 1;
+			LoadStep = 1;
 
-			while (_loadStep <= NumLoadSteps)
+			while (LoadStep <= NumLoadSteps)
 			{
 				// Get the force vector
-				_currentForces = LoadFactor * ForceVector;
+				CurrentForces = LoadFactor * ForceVector;
 
 				// Iterate
 				Iterate();
@@ -358,7 +358,7 @@ namespace andrefmello91.FEMAnalysis
 				SaveLoadStepResults();
 
 				// Increment load step
-				_loadStep++;
+				LoadStep++;
 			}
 		}
 
@@ -373,7 +373,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Check if maximum number of iterations is reached
 			if (Stop)
-				StopMessage = $"Convergence not reached at load step {_loadStep}";
+				StopMessage = $"Convergence not reached at load step {LoadStep}";
 
 			return Stop;
 		}

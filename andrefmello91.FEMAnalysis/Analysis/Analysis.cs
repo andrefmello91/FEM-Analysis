@@ -42,7 +42,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Analysis base object.
         /// </summary>
-        /// <param name="femInput">The <see cref="FEMInput" /> for SPM analysis.</param>
+        /// <param name="femInput">The <see cref="FEMInput" /> for finite element analysis.</param>
         public Analysis(FEMInput femInput) => FemInput = femInput;
 
 		#endregion
