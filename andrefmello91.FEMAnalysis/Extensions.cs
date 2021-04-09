@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
+using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
@@ -141,7 +142,8 @@ namespace andrefmello91.FEMAnalysis
 			var x = globalDisplacementVector[grip.DoFIndex[0]];
 			var y = globalDisplacementVector[grip.DoFIndex[1]];
 
-			grip.Displacement = new PlaneDisplacement(x, y);
+			if (x.IsFinite() || y.IsFinite())
+				grip.Displacement = new PlaneDisplacement(x, y);
 		}
 
 		/// <summary>
