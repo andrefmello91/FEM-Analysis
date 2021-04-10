@@ -24,7 +24,7 @@ namespace andrefmello91.FEMAnalysis
         ///     Field to store each iteration force <see cref="Vector" />
         /// </summary>
         /// <inheritdoc cref="Analysis.ForceVector" />
-        protected Vector<double>? CurrentForces;
+        private Vector<double>? _currentForces;
 
         /// <summary>
         ///     The residual force <see cref="Vector" /> of current iteration
@@ -129,7 +129,7 @@ namespace andrefmello91.FEMAnalysis
 				for (var i = 0; i < _currentResidual!.Count; i++)
 				{
 					num += _currentResidual[i] * _currentResidual[i];
-					den += CurrentForces![i] * CurrentForces[i];
+					den += _currentForces![i] * _currentForces[i];
 				}
 
 				return
@@ -259,7 +259,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Iterate to find solution.
         /// </summary>
-        protected void Iterate()
+        private void Iterate()
 		{
 			// Initiate first iteration
 			_iteration = 1;
@@ -300,7 +300,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Calculate residual force <see cref="Vector" />.
         /// </summary>
-        private Vector<double> ResidualForces() => InternalForces(FemInput) - CurrentForces;
+        private Vector<double> ResidualForces() => InternalForces(FemInput) - _currentForces;
 
         /// <summary>
         ///     Update residual force <see cref="Vector" />.
@@ -367,7 +367,7 @@ namespace andrefmello91.FEMAnalysis
 			while (simulate || _loadStep <= NumLoadSteps)
 			{
 				// Get the force vector
-				CurrentForces = LoadFactor * ForceVector;
+				_currentForces = LoadFactor * ForceVector;
 
 				// Iterate
 				Iterate();

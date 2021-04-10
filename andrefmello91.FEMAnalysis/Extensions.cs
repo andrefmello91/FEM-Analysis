@@ -141,9 +141,8 @@ namespace andrefmello91.FEMAnalysis
 		{
 			var x = globalDisplacementVector[grip.DoFIndex[0]];
 			var y = globalDisplacementVector[grip.DoFIndex[1]];
-
-			if (x.IsFinite() || y.IsFinite())
-				grip.Displacement = new PlaneDisplacement(x, y);
+			
+			grip.Displacement = new PlaneDisplacement(x, y);
 		}
 
 		/// <summary>
