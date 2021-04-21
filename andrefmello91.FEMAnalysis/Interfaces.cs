@@ -23,6 +23,27 @@ namespace andrefmello91.FEMAnalysis
 	}
 
 	/// <summary>
+	///		Nonlinear solution procedures.
+	/// </summary>
+	public enum NonLinearSolver
+	{
+		/// <summary>
+		///		Newton-Raphson nonlinear solver.
+		/// </summary>
+		NewtonRaphson,
+		
+		/// <summary>
+		///		Modified Newton-Raphson nonlinear solver.
+		/// </summary>
+		ModifiedNewtonRaphson,
+		
+		/// <summary>
+		///		Secant Method nonlinear solver.
+		/// </summary>
+		Secant
+	}
+
+	/// <summary>
 	///     Interface for numbered elements.
 	/// </summary>
 	public interface INumberedElement
@@ -127,5 +148,21 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+	}
+
+	/// <summary>
+	///		Interface for nonlinear finite elements.
+	/// </summary>
+	public interface INonlinearElement : IFiniteElement
+	{
+		/// <summary>
+		///		The results of the last iteration.
+		/// </summary>
+		IterationResult LastIterationResult { get; set; }
+		
+		/// <summary>
+		///		The results of the current iteration.
+		/// </summary>
+		IterationResult CurrentIterationResult { get; set; }
 	}
 }

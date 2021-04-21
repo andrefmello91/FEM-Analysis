@@ -40,7 +40,7 @@ namespace andrefmello91.FEMAnalysis
 		#region Constructors
 
         /// <summary>
-        ///     Analysis base object.
+        ///     Linear analysis constructor.
         /// </summary>
         /// <param name="femInput">The <see cref="FEMInput" /> for finite element analysis.</param>
         public Analysis(FEMInput femInput) => FemInput = femInput;

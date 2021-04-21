@@ -187,6 +187,47 @@ namespace andrefmello91.FEMAnalysis
 				grip.SetReactions(globalReactionVector);
 		}
 
+		/// <summary>
+		///		Update the tangent stiffness of this element for the next iteration.
+		/// </summary>
+		/// <param name="element">The <see cref="INonlinearElement"/>.</param>
+		public static void UpdateStiffness(this INonlinearElement element)
+		{
+			// Get results
+			IterationResult
+				last    = element.LastIterationResult,
+				current = element.CurrentIterationResult;
+
+			// Get current values
+			var displacements = current.Displacements;
+			var stiffness     = current.Stiffness.Clone();
+			
+			// Get displacement variation
+			var du = displacements - last.Displacements;
+
+			// Get stiffness variation
+			var dk = stiffness - last.Stiffness;
+
+			// Increment elements of stiffness matrix
+			for (var i = 0; i < stiffness.RowCount; i++)
+			for (var j = 0; j < stiffness.ColumnCount; j++)
+				stiffness[i, j] += dk.Row(i) / du[j] * displacements;
+
+			// Set new values
+			last.Stiffness    = current.Stiffness;
+			current.Stiffness = stiffness;
+		}
+
+		/// <summary>
+		///		Update the tangent stiffness of each element in this collection for the next iteration.
+		/// </summary>
+		/// <param name="elements">The collection of <see cref="INonlinearElement"/>'s.</param>
+		public static void UpdateStiffness(this IEnumerable<INonlinearElement> elements)
+		{
+			foreach (var element in elements)
+				element.UpdateStiffness();
+		}
+
 		#endregion
 
 	}

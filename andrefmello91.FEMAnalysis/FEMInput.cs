@@ -9,7 +9,7 @@ using UnitsNet.Units;
 namespace andrefmello91.FEMAnalysis
 {
 	/// <summary>
-	///     Input Data class.
+	///     Linear input class.
 	/// </summary>
 	public class FEMInput
 	{
@@ -140,4 +140,22 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 	}
+
+	/// <summary>
+	///		Nonlinear input class.
+	/// </summary>
+	public class NonlinearInput : FEMInput
+	{
+
+		/// <inheritdoc />
+		public NonlinearInput(IEnumerable<INonlinearElement> elements) : base(elements)
+		{
+		}
+
+		/// <inheritdoc />
+		public NonlinearInput(IEnumerable<INonlinearElement> elements, IEnumerable<IGrip> grips) : base(elements, grips)
+		{
+		}
+	}
+	
 }
