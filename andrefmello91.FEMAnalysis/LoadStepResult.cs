@@ -14,29 +14,42 @@ namespace andrefmello91.FEMAnalysis
 		public int Number { get; set; }
 		
 		/// <summary>
+		///		The monitored displacement of this load step.
+		/// </summary>
+		public MonitoredDisplacement? MonitoredDisplacement { get; set; }
+		
+		/// <summary>
 		///		The displacement vector of this load step.
 		/// </summary>
-		public Vector<double>? Displacements { get; set; }
+		public Vector<double> Displacements { get; set; }
 		
 		/// <summary>
 		///		The force vector of this load step.
 		/// </summary>
 		public Vector<double> Forces { get; set; }
-
+		
 		/// <summary>
-		///		Create a load step object.
+		///		The stiffness matrix of this load step.
 		/// </summary>
-		/// <param name="forces">The force vector of this load step.</param>
-		public LoadStepResult(Vector<double> forces)
+		public Matrix<double> Stiffness { get; set; }
+
+		///  <summary>
+		/// 		Create a load step object.
+		///  </summary>
+		///  <param name="number">The number of this load step.</param>
+		///  <param name="forces">The force vector of this load step.</param>
+		///  <param name="displacements">The displacement vector of this load step.</param>
+		///  <param name="stiffness">The stiffness matrix of this load step.</param>
+		public LoadStepResult(int number, Vector<double> forces, Vector<double> displacements, Matrix<double> stiffness)
 		{
-			Forces = forces;
+			Number        = number;
+			Forces        = forces;
+			Displacements = displacements;
+			Stiffness     = stiffness;
 		}
 
 		/// <inheritdoc />
-		public LoadStepResult Clone() => new(Forces.Clone())
-		{
-			Displacements = Displacements?.Clone()
-		};
+		public LoadStepResult Clone() => new(Number, Forces.Clone(), Displacements.Clone(), Stiffness.Clone());
 
 		/// <summary>
 		///		Get the number of a load step.

@@ -9,11 +9,12 @@ using UnitsNet.Units;
 namespace andrefmello91.FEMAnalysis
 {
 	/// <summary>
-	///     Linear input class.
+	///     Finite element input class.
 	/// </summary>
-	public class FEMInput
+	/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement"/>.</typeparam>
+	public class FEMInput<TFiniteElement>
+		where TFiniteElement : IFiniteElement
 	{
-
 		#region Properties
 
 		/// <summary>
@@ -24,7 +25,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the elements of the finite element model.
 		/// </summary>
-		public List<IFiniteElement> Elements { get; }
+		public List<TFiniteElement> Elements { get; }
 
 		/// <summary>
 		///     Get the external force <see cref="Vector" />.
@@ -48,11 +49,11 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Constructors
 
-		/// <inheritdoc cref="FEMInput(IEnumerable{IFiniteElement}, IEnumerable{IGrip})"/>
+		/// <inheritdoc cref="FEMInput{IFiniteElement}(IEnumerable{IFiniteElement}, IEnumerable{IGrip})"/>
 		/// <remarks>
 		///		Grips are taken from <paramref name="elements"/>.
 		/// </remarks>
-		public FEMInput(IEnumerable<IFiniteElement> elements)
+		public FEMInput(IEnumerable<TFiniteElement> elements)
 			: this(elements, elements.SelectMany(e => e.Grips).Distinct().OrderBy(g => g.Number).ToList())
 		{
 		}
@@ -62,7 +63,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="elements">The collection containing all distinct <see cref="IFiniteElement" />'s in the model.</param>
 		/// <param name="grips">The collection containing all distinct <see cref="IGrip" />'s in the model.</param>
-		public FEMInput(IEnumerable<IFiniteElement> elements, IEnumerable<IGrip> grips)
+		public FEMInput(IEnumerable<TFiniteElement> elements, IEnumerable<IGrip> grips)
 		{
 			Elements        = elements.ToList();
 			Grips           = grips.ToList();
@@ -140,22 +141,4 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 	}
-
-	/// <summary>
-	///		Nonlinear input class.
-	/// </summary>
-	public class NonlinearInput : FEMInput
-	{
-
-		/// <inheritdoc />
-		public NonlinearInput(IEnumerable<INonlinearElement> elements) : base(elements)
-		{
-		}
-
-		/// <inheritdoc />
-		public NonlinearInput(IEnumerable<INonlinearElement> elements, IEnumerable<IGrip> grips) : base(elements, grips)
-		{
-		}
-	}
-	
 }

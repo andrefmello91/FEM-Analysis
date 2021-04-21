@@ -9,9 +9,10 @@ namespace andrefmello91.FEMAnalysis
     /// <summary>
     ///     Linear analysis class.
     /// </summary>
-    public class Analysis
+    /// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement"/>.</typeparam>
+    public abstract class Analysis<TFiniteElement>
+		where TFiniteElement : IFiniteElement
 	{
-
 		#region Properties
 
         /// <summary>
@@ -25,9 +26,9 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Get the <see cref="FEMInput" />.
         /// </summary>
-        public FEMInput FemInput { get; }
+        public FEMInput<TFiniteElement> FemInput { get; }
 
-		/// <inheritdoc cref="FEMInput.ForceVector" />
+		/// <inheritdoc cref="FEMInput{TFiniteElement}.ForceVector" />
 		public Vector<double>? ForceVector { get; protected set; }
 
         /// <summary>
@@ -40,10 +41,10 @@ namespace andrefmello91.FEMAnalysis
 		#region Constructors
 
         /// <summary>
-        ///     Linear analysis constructor.
+        ///     Base analysis constructor.
         /// </summary>
-        /// <param name="femInput">The <see cref="FEMInput" /> for finite element analysis.</param>
-        public Analysis(FEMInput femInput) => FemInput = femInput;
+        /// <param name="femInput">The <see cref="FEMInput{TFiniteElement}" /> for finite element analysis.</param>
+        public Analysis(FEMInput<TFiniteElement> femInput) => FemInput = femInput;
 
 		#endregion
 
@@ -52,13 +53,13 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Assemble the global stiffness <see cref="Matrix" />.
         /// </summary>
-        /// <param name="femInput">The <see cref="FEMInput" /></param>
-        public static Matrix<double> AssembleStiffness(FEMInput femInput)
+        /// <param name="femInput">The <see cref="FEMInput{TFiniteElement}" /></param>
+        public static Matrix<double> AssembleStiffness(FEMInput<TFiniteElement> femInput)
 		{
 			var n         = femInput.NumberOfDoFs;
 			var stiffness = Matrix<double>.Build.Dense(n, n);
 
-			femInput.Elements.AddToGlobalStiffness(stiffness);
+			stiffness.AddStiffness(femInput.Elements);
 
 			return stiffness;
 		}
@@ -83,11 +84,11 @@ namespace andrefmello91.FEMAnalysis
         /// </summary>
         /// <param name="femInput">The <see cref="FemInput" />.</param>
         /// <param name="simplify">Simplify vector in constraint indexes?</param>
-        public static Vector<double> InternalForces(FEMInput femInput, bool simplify = true)
+        public static Vector<double> InternalForces(FEMInput<TFiniteElement> femInput, bool simplify = true)
 		{
 			var iForces = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
 
-			femInput.Elements.AddToInternalForces(iForces);
+			iForces.AddInternalForces(femInput.Elements);
 
 			if (!simplify)
 				return iForces;
@@ -96,31 +97,6 @@ namespace andrefmello91.FEMAnalysis
 				iForces[i] = 0;
 
 			return iForces;
-		}
-
-        /// <summary>
-        ///     Execute the analysis.
-        /// </summary>
-        /// <param name="loadFactor">The load factor to multiply <see cref="Analysis.ForceVector" /> (default: 1).</param>
-        public void Execute(double loadFactor = 1)
-		{
-			// Set force vector
-			ForceVector = FemInput.ForceVector * loadFactor;
-
-			// Assemble and simplify global stiffness and force vector
-			UpdateStiffness();
-
-			// Solve
-			DisplacementVector = CalculateDisplacements(GlobalStiffness!, ForceVector)!;
-
-			// Set displacements to grips
-			FemInput.Grips.SetDisplacements(DisplacementVector);
-
-			// Calculate element forces
-			FemInput.Elements.CalculateForces();
-
-			// Set Reactions
-			FemInput.Grips.SetReactions(GetReactions());
 		}
 
         /// <summary>
@@ -185,7 +161,7 @@ namespace andrefmello91.FEMAnalysis
         ///     Update <see cref="GlobalStiffness" />.
         /// </summary>
         /// <param name="simplify">Simplify stiffness and force vector? (default: true)</param>
-        protected void UpdateStiffness(bool simplify = true)
+        protected virtual void UpdateStiffness(bool simplify = true)
 		{
 			// Initialize the global stiffness matrix
 			GlobalStiffness = AssembleStiffness(FemInput);

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿/*using System.Collections.Generic;
 using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
@@ -415,4 +415,4 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 	}
-}
+}*/

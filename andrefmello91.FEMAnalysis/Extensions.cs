@@ -22,9 +22,10 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Add the stiffness of an <see cref="IFiniteElement" /> to global stiffness <see cref="Matrix" />.
 		/// </summary>
-		/// <param name="element">The <see cref="IFiniteElement" /> to add to <paramref name="globalStiffness" />.</param>
 		/// <param name="globalStiffness">The global stiffness <see cref="Matrix" />.</param>
-		public static void AddToGlobalStiffness([NotNull] this IFiniteElement element, [NotNull] Matrix<double> globalStiffness)
+		/// <param name="element">The <see cref="IFiniteElement" /> to add to <paramref name="globalStiffness" />.</param>
+		public static void AddStiffness<TFiniteElement>([NotNull] this Matrix<double> globalStiffness, [NotNull] TFiniteElement element)
+			where TFiniteElement : IFiniteElement
 		{
 			var dofIndex = element.DoFIndex;
 
@@ -44,23 +45,24 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Add the stiffness of each <see cref="IFiniteElement" />'s in a collection to global stiffness <see cref="Matrix" />
-		///     .
+		///     Add the stiffness of each <see cref="IFiniteElement" />'s in a collection to global stiffness <see cref="Matrix" />.
 		/// </summary>
-		/// <param name="elements">The <see cref="IFiniteElement" />'s to add to <paramref name="globalStiffness" />.</param>
-		/// <inheritdoc cref="AddToGlobalStiffness(IFiniteElement, Matrix{double})" />
-		public static void AddToGlobalStiffness([NotNull] this IEnumerable<IFiniteElement> elements, [NotNull] Matrix<double> globalStiffness)
+		/// <param name="globalStiffness">The global stiffness <see cref="Matrix" />.</param>
+		/// <param name="elements">The collection <see cref="IFiniteElement" />'s to add to <paramref name="globalStiffness" />.</param>
+		public static void AddStiffness<TFiniteElement>([NotNull] this Matrix<double> globalStiffness, [NotNull] IEnumerable<TFiniteElement> elements)
+			where TFiniteElement : IFiniteElement
 		{
 			foreach (var element in elements)
-				element.AddToGlobalStiffness(globalStiffness);
+				globalStiffness.AddStiffness(element);
 		}
 
 		/// <summary>
 		///     Add the internal forces of an <see cref="IFiniteElement" /> to the global internal force <see cref="Vector" />.
 		/// </summary>
-		/// <param name="element">The <see cref="IFiniteElement" /> to add to <paramref name="internalForceVector" />.</param>
 		/// <param name="internalForceVector">The global internal force <see cref="Vector" />.</param>
-		public static void AddToInternalForces([NotNull] this IFiniteElement element, [NotNull] Vector<double> internalForceVector)
+		/// <param name="element">The <see cref="IFiniteElement" /> to add to <paramref name="internalForceVector" />.</param>
+		public static void AddInternalForces<TFiniteElement>([NotNull] this Vector<double> internalForceVector, [NotNull] TFiniteElement element)
+			where TFiniteElement : IFiniteElement
 		{
 			var dofIndex = element.DoFIndex;
 
@@ -78,41 +80,70 @@ namespace andrefmello91.FEMAnalysis
 		///     Add the internal forces of a collection of <see cref="IFiniteElement" />'s to the global internal force
 		///     <see cref="Vector" />.
 		/// </summary>
+		/// <param name="internalForceVector">The global internal force <see cref="Vector" />.</param>
 		/// <param name="elements">The <see cref="IFiniteElement" />'s to add to <paramref name="internalForceVector" />.</param>
-		/// <inheritdoc cref="AddToInternalForces(IFiniteElement, Vector{double})" />
-		public static void AddToInternalForces([NotNull] this IEnumerable<IFiniteElement> elements, [NotNull] Vector<double> internalForceVector)
+		public static void AddInternalForces<TFiniteElement>([NotNull] this Vector<double> internalForceVector, [NotNull] IEnumerable<TFiniteElement> elements)
+			where TFiniteElement : IFiniteElement
 		{
 			foreach (var element in elements)
-				element.AddToInternalForces(internalForceVector);
+				internalForceVector.AddInternalForces(element);
 		}
 
 		/// <summary>
 		///     Calculate forces in each element in this collection after updating displacements in grips.
 		/// </summary>
 		/// <inheritdoc cref="IFiniteElement.CalculateForces" />
-		public static void CalculateForces(this IEnumerable<IFiniteElement> elements)
+		public static void CalculateForces<TFiniteElement>(this IEnumerable<TFiniteElement> elements)
+			where TFiniteElement : IFiniteElement
 		{
 			foreach (var element in elements)
 				element.CalculateForces();
 		}
 
 		/// <summary>
-		///     Return an <see cref="INumberedElement" /> of a collection, in given <paramref name="number" />.
+		///     Return an element of a collection, in given <paramref name="number" />.
 		/// </summary>
 		/// <param name="elements">The collection of <see cref="INumberedElement" />'s.</param>
 		/// <param name="number">The number of the element wanted.</param>
-		public static INumberedElement? GetByNumber(this IEnumerable<INumberedElement> elements, int number) => elements.First(element => number == element.Number);
+		public static TNumberedElement? GetByNumber<TNumberedElement>(this IEnumerable<TNumberedElement> elements, int number)
+			where TNumberedElement : INumberedElement =>
+			elements.First(element => number == element.Number);
 
 		/// <summary>
-		///     Get the displacement <see cref="Vector" /> from this element's grips.
+		///     Update the displacement <see cref="Vector" /> from this element's grips.
 		/// </summary>
 		/// <returns>
 		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
 		/// </returns>
-		public static Vector<double> GetDisplacementsFromGrips([NotNull] this IFiniteElement element) =>
-			element.Grips
+		public static void UpdateDisplacements<TFiniteElement>([NotNull] this TFiniteElement element)
+			where TFiniteElement : IFiniteElement
+		{
+			var displacements = element.Grips
 				.SelectMany(g => new[] { g.Displacement.X.Millimeters, g.Displacement.Y.Millimeters })
 				.ToVector();
+
+			// Update nonlinear results
+			if (element is INonlinearElement nonlinearElement)
+			{
+				nonlinearElement.LastIterationResult.Displacements    = nonlinearElement.Displacements.Clone();
+				nonlinearElement.CurrentIterationResult.Displacements = displacements;
+			}
+			
+			element.Displacements = displacements;
+		}
+
+		/// <summary>
+		///     Update the displacement <see cref="Vector" /> from this element's grips.
+		/// </summary>
+		/// <returns>
+		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
+		/// </returns>
+		public static void UpdateDisplacements<TFiniteElement>([NotNull] this IEnumerable<TFiniteElement> elements)
+			where TFiniteElement : IFiniteElement
+		{
+			foreach (var element in elements)
+				element.UpdateDisplacements();
+		}
 
 		/// <summary>
 		///     Get global indexes of the degrees of freedom of a collection of grips.
@@ -190,8 +221,10 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Update the tangent stiffness of this element for the next iteration.
 		/// </summary>
-		/// <param name="element">The <see cref="INonlinearElement"/>.</param>
-		public static void UpdateStiffness(this INonlinearElement element)
+		/// <param name="element">The nonlinear element.</param>
+		/// <typeparam name="TNonlinearElement">Any type that implements <see cref="INonlinearElement"/>.</typeparam>
+		public static void UpdateStiffness<TNonlinearElement>(this TNonlinearElement element)
+			where TNonlinearElement : INonlinearElement
 		{
 			// Get results
 			IterationResult
@@ -216,18 +249,21 @@ namespace andrefmello91.FEMAnalysis
 			// Set new values
 			last.Stiffness    = current.Stiffness;
 			current.Stiffness = stiffness;
+			element.Stiffness = stiffness;
 		}
 
 		/// <summary>
 		///		Update the tangent stiffness of each element in this collection for the next iteration.
 		/// </summary>
 		/// <param name="elements">The collection of <see cref="INonlinearElement"/>'s.</param>
-		public static void UpdateStiffness(this IEnumerable<INonlinearElement> elements)
+		/// <typeparam name="TNonlinearElement">Any type that implements <see cref="INonlinearElement"/>.</typeparam>
+		public static void UpdateStiffness<TNonlinearElement>(this IEnumerable<TNonlinearElement> elements)
+			where TNonlinearElement : INonlinearElement
 		{
 			foreach (var element in elements)
 				element.UpdateStiffness();
 		}
-
+	
 		#endregion
 
 	}

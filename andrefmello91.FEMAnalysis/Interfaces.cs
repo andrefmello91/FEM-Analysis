@@ -114,7 +114,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Components in <see cref="LengthUnit.Millimeter" />.
 		/// </remarks>
-		Vector<double> Displacements { get; }
+		Vector<double> Displacements { get; set; }
 
 		/// <summary>
 		///     Get the force <see cref="Vector" /> in this element, in global coordinate system.
@@ -122,7 +122,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Components in <see cref="ForceUnit.Newton" />.
 		/// </remarks>
-		Vector<double> Forces { get; }
+		Vector<double> Forces { get; set; }
 
 		/// <summary>
 		///     Get the grips of this element.
@@ -135,7 +135,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Components in units compatible to <see cref="ForceUnit.Newton" /> and <see cref="LengthUnit.Millimeter" />.
 		/// </remarks>
-		Matrix<double> Stiffness { get; }
+		Matrix<double> Stiffness { get; set; }
 
 		#endregion
 
