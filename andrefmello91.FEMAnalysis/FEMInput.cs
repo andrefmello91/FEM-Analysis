@@ -12,11 +12,9 @@ namespace andrefmello91.FEMAnalysis
 	///     Finite element input class.
 	/// </summary>
 	/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement"/>.</typeparam>
-	public class FEMInput<TFiniteElement>
+	public interface IFEMInput<TFiniteElement>
 		where TFiniteElement : IFiniteElement
 	{
-		#region Properties
-
 		/// <summary>
 		///     Get the index of constrained degrees of freedom.
 		/// </summary>
@@ -44,6 +42,31 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the number of degrees of freedom (DoFs).
 		/// </summary>
 		public int NumberOfDoFs { get; }
+	}
+
+	/// <summary>
+	///     Default finite element input class.
+	/// </summary>
+	/// <inheritdoc cref="IFEMInput{TFiniteElement}"/>
+	public class FEMInput<TFiniteElement> : IFEMInput<TFiniteElement>
+		where TFiniteElement : IFiniteElement
+	{
+		#region Properties
+
+		/// <inheritdoc />
+		public List<int> ConstraintIndex { get; }
+
+		/// <inheritdoc />
+		public List<TFiniteElement> Elements { get; }
+
+		/// <inheritdoc />
+		public Vector<double> ForceVector { get; }
+
+		/// <inheritdoc />
+		public List<IGrip> Grips { get; }
+
+		/// <inheritdoc />
+		public int NumberOfDoFs { get; }
 
 		#endregion
 
@@ -68,69 +91,14 @@ namespace andrefmello91.FEMAnalysis
 			Elements        = elements.ToList();
 			Grips           = grips.ToList();
 			NumberOfDoFs    = 2 * Grips.Count;
-			ForceVector     = GetForceVector(Grips);
-			ConstraintIndex = GetConstraintIndex(Grips).ToList();
+			ForceVector     = Grips.AssembleForceVector();
+			ConstraintIndex = Grips.GetConstraintIndex().ToList();
 		}
 
 		#endregion
 
 		#region Methods
-
-		/// <summary>
-		///     Get the indexes of constrained degrees of freedom from a collection of grips.
-		/// </summary>
-		/// <inheritdoc cref="GetForceVector" />
-		private static IEnumerable<int> GetConstraintIndex(IEnumerable<IGrip> grips)
-		{
-			foreach (var grip in grips)
-			{
-				// Get DoF indexes
-				var index = grip.DoFIndex;
-				int
-					i = index[0],
-					j = index[1];
-
-				var constraint = grip.Constraint;
-
-				if (constraint.X)
-
-					// There is a support in X direction
-					yield return i;
-
-				if (constraint.Y)
-
-					// There is a support in Y direction
-					yield return j;
-			}
-		}
-
-		/// <summary>
-		///     Get the force <see cref="Vector" /> from a collection of grips.
-		/// </summary>
-		/// <param name="grips">The collection of distinct grips of the finite element model.</param>
-		/// <inheritdoc cref="ForceVector" />
-		public static Vector<double> GetForceVector(IEnumerable<IGrip> grips)
-		{
-			// Initialize the force vector
-			var f = new double[2 * grips.Count()];
-
-			// Read the nodes data
-			foreach (var grip in grips)
-			{
-				// Get DoF indexes
-				var index = grip.DoFIndex;
-				int
-					i = index[0],
-					j = index[1];
-
-				// Set to force vector
-				f[i] = grip.Force.X.Newtons;
-				f[j] = grip.Force.Y.Newtons;
-			}
-
-			return f.ToVector();
-		}
-
+		
 		/// <inheritdoc />
 		public override string ToString() =>
 			$"Number of grips: {Grips.Count}\n" +

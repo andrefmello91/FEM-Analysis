@@ -139,15 +139,15 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Nonlinear analysis constructor.
 		/// </summary>
-		/// <param name="nonlinearInput">The <see cref="FEMInput{INonlinearElement}" />.</param>
+		/// <param name="nonlinearInput">The <see cref="IFEMInput{INonlinearElement}" />.</param>
 		/// <param name="solver">The <see cref="NonLinearSolver" /> to use.</param>
 		/// <param name="numLoadSteps">The number of load steps to perform (default: 50).</param>
 		/// <param name="tolerance">The convergence tolerance (default: 1E-6).</param>
 		/// <param name="maxIterations">Maximum number of iterations for each load step (default: 10000).</param>
 		/// <param name="minIterations">Minimum number of iterations for each load step (default: 2).</param>
 		public NonlinearAnalysis(
-			FEMInput<INonlinearElement> nonlinearInput,
-			NonLinearSolver solver = NonLinearSolver.NewtonRaphson,
+			IFEMInput<INonlinearElement> nonlinearInput,
+			NonLinearSolver solver = NonLinearSolver.Secant,
 			int numLoadSteps = 50,
 			double tolerance = 1E-6,
 			int maxIterations = 10000,
@@ -237,7 +237,7 @@ namespace andrefmello91.FEMAnalysis
 
 					// Set new values
 					_lastIteration.Stiffness    = _currentIteration.Stiffness.Clone();
-					_currentIteration.Stiffness = AssembleStiffness(FemInput);
+					_currentIteration.Stiffness = Extensions.AssembleStiffness(FemInput);
 
 					break;
 			}
@@ -325,7 +325,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate residual force <see cref="Vector{T}" />.
 		/// </summary>
-		private Vector<double> ResidualForces() => InternalForces(FemInput) - _currentForces;
+		private Vector<double> ResidualForces() => Extensions.InternalForces<INonlinearElement>(FemInput) - _currentForces;
 
 		/// <summary>
 		///     Update residual force <see cref="Vector{T}" />.

@@ -24,9 +24,9 @@ namespace andrefmello91.FEMAnalysis
         public Vector<double>? DisplacementVector { get; protected set; }
 
         /// <summary>
-        ///     Get the <see cref="FEMInput" />.
+        ///     Get the input for finite element analysis.
         /// </summary>
-        public FEMInput<TFiniteElement> FemInput { get; }
+        public IFEMInput<TFiniteElement> FemInput { get; }
 
 		/// <inheritdoc cref="FEMInput{TFiniteElement}.ForceVector" />
 		public Vector<double>? ForceVector { get; protected set; }
@@ -43,28 +43,14 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Base analysis constructor.
         /// </summary>
-        /// <param name="femInput">The <see cref="FEMInput{TFiniteElement}" /> for finite element analysis.</param>
-        public Analysis(FEMInput<TFiniteElement> femInput) => FemInput = femInput;
+        /// <param name="femInput">The <see cref="IFEMInput{TFiniteElement}" /> for finite element analysis.</param>
+        public Analysis(IFEMInput<TFiniteElement> femInput) => FemInput = femInput;
 
 		#endregion
 
 		#region Methods
 
-        /// <summary>
-        ///     Assemble the global stiffness <see cref="Matrix" />.
-        /// </summary>
-        /// <param name="femInput">The <see cref="FEMInput{TFiniteElement}" /></param>
-        public static Matrix<double> AssembleStiffness(FEMInput<TFiniteElement> femInput)
-		{
-			var n         = femInput.NumberOfDoFs;
-			var stiffness = Matrix<double>.Build.Dense(n, n);
-
-			stiffness.AddStiffness(femInput.Elements);
-
-			return stiffness;
-		}
-
-        /// <summary>
+		/// <summary>
         ///     Calculate the displacement <see cref="Vector" /> from an external force <see cref="Vector" /> and a global
         ///     stiffness matrix.
         /// </summary>
@@ -79,27 +65,7 @@ namespace andrefmello91.FEMAnalysis
 				? globalStiffness.Solve(forceVector)
 				: null;
 
-        /// <summary>
-        ///     Get the internal force <see cref="Vector" />.
-        /// </summary>
-        /// <param name="femInput">The <see cref="FemInput" />.</param>
-        /// <param name="simplify">Simplify vector in constraint indexes?</param>
-        public static Vector<double> InternalForces(FEMInput<TFiniteElement> femInput, bool simplify = true)
-		{
-			var iForces = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
-
-			iForces.AddInternalForces(femInput.Elements);
-
-			if (!simplify)
-				return iForces;
-
-			foreach (var i in femInput.ConstraintIndex)
-				iForces[i] = 0;
-
-			return iForces;
-		}
-
-        /// <summary>
+		/// <summary>
         ///     Calculate the <see cref="Vector" /> of support reactions.
         /// </summary>
         public Vector<double> GetReactions()
@@ -164,7 +130,7 @@ namespace andrefmello91.FEMAnalysis
         protected virtual void UpdateStiffness(bool simplify = true)
 		{
 			// Initialize the global stiffness matrix
-			GlobalStiffness = AssembleStiffness(FemInput);
+			GlobalStiffness = FemInput.AssembleStiffness();
 
 			// Simplify stiffness matrix
 			if (simplify)

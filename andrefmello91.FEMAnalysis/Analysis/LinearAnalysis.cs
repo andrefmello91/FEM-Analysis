@@ -13,7 +13,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Linear analysis constructor.
 		/// </summary>
 		/// <inheritdoc/>
-		public LinearAnalysis(FEMInput<IFiniteElement> femInput)
+		public LinearAnalysis(IFEMInput<IFiniteElement> femInput)
 			: base(femInput)
 		{
 		}
