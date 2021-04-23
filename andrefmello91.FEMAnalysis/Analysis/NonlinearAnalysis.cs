@@ -262,18 +262,8 @@ namespace andrefmello91.FEMAnalysis
 			switch (Solver)
 			{
 				case NonLinearSolver.Secant:
-					// Calculate the variation of displacements and residual as vectors
-					Vector<double>
-						dDisp = DisplacementVector - _lastIteration.Displacements,
-						dRes  = ResidualForces     - _lastIteration.ResidualForces;
-
 					// Increment current stiffness
-					var dK = ((dRes - _lastIteration.Stiffness * dDisp) / dDisp.Norm(2)).ToColumnMatrix() * dDisp.ToRowMatrix();
-
-					// Set new values
-					// _lastIteration.Stiffness =  GlobalStiffness!.Clone();
-					GlobalStiffness += dK;
-					
+					GlobalStiffness += SecantIncrement(GlobalStiffness!, DisplacementVector!, _lastIteration.Displacements, ResidualForces, _lastIteration.ResidualForces);
 					break;
 
 				// For Newton-Raphson
@@ -282,7 +272,6 @@ namespace andrefmello91.FEMAnalysis
 					FemInput.Elements.UpdateStiffness();
 
 					// Set new values
-					// _lastIteration.Stiffness = GlobalStiffness!.Clone();
 					GlobalStiffness = FemInput.AssembleStiffness();
 
 					break;
@@ -293,6 +282,52 @@ namespace andrefmello91.FEMAnalysis
 				Simplify(simplify, false);
 		}
 
+		///  <summary>
+		/// 		Calculate the tangent stiffness increment.
+		///  </summary>
+		///  <param name="currentStiffness">The stiffness matrix from current iteration.</param>
+		///  <param name="lastStiffness">The stiffness matrix from last iteration.</param>
+		///  <param name="currentDisplacements">The displacement vector from current iteration.</param>
+		///  <param name="lastDisplacements">The displacement vector from the last iteration.</param>
+		///  <returns><see cref="Matrix{T}"/></returns>
+		public static Matrix<double> TangentIncrement(Matrix<double> currentStiffness, Matrix<double> lastStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements)
+		{
+			// Get displacement variation
+			var du = currentDisplacements - lastDisplacements;
+
+			// Get stiffness variation
+			var dk = currentStiffness - lastStiffness;
+
+			var inc = Matrix<double>.Build.Dense(dk.RowCount, dk.ColumnCount);
+			
+			// Increment elements of stiffness matrix
+			for (var i = 0; i < inc.RowCount; i++)
+			for (var j = 0; j < inc.ColumnCount; j++)
+				inc[i, j] += dk.Row(i) / du[j] * currentDisplacements;
+
+			return inc;
+		}
+		
+		/// <summary>
+		///		Calculate the secant stiffness increment.
+		/// </summary>
+		/// <param name="currentStiffness">The stiffness matrix from current iteration.</param>
+		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
+		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
+		/// <param name="currentResidual">The residual force vector from current iteration.</param>
+		/// <param name="lastResidual">The residual force vector from last iteration.</param>
+		///  <returns><see cref="Matrix{T}"/></returns>
+		public static Matrix<double> SecantIncrement(Matrix<double> currentStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements, Vector<double> currentResidual, Vector<double> lastResidual)
+		{
+			// Calculate the variation of displacements and residual as vectors
+			Vector<double>
+				dDisp = currentDisplacements - lastDisplacements,
+				dRes  = currentResidual      - lastResidual;
+
+			return
+				((dRes - currentStiffness * dDisp) / dDisp.Norm(2)).ToColumnMatrix() * dDisp.ToRowMatrix();
+		}
+		
 		/// <summary>
 		///     Correct results from last load step after not achieving convergence.
 		/// </summary>
