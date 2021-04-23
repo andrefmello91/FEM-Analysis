@@ -90,6 +90,54 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
+		///     Assemble the force <see cref="Vector" /> from a collection containing all grips in a finite element model.
+		/// </summary>
+		/// <inheritdoc cref="GetConstraintIndex" />
+		/// <inheritdoc cref="IFEMInput{TFiniteElement}.ForceVector" />
+		public static Vector<double> AssembleForceVector(this IEnumerable<IGrip> grips)
+		{
+			// Initialize the force vector
+			var f = new double[2 * grips.Count()];
+
+			// Read the nodes data
+			foreach (var grip in grips)
+			{
+				// Get DoF indexes
+				var index = grip.DoFIndex;
+				int
+					i = index[0],
+					j = index[1];
+
+				// Set to force vector
+				f[i] = grip.Force.X.Newtons;
+				f[j] = grip.Force.Y.Newtons;
+			}
+
+			return f.ToVector();
+		}
+
+		/// <summary>
+		///     Assemble the internal force <see cref="Vector" />.
+		/// </summary>
+		/// <param name="femInput">The <see cref="IFEMInput{TFiniteElement}" />.</param>
+		/// <param name="simplify">Simplify vector in constraint indexes?</param>
+		public static Vector<double> AssembleInternalForces<TFiniteElement>(this IFEMInput<TFiniteElement> femInput, bool simplify = true)
+			where TFiniteElement : IFiniteElement
+		{
+			var iForces = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
+
+			iForces.AddInternalForces(femInput.Elements);
+
+			if (!simplify)
+				return iForces;
+
+			foreach (var i in femInput.ConstraintIndex)
+				iForces[i] = 0;
+
+			return iForces;
+		}
+
+		/// <summary>
 		///     Assemble the global stiffness <see cref="Matrix" />.
 		/// </summary>
 		/// <param name="femInput">The <see cref="FEMInput{TFiniteElement}" /></param>
@@ -153,33 +201,6 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Assemble the force <see cref="Vector" /> from a collection containing all grips in a finite element model.
-		/// </summary>
-		/// <inheritdoc cref="GetConstraintIndex" />
-		/// <inheritdoc cref="IFEMInput{TFiniteElement}.ForceVector" />
-		public static Vector<double> AssembleForceVector(this IEnumerable<IGrip> grips)
-		{
-			// Initialize the force vector
-			var f = new double[2 * grips.Count()];
-
-			// Read the nodes data
-			foreach (var grip in grips)
-			{
-				// Get DoF indexes
-				var index = grip.DoFIndex;
-				int
-					i = index[0],
-					j = index[1];
-
-				// Set to force vector
-				f[i] = grip.Force.X.Newtons;
-				f[j] = grip.Force.Y.Newtons;
-			}
-
-			return f.ToVector();
-		}
-
-		/// <summary>
 		///     Get global indexes of the degrees of freedom of a collection of grips.
 		/// </summary>
 		/// <param name="grips">A collection of <see cref="IGrip" />'s.</param>
@@ -228,7 +249,10 @@ namespace andrefmello91.FEMAnalysis
 		///     Set support reactions to an <see cref="IGrip" /> from the global reaction <see cref="Vector" />.
 		/// </summary>
 		/// <param name="grip">The <see cref="IGrip" /> to set support reactions.</param>
-		/// <param name="globalReactionVector">The global reaction <see cref="Vector" />, with components in     <see cref="ForceUnit.Newton" />. </param>
+		/// <param name="globalReactionVector">
+		///     The global reaction <see cref="Vector" />, with components in
+		///     <see cref="ForceUnit.Newton" />.
+		/// </param>
 		public static void SetReactions([NotNull] this IGrip grip, [NotNull] Vector<double> globalReactionVector)
 		{
 			// Verify if grip is free
@@ -245,7 +269,10 @@ namespace andrefmello91.FEMAnalysis
 		///     Set support reactions to a collection of <see cref="IGrip" />'s from the global reaction <see cref="Vector" />.
 		/// </summary>
 		/// <param name="grips">The collection of <see cref="IGrip" />'s to set support reactions.</param>
-		/// <param name="globalReactionVector">The global reaction <see cref="Vector" />, with components in     <see cref="ForceUnit.Newton" />. </param>
+		/// <param name="globalReactionVector">
+		///     The global reaction <see cref="Vector" />, with components in
+		///     <see cref="ForceUnit.Newton" />.
+		/// </param>
 		public static void SetReactions([NotNull] this IEnumerable<IGrip> grips, [NotNull] Vector<double> globalReactionVector)
 		{
 			foreach (var grip in grips)
@@ -266,10 +293,13 @@ namespace andrefmello91.FEMAnalysis
 				.ToVector();
 
 			// Update nonlinear results
-			if (element is INonlinearElement nonlinearElement)
+			if (element.GetType().IsAssignableFrom(typeof(INonlinearElement)))
 			{
-				nonlinearElement.LastIterationResult.Displacements    = nonlinearElement.Displacements.Clone();
-				nonlinearElement.CurrentIterationResult.Displacements = displacements;
+				var nonlinearElement = (INonlinearElement) element;
+				nonlinearElement.CurrentIterationResult               ??= new IterationResult(displacements, Vector<double>.Build.Dense(displacements.Count), nonlinearElement.Stiffness);
+				nonlinearElement.LastIterationResult                  ??= nonlinearElement.CurrentIterationResult.Clone();
+				nonlinearElement.LastIterationResult.Displacements    =   nonlinearElement.Displacements.Clone();
+				nonlinearElement.CurrentIterationResult.Displacements =   displacements;
 			}
 
 			element.Displacements = displacements;
@@ -294,7 +324,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="element">The nonlinear element.</param>
 		/// <typeparam name="TNonlinearElement">Any type that implements <see cref="INonlinearElement" />.</typeparam>
 		public static void UpdateStiffness<TNonlinearElement>(this TNonlinearElement element)
-			where TNonlinearElement : INonlinearElement
+			where TNonlinearElement : INonlinearElement, IFiniteElement
 		{
 			// Get results
 			IterationResult
@@ -328,7 +358,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="elements">The collection of <see cref="INonlinearElement" />'s.</param>
 		/// <typeparam name="TNonlinearElement">Any type that implements <see cref="INonlinearElement" />.</typeparam>
 		public static void UpdateStiffness<TNonlinearElement>(this IEnumerable<TNonlinearElement> elements)
-			where TNonlinearElement : INonlinearElement
+			where TNonlinearElement : INonlinearElement, IFiniteElement
 		{
 			foreach (var element in elements)
 				element.UpdateStiffness();
@@ -336,25 +366,5 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
-		/// <summary>
-		///     Get the internal force <see cref="Vector" />.
-		/// </summary>
-		/// <param name="femInput">The <see cref="IFEMInput{TFiniteElement}" />.</param>
-		/// <param name="simplify">Simplify vector in constraint indexes?</param>
-		public static Vector<double> InternalForces<TFiniteElement>(this IFEMInput<TFiniteElement> femInput, bool simplify = true)
-			where TFiniteElement : IFiniteElement
-		{
-			var iForces = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
-
-			iForces.AddInternalForces(femInput.Elements);
-
-			if (!simplify)
-				return iForces;
-
-			foreach (var i in femInput.ConstraintIndex)
-				iForces[i] = 0;
-
-			return iForces;
-		}
 	}
 }

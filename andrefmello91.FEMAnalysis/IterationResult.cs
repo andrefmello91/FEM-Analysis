@@ -28,6 +28,15 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public Matrix<double> Stiffness { get; set; }
 
+		///  <summary>
+		/// 		Create an iteration object with elements composed by zero..
+		///  </summary>
+		///  <param name="numberOfDofs">The number of degrees of freedom.</param>
+		public IterationResult(int numberOfDofs)
+			: this(Vector<double>.Build.Dense(numberOfDofs), Vector<double>.Build.Dense(numberOfDofs), Matrix<double>.Build.Dense(numberOfDofs, numberOfDofs))
+		{
+		}
+			
 		/// <summary>
 		///		Create an iteration object.
 		/// </summary>

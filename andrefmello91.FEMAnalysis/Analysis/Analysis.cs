@@ -21,7 +21,7 @@ namespace andrefmello91.FEMAnalysis
         /// <remarks>
         ///     Components in <see cref="LengthUnit.Millimeter" />.
         /// </remarks>
-        public Vector<double>? DisplacementVector { get; protected set; }
+        public virtual Vector<double>? DisplacementVector { get; protected set; }
 
         /// <summary>
         ///     Get the input for finite element analysis.
@@ -34,7 +34,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Get/set global stiffness <see cref="Matrix" />.
         /// </summary>
-        public Matrix<double>? GlobalStiffness { get; protected set; }
+        public virtual Matrix<double>? GlobalStiffness { get; protected set; }
 
 		#endregion
 

@@ -158,11 +158,11 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		The results of the last iteration.
 		/// </summary>
-		IterationResult LastIterationResult { get; set; }
+		IterationResult? LastIterationResult { get; set; }
 		
 		/// <summary>
 		///		The results of the current iteration.
 		/// </summary>
-		IterationResult CurrentIterationResult { get; set; }
+		IterationResult? CurrentIterationResult { get; set; }
 	}
 }

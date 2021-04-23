@@ -9,7 +9,7 @@ namespace andrefmello91.FEMAnalysis
     /// <summary>
     ///     Nonlinear analysis class.
     /// </summary>
-    public class SecantAnalysis : Analysis
+    public class SecantAnalysis : Analysis<INonlinearElement>
 	{
 
 		#region Fields
@@ -159,7 +159,7 @@ namespace andrefmello91.FEMAnalysis
         /// <param name="maxIterations">Maximum number of iterations for each load step (default: 10000).</param>
         /// <param name="minIterations">Minimum number of iterations for each load step (default: 2).</param>
         /// <inheritdoc />
-        public SecantAnalysis(FEMInput femInput,
+        public SecantAnalysis(IFEMInput<INonlinearElement> femInput,
 			int numLoadSteps = 50,
 			double tolerance = 1E-6,
 			int maxIterations = 10000,
@@ -229,6 +229,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Update displacements in grips
 			FemInput.Grips.SetDisplacements(_currentDisplacements);
+			FemInput.Elements.UpdateDisplacements();
 		}
 
         /// <summary>
@@ -254,6 +255,10 @@ namespace andrefmello91.FEMAnalysis
 			_lastItDisplacements = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
 			_lastItResidual      = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
 			_currentResidual   = Vector<double>.Build.Dense(FemInput.NumberOfDoFs);
+			
+			// Update displacements in grips and elements
+			FemInput.Grips.SetDisplacements(_currentDisplacements);
+			FemInput.Elements.UpdateDisplacements();
 		}
 
         /// <summary>
@@ -277,8 +282,8 @@ namespace andrefmello91.FEMAnalysis
 					return;
 
 				// Update stiffness and displacements
-				SecantStiffnessUpdate();
 				DisplacementUpdate();
+				SecantStiffnessUpdate();
 
 				// Increase iteration count
 				_iteration++;
@@ -292,6 +297,7 @@ namespace andrefmello91.FEMAnalysis
         {
 	        // Set displacements from last load step
 	        FemInput.Grips.SetDisplacements(_lastStepDisplacements!);
+	        FemInput.Elements.UpdateDisplacements();
 
 	        // Calculate element forces
 	        FemInput.Elements.CalculateForces();
@@ -300,7 +306,7 @@ namespace andrefmello91.FEMAnalysis
         /// <summary>
         ///     Calculate residual force <see cref="Vector" />.
         /// </summary>
-        private Vector<double> ResidualForces() => InternalForces(FemInput) - _currentForces;
+        private Vector<double> ResidualForces() => FemInput.AssembleInternalForces() - _currentForces;
 
         /// <summary>
         ///     Update residual force <see cref="Vector" />.
@@ -335,9 +341,6 @@ namespace andrefmello91.FEMAnalysis
         /// <param name="simplify">Simplify stiffness?</param>
         private void SecantStiffnessUpdate(bool simplify = true)
 		{
-			// Clone current stiffness
-			var kCur = _currentStiffness!.Clone();
-
 			// Calculate the variation of displacements and residual as vectors
 			Vector<double>
 				dDisp = _currentDisplacements - _lastItDisplacements,
@@ -347,8 +350,8 @@ namespace andrefmello91.FEMAnalysis
 			var dK = ((dRes - _lastItStiffness * dDisp) / dDisp.Norm(2)).ToColumnMatrix() * dDisp.ToRowMatrix();
 
 			// Set new values
-			_currentStiffness = _lastItStiffness + dK;
-			_lastItStiffness    = kCur;
+			_lastItStiffness  =  _currentStiffness!.Clone();
+			_currentStiffness += dK;
 
 			// Simplify
 			if (simplify)

@@ -12,6 +12,11 @@ namespace andrefmello91.FEMAnalysis
 		///		The number of this load step.
 		/// </summary>
 		public int Number { get; set; }
+
+		/// <summary>
+		///		The status of this load step. True if it was calculated.
+		/// </summary>
+		public bool IsCalculated { get; set; }
 		
 		/// <summary>
 		///		The monitored displacement of this load step.
@@ -38,6 +43,12 @@ namespace andrefmello91.FEMAnalysis
 		///  </summary>
 		///  <param name="number">The number of this load step.</param>
 		///  <param name="forces">The force vector of this load step.</param>
+		public LoadStepResult(int number, Vector<double> forces)
+			: this(number, forces, Vector<double>.Build.Dense(forces.Count), Matrix<double>.Build.Dense(forces.Count, forces.Count))
+		{
+		}
+		
+		///  <inheritdoc cref="LoadStepResult(int, Vector{double})"/>
 		///  <param name="displacements">The displacement vector of this load step.</param>
 		///  <param name="stiffness">The stiffness matrix of this load step.</param>
 		public LoadStepResult(int number, Vector<double> forces, Vector<double> displacements, Matrix<double> stiffness)
