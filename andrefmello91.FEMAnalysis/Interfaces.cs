@@ -146,23 +146,17 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		void CalculateForces();
 
-		#endregion
-
-	}
-
-	/// <summary>
-	///		Interface for nonlinear finite elements.
-	/// </summary>
-	public interface INonlinearElement : IFiniteElement
-	{
 		/// <summary>
-		///		The results of the last iteration.
+		///		Update displacements in this element.
 		/// </summary>
-		IterationResult? LastIterationResult { get; set; }
+		void UpdateDisplacements();
 		
 		/// <summary>
-		///		The results of the current iteration.
+		///		Update stiffness of this element.
 		/// </summary>
-		IterationResult? CurrentIterationResult { get; set; }
+		void UpdateStiffness();
+
+		#endregion
+
 	}
 }

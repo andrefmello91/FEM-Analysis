@@ -10,7 +10,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Nonlinear analysis class
 	/// </summary>
-	public class NonlinearAnalysis : Analysis<INonlinearElement>
+	public class NonlinearAnalysis : Analysis<IFiniteElement>
 	{
 
 		#region Fields
@@ -199,7 +199,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="maxIterations">Maximum number of iterations for each load step (default: 10000).</param>
 		/// <param name="minIterations">Minimum number of iterations for each load step (default: 2).</param>
 		public NonlinearAnalysis(
-			IFEMInput<INonlinearElement> nonlinearInput,
+			IFEMInput<IFiniteElement> nonlinearInput,
 			NonLinearSolver solver = NonLinearSolver.NewtonRaphson,
 			int numLoadSteps = 50,
 			double tolerance = 1E-6,
@@ -254,7 +254,7 @@ namespace andrefmello91.FEMAnalysis
 					.ToList());
 
 		/// <summary>
-		///     Calculate the secant stiffness <see cref="Matrix" /> of current iteration.
+		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
 		/// </summary>
 		/// <param name="simplify">Simplify stiffness?</param>
 		protected override void UpdateStiffness(bool simplify = true)

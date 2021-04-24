@@ -280,37 +280,20 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Update the displacement <see cref="Vector" /> from this element's grips.
+		///     Get the displacement <see cref="Vector" /> from this element's grips.
 		/// </summary>
 		/// <returns>
 		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
 		/// </returns>
-		public static void UpdateDisplacements<TFiniteElement>([NotNull] this TFiniteElement element)
-			where TFiniteElement : IFiniteElement
-		{
-			var displacements = element.Grips
+		public static Vector<double> GetDisplacementsFromGrips<TFiniteElement>([NotNull] this TFiniteElement element)
+			where TFiniteElement : IFiniteElement =>
+			element.Grips
 				.SelectMany(g => new[] { g.Displacement.X.Millimeters, g.Displacement.Y.Millimeters })
 				.ToVector();
 
-			// Update nonlinear results
-			if (element.GetType().IsAssignableFrom(typeof(INonlinearElement)))
-			{
-				var nonlinearElement = (INonlinearElement) element;
-				nonlinearElement.CurrentIterationResult               ??= new IterationResult(displacements, Vector<double>.Build.Dense(displacements.Count), nonlinearElement.Stiffness);
-				nonlinearElement.LastIterationResult                  ??= nonlinearElement.CurrentIterationResult.Clone();
-				nonlinearElement.LastIterationResult.Displacements    =   nonlinearElement.Displacements.Clone();
-				nonlinearElement.CurrentIterationResult.Displacements =   displacements;
-			}
-
-			element.Displacements = displacements;
-		}
-
 		/// <summary>
-		///     Update the displacement <see cref="Vector" /> from this element's grips.
+		///     Update the displacement <see cref="Vector" /> for this element.
 		/// </summary>
-		/// <returns>
-		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
-		/// </returns>
 		public static void UpdateDisplacements<TFiniteElement>([NotNull] this IEnumerable<TFiniteElement> elements)
 			where TFiniteElement : IFiniteElement
 		{
@@ -318,47 +301,14 @@ namespace andrefmello91.FEMAnalysis
 				element.UpdateDisplacements();
 		}
 
-		/// <summary>
-		///     Update the tangent stiffness of this element for the next iteration.
-		/// </summary>
-		/// <param name="element">The nonlinear element.</param>
-		/// <typeparam name="TNonlinearElement">Any type that implements <see cref="INonlinearElement" />.</typeparam>
-		public static void UpdateStiffness<TNonlinearElement>(this TNonlinearElement element)
-			where TNonlinearElement : INonlinearElement, IFiniteElement
-		{
-			// Get results
-			IterationResult
-				last    = element.LastIterationResult,
-				current = element.CurrentIterationResult;
-
-			// Get current values
-			var displacements = current.Displacements;
-			var stiffness     = current.Stiffness.Clone();
-
-			// Get displacement variation
-			var du = displacements - last.Displacements;
-
-			// Get stiffness variation
-			var dk = stiffness - last.Stiffness;
-
-			// Increment elements of stiffness matrix
-			for (var i = 0; i < stiffness.RowCount; i++)
-			for (var j = 0; j < stiffness.ColumnCount; j++)
-				stiffness[i, j] += dk.Row(i) / du[j] * displacements;
-
-			// Set new values
-			last.Stiffness    = current.Stiffness;
-			current.Stiffness = stiffness;
-			element.Stiffness = stiffness;
-		}
 
 		/// <summary>
-		///     Update the tangent stiffness of each element in this collection for the next iteration.
+		///     Update the stiffness of each element in this collection.
 		/// </summary>
-		/// <param name="elements">The collection of <see cref="INonlinearElement" />'s.</param>
-		/// <typeparam name="TNonlinearElement">Any type that implements <see cref="INonlinearElement" />.</typeparam>
-		public static void UpdateStiffness<TNonlinearElement>(this IEnumerable<TNonlinearElement> elements)
-			where TNonlinearElement : INonlinearElement, IFiniteElement
+		/// <param name="elements">The collection of <see cref="TFiniteElement" />'s.</param>
+		/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement" />.</typeparam>
+		public static void UpdateStiffness<TFiniteElement>(this IEnumerable<TFiniteElement> elements)
+			where TFiniteElement : IFiniteElement
 		{
 			foreach (var element in elements)
 				element.UpdateStiffness();
