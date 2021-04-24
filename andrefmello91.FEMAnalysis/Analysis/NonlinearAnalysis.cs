@@ -16,12 +16,6 @@ namespace andrefmello91.FEMAnalysis
 		#region Fields
 
 		/// <summary>
-		///     The force vector of current load step.
-		/// </summary>
-		/// <inheritdoc cref="Analysis{TFiniteElement}.ForceVector" />
-		private Vector<double> _currentForces;
-
-		/// <summary>
 		///     The results of the current iteration.
 		/// </summary>
 		private IterationResult _currentIteration;
@@ -30,11 +24,6 @@ namespace andrefmello91.FEMAnalysis
 		///     The results of the last iteration.
 		/// </summary>
 		private IterationResult _lastIteration;
-
-		/// <summary>
-		///     Current load step number.
-		/// </summary>
-		private int _loadStep;
 
 		/// <summary>
 		///     The list of load step results.
@@ -97,7 +86,7 @@ namespace andrefmello91.FEMAnalysis
 					den = 1;
 
 				var res = _currentIteration.ResidualForces;
-				var f   = _currentForces;
+				var f   = CurrentLoadStep.Forces;
 
 				for (var i = 0; i < res.Count; i++)
 				{
@@ -179,11 +168,6 @@ namespace andrefmello91.FEMAnalysis
 		private LoadStepResult LastLoadStep => _loadSteps.Count > 1
 			? _loadSteps[_loadSteps.Count - 2]
 			: CurrentLoadStep;
-
-		/// <summary>
-		///     Get current load factor.
-		/// </summary>
-		private double LoadFactor => (double) _loadStep / NumLoadSteps;
 
 		#endregion
 
@@ -373,8 +357,8 @@ namespace andrefmello91.FEMAnalysis
 			Simplify();
 
 			// Calculate initial displacements
-			_currentForces     = ForceVector / NumLoadSteps;
-			DisplacementVector = GlobalStiffness!.Solve(_currentForces);
+			var fi             = ForceVector / NumLoadSteps;
+			DisplacementVector = GlobalStiffness!.Solve(fi);
 			
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
@@ -414,7 +398,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Update residual force <see cref="Vector{T}" />.
 		/// </summary>
 		private void ResidualUpdate() => 
-			ResidualForces = FemInput.AssembleInternalForces() - _currentForces;
+			ResidualForces = FemInput.AssembleInternalForces() - CurrentLoadStep.Forces;
 
 		/// <summary>
 		///     Save load step results after achieving convergence.
@@ -433,7 +417,7 @@ namespace andrefmello91.FEMAnalysis
 			var disp = Length.FromMillimeters(DisplacementVector![_monitoredIndex.Value]);
 
 			// Set to load step
-			curLoadStep.MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
+			curLoadStep.MonitoredDisplacement = new MonitoredDisplacement(disp, (double) (int) curLoadStep / NumLoadSteps);
 		}
 
 		/// <summary>
@@ -443,15 +427,15 @@ namespace andrefmello91.FEMAnalysis
 		private void StepAnalysis(bool simulate)
 		{
 			// Initiate first load step
-			_loadStep = 1;
+			var loadStep = 1;
 
-			while (simulate || _loadStep <= NumLoadSteps)
+			while (simulate || loadStep <= NumLoadSteps)
 			{
 				// Get the force vector
-				_currentForces = LoadFactor * ForceVector;
+				var f = (double) loadStep / NumLoadSteps * ForceVector;
 
 				// Create load step
-				_loadSteps.Add(new LoadStepResult(_loadStep, _currentForces));
+				_loadSteps.Add(new LoadStepResult(loadStep, f));
 				
 				// Iterate
 				Iterate();
@@ -467,7 +451,7 @@ namespace andrefmello91.FEMAnalysis
 				SaveLoadStepResults();
 
 				// Increment load step
-				_loadStep++;
+				loadStep++;
 			}
 		}
 
@@ -482,7 +466,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Check if maximum number of iterations is reached
 			if (Stop)
-				StopMessage = $"Convergence not reached at load step {_loadStep}";
+				StopMessage = $"Convergence not reached at load step {(int) CurrentLoadStep}";
 
 			return Stop;
 		}
