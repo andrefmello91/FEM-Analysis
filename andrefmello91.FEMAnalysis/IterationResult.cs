@@ -51,7 +51,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc />
-		public IterationResult Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone());
+		public IterationResult Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone()) { Number = Number};
 		
 		/// <summary>
 		///		Get the number of a iteration.
