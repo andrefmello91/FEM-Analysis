@@ -1,4 +1,6 @@
-﻿using andrefmello91.Extensions;
+﻿using System.Collections.Generic;
+using System.Linq;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
@@ -81,48 +83,51 @@ namespace andrefmello91.FEMAnalysis
 			return f;
 		}
 
-        /// <summary>
-        ///     Simplify <see cref="GlobalStiffness" /> and <see cref="ForceVector" />.
-        /// </summary>
-        /// <param name="simplifyByConstraints">Simplify matrix and vector by constraints?</param>
-        /// <param name="simplifyZeroRows">Simplify matrix and vector on rows containing only zero elements?</param>
-        protected void Simplify(bool simplifyByConstraints = true, bool simplifyZeroRows = true)
+		/// <summary>
+		///		Simplify the stiffness matrix and force vector at constrained DoFs.
+		/// </summary>
+		/// <param name="stiffness">The global stiffness <see cref="Matrix{T}"/>.</param>
+		/// <param name="forceVector">The global force <see cref="Vector{T}"/>.</param>
+		/// <param name="constraintIndex">The index of constrained DoFs.</param>
+		/// <param name="simplifyZeroRows">Simplify matrix and vector at rows containing only zero elements?</param>
+		internal static void Simplify(Matrix<double> stiffness, Vector<double>? forceVector, IEnumerable<int> constraintIndex, bool simplifyZeroRows = true)
 		{
-			if (simplifyByConstraints)
+			var index = constraintIndex.ToArray();
+			
+			// Clear the rows and columns in the stiffness matrix
+			stiffness.ClearRows(index);
+			stiffness.ClearColumns(index);
+
+			foreach (var i in index)
 			{
-				// Clear the rows and columns in the stiffness matrix
-				GlobalStiffness!.ClearRows(FemInput.ConstraintIndex.ToArray());
-				GlobalStiffness!.ClearColumns(FemInput.ConstraintIndex.ToArray());
+				// Set the diagonal element to 1
+				stiffness[i, i] = 1;
 
-				foreach (var i in FemInput.ConstraintIndex)
-				{
-					// Set the diagonal element to 1
-					GlobalStiffness[i, i] = 1;
-
-					// Clear the row in the force vector
-					ForceVector![i] = 0;
-				}
+				// Clear the row in the force vector
+				if (forceVector != null)
+					forceVector[i] = 0;
 			}
-
+			
 			if (simplifyZeroRows)
-				for (var i = 0; i < GlobalStiffness!.RowCount; i++)
+				for (var i = 0; i < stiffness.RowCount; i++)
 				{
 					// Verify what line of the matrix is composed of zeroes
-					if (GlobalStiffness!.Row(i).Exists(num => !num.ApproxZero()))
+					if (stiffness.Row(i).Exists(num => !num.ApproxZero(1E-9)))
 						continue;
 
 					// The row is composed of only zeroes, so the displacement must be zero
 					// Set the diagonal element to 1
-					GlobalStiffness[i, i] = 1;
+					stiffness[i, i] = 1;
 
 					// Clear the row in the force vector
-					ForceVector![i] = 0;
+					if (forceVector != null)
+						forceVector[i] = 0;
 				}
 
 			// Approximate small numbers to zero
-			GlobalStiffness!.CoerceZero(1E-9);
+			stiffness!.CoerceZero(1E-9);
 		}
-
+		
         /// <summary>
         ///     Update <see cref="GlobalStiffness" />.
         /// </summary>
@@ -134,7 +139,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Simplify stiffness matrix
 			if (simplify)
-				Simplify();
+				Simplify(GlobalStiffness, ForceVector!, FemInput.ConstraintIndex);
 		}
 
 		/// <inheritdoc />

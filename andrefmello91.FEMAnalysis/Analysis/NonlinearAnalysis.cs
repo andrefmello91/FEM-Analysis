@@ -263,7 +263,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Simplify
 			if (simplify)
-				Simplify(simplify, false);
+				Simplify(GlobalStiffness, null, FemInput.ConstraintIndex);
 		}
 
 		///  <summary>
@@ -287,7 +287,9 @@ namespace andrefmello91.FEMAnalysis
 			// Increment elements of stiffness matrix
 			for (var i = 0; i < inc.RowCount; i++)
 			for (var j = 0; j < inc.ColumnCount; j++)
-				inc[i, j] += dk.Row(i) / du[j] * currentDisplacements;
+				if (du[j] != 0)
+					for (var k = 0; k < inc.ColumnCount; k++)
+						inc[i, j] += dk[i, k] / du[j] * currentDisplacements[k];
 
 			return inc;
 		}
@@ -333,7 +335,7 @@ namespace andrefmello91.FEMAnalysis
 		private void DisplacementUpdate()
 		{
 			// Increment displacements
-			DisplacementVector += GlobalStiffness!.Solve(- ResidualForces);
+			DisplacementVector -= GlobalStiffness!.Solve(ResidualForces);
 
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
