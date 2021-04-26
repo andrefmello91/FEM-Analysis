@@ -166,7 +166,7 @@ namespace andrefmello91.FEMAnalysis
 		///     The last load step result.
 		/// </summary>
 		private LoadStepResult LastLoadStep => _loadSteps.Count > 1
-			? _loadSteps[_loadSteps.Count - 2]
+			? _loadSteps[^2]
 			: CurrentLoadStep;
 
 		#endregion
@@ -356,7 +356,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Get the initial stiffness and force vector simplified
 			GlobalStiffness = FemInput.AssembleStiffness();
-			Simplify();
+			Simplify(GlobalStiffness, ForceVector, FemInput.ConstraintIndex);
 
 			// Calculate initial displacements
 			var fi             = ForceVector / NumLoadSteps;
