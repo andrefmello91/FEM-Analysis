@@ -341,6 +341,12 @@ namespace andrefmello91.FEMAnalysis
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
 			FemInput.Elements.UpdateDisplacements();
+			
+			// Calculate element forces
+			FemInput.Elements.CalculateForces();
+
+			// Update residual
+			ResidualForces = FemInput.AssembleInternalForces() - fi;
 		}
 
 		/// <summary>
@@ -358,10 +364,21 @@ namespace andrefmello91.FEMAnalysis
 			}
 
 			// Initiate first iteration
-			OngoingIteration.Number = 1;
+			OngoingIteration.Number = 0;
 
-			while (true)
+			// Iterate
+			do
 			{
+				// Add iteration
+				_iterations.Add(OngoingIteration.Clone());
+
+				// Increase iteration count
+				OngoingIteration.Number++;
+
+				// Update stiffness and displacements
+				UpdateDisplacements();
+				UpdateStiffness();
+
 				// Calculate element forces
 				FemInput.Elements.CalculateForces();
 
@@ -371,19 +388,7 @@ namespace andrefmello91.FEMAnalysis
 				// Check convergence or if analysis must stop
 				OngoingIteration.Convergence = ForceConvergence(OngoingIteration.ResidualForces, CurrentLoadStep.Forces);
 				
-				if (IterativeStop())
-					return;
-
-				// Add iteration
-				_iterations.Add(OngoingIteration.Clone());
-
-				// Increase iteration count
-				OngoingIteration.Number++;
-
-				// Update stiffness and displacements
-				UpdateStiffness();
-				UpdateDisplacements();
-			}
+			} while (!IterativeStop());
 		}
 
 		/// <summary>
@@ -443,7 +448,8 @@ namespace andrefmello91.FEMAnalysis
 			// Initiate first load step
 			var loadStep = 1;
 
-			while (simulate || loadStep <= NumLoadSteps)
+			// Step-by-step analysis
+			do
 			{
 				// Get the force vector
 				var f = (double) loadStep / NumLoadSteps * ForceVector;
@@ -466,7 +472,8 @@ namespace andrefmello91.FEMAnalysis
 
 				// Increment load step
 				loadStep++;
-			}
+				
+			} while (simulate || loadStep <= NumLoadSteps);
 		}
 
 		/// <summary>
