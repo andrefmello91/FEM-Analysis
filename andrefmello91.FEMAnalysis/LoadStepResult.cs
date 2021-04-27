@@ -42,8 +42,18 @@ namespace andrefmello91.FEMAnalysis
 		/// 		Create a load step object.
 		///  </summary>
 		///  <param name="number">The number of this load step.</param>
+		/// <param name="numberOfDoFs">The number of degrees of freedom.</param>
+		public LoadStepResult(int numberOfDoFs, int number = 0)
+			: this(number, Vector<double>.Build.Dense(numberOfDoFs), Vector<double>.Build.Dense(numberOfDoFs), Matrix<double>.Build.Dense(numberOfDoFs, numberOfDoFs))
+		{
+		}
+		
+		///  <summary>
+		/// 		Create a load step object.
+		///  </summary>
+		///  <param name="number">The number of this load step.</param>
 		///  <param name="forces">The force vector of this load step.</param>
-		public LoadStepResult(int number, Vector<double> forces)
+		public LoadStepResult(Vector<double> forces, int number = 0)
 			: this(number, forces, Vector<double>.Build.Dense(forces.Count), Matrix<double>.Build.Dense(forces.Count, forces.Count))
 		{
 		}
