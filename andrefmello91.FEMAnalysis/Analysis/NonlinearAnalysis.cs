@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System;
 using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
@@ -16,19 +15,19 @@ namespace andrefmello91.FEMAnalysis
 		#region Fields
 
 		/// <summary>
+		///     The list of load step results.
+		/// </summary>
+		private readonly List<LoadStepResult> _loadSteps = new();
+
+		/// <summary>
 		///     The results of the current iteration.
 		/// </summary>
 		private IterationResult _currentIteration;
-		
+
 		/// <summary>
 		///     The results of the last iteration.
 		/// </summary>
 		private IterationResult _lastIteration;
-
-		/// <summary>
-		///     The list of load step results.
-		/// </summary>
-		private readonly List<LoadStepResult> _loadSteps = new();
 
 		/// <summary>
 		///     Field to store the DoF index for monitored displacements.
@@ -38,6 +37,44 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Properties
+
+		/// <inheritdoc />
+		/// <remarks>
+		///     The displacements of current iteration.
+		/// </remarks>
+		public override Vector<double>? DisplacementVector
+		{
+			get => _currentIteration.Displacements;
+			protected set
+			{
+				if (value is null)
+					return;
+
+				// Update last iteration
+				_lastIteration.Displacements = _currentIteration.Displacements;
+
+				_currentIteration.Displacements = value;
+			}
+		}
+
+		/// <inheritdoc />
+		/// <remarks>
+		///     The stiffness of current iteration.
+		/// </remarks>
+		public override Matrix<double>? GlobalStiffness
+		{
+			get => _currentIteration.Stiffness;
+			protected set
+			{
+				if (value is null)
+					return;
+
+				// Update last iteration
+				_lastIteration.Stiffness = _currentIteration.Stiffness;
+
+				_currentIteration.Stiffness = value;
+			}
+		}
 
 		/// <summary>
 		///     Get/set the maximum number of iterations.
@@ -75,70 +112,19 @@ namespace andrefmello91.FEMAnalysis
 		public double Tolerance { get; set; }
 
 		/// <summary>
-		///     Get current convergence.
+		///     The current load step result.
 		/// </summary>
-		private double Convergence
-		{
-			get
-			{
-				double
-					num = 0,
-					den = 1;
-
-				var res = _currentIteration.ResidualForces;
-				var f   = CurrentLoadStep.Forces;
-
-				for (var i = 0; i < res.Count; i++)
-				{
-					num += res[i] * res[i];
-					den += f[i] * f[i];
-				}
-
-				return
-					num / den;
-			}
-		}
-
-		/// <inheritdoc />
-		/// <remarks>
-		///	The displacements of current iteration.
-		/// </remarks>
-		public override Vector<double>? DisplacementVector
-		{
-			get => _currentIteration.Displacements;
-			protected set
-			{
-				if (value is null)
-					return;
-				
-				// Update last iteration
-				_lastIteration.Displacements = _currentIteration.Displacements;
-
-				_currentIteration.Displacements = value;
-			}
-		}
-
-		/// <inheritdoc />
-		/// <remarks>
-		///	The stiffness of current iteration.
-		/// </remarks>
-		public override Matrix<double>? GlobalStiffness
-		{
-			get => _currentIteration.Stiffness;
-			protected set
-			{
-				if (value is null)
-					return;
-				
-				// Update last iteration
-				_lastIteration.Stiffness = _currentIteration.Stiffness;
-
-				_currentIteration.Stiffness = value;
-			}
-		}
+		private LoadStepResult CurrentLoadStep => _loadSteps.Last();
 
 		/// <summary>
-		///		Get/set the residual force vector of current iteration.
+		///     The last load step result.
+		/// </summary>
+		private LoadStepResult LastLoadStep => _loadSteps.Count > 1
+			? _loadSteps[^2]
+			: CurrentLoadStep;
+
+		/// <summary>
+		///     Get/set the residual force vector of current iteration.
 		/// </summary>
 		private Vector<double> ResidualForces
 		{
@@ -151,23 +137,6 @@ namespace andrefmello91.FEMAnalysis
 				_currentIteration.ResidualForces = value;
 			}
 		}
-		
-		/// <summary>
-		///     Returns true if achieved convergence.
-		/// </summary>
-		private bool ConvergenceReached => VerifyConvergence(Convergence);
-
-		/// <summary>
-		///     The current load step result.
-		/// </summary>
-		private LoadStepResult CurrentLoadStep => _loadSteps.Last();
-
-		/// <summary>
-		///     The last load step result.
-		/// </summary>
-		private LoadStepResult LastLoadStep => _loadSteps.Count > 1
-			? _loadSteps[^2]
-			: CurrentLoadStep;
 
 		#endregion
 
@@ -201,6 +170,73 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Methods
+
+		/// <summary>
+		///     Calculate the secant stiffness increment.
+		/// </summary>
+		/// <param name="currentStiffness">The stiffness matrix from current iteration.</param>
+		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
+		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
+		/// <param name="currentResidual">The residual force vector from current iteration.</param>
+		/// <param name="lastResidual">The residual force vector from last iteration.</param>
+		/// <returns>
+		///     <see cref="Matrix{T}" />
+		/// </returns>
+		public static Matrix<double> SecantIncrement(Matrix<double> currentStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements, Vector<double> currentResidual, Vector<double> lastResidual)
+		{
+			// Calculate the variation of displacements and residual as vectors
+			Vector<double>
+				dDisp = currentDisplacements - lastDisplacements,
+				dRes  = currentResidual - lastResidual;
+
+			return
+				((dRes - currentStiffness * dDisp) / dDisp.Norm(2)).ToColumnMatrix() * dDisp.ToRowMatrix();
+		}
+
+		/// <summary>
+		///     Calculate the tangent stiffness increment.
+		/// </summary>
+		/// <param name="currentStiffness">The stiffness matrix from current iteration.</param>
+		/// <param name="lastStiffness">The stiffness matrix from last iteration.</param>
+		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
+		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
+		/// <returns>
+		///     <see cref="Matrix{T}" />
+		/// </returns>
+		public static Matrix<double> TangentIncrement(Matrix<double> currentStiffness, Matrix<double> lastStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements)
+		{
+			// Get displacement variation
+			var du = currentDisplacements - lastDisplacements;
+
+			// Get stiffness variation
+			var dk = currentStiffness - lastStiffness;
+
+			var inc = Matrix<double>.Build.Dense(dk.RowCount, dk.ColumnCount);
+
+			// Increment elements of stiffness matrix
+			for (var i = 0; i < inc.RowCount; i++)
+			for (var j = 0; j < inc.ColumnCount; j++)
+				if (du[j] != 0)
+					for (var k = 0; k < inc.ColumnCount; k++)
+						inc[i, j] += dk[i, k] / du[j] * currentDisplacements[k];
+
+			return inc;
+		}
+
+		/// <summary>
+		///     Calculate the force based convergence.
+		/// </summary>
+		/// <param name="residualForces">The residual forces of the current iteration.</param>
+		/// <param name="appliedForces">The applied forces of the current load step.</param>
+		private static double Convergence(IEnumerable<double> residualForces, IEnumerable<double> appliedForces)
+		{
+			double
+				num = residualForces.Sum(n => n * n),
+				den = 1 + appliedForces.Sum(n => n * n);
+
+			return
+				num / den;
+		}
 
 		/// <summary>
 		///     Execute the analysis.
@@ -266,54 +302,6 @@ namespace andrefmello91.FEMAnalysis
 				Simplify(GlobalStiffness, null, FemInput.ConstraintIndex);
 		}
 
-		///  <summary>
-		/// 		Calculate the tangent stiffness increment.
-		///  </summary>
-		///  <param name="currentStiffness">The stiffness matrix from current iteration.</param>
-		///  <param name="lastStiffness">The stiffness matrix from last iteration.</param>
-		///  <param name="currentDisplacements">The displacement vector from current iteration.</param>
-		///  <param name="lastDisplacements">The displacement vector from the last iteration.</param>
-		///  <returns><see cref="Matrix{T}"/></returns>
-		public static Matrix<double> TangentIncrement(Matrix<double> currentStiffness, Matrix<double> lastStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements)
-		{
-			// Get displacement variation
-			var du = currentDisplacements - lastDisplacements;
-
-			// Get stiffness variation
-			var dk = currentStiffness - lastStiffness;
-
-			var inc = Matrix<double>.Build.Dense(dk.RowCount, dk.ColumnCount);
-			
-			// Increment elements of stiffness matrix
-			for (var i = 0; i < inc.RowCount; i++)
-			for (var j = 0; j < inc.ColumnCount; j++)
-				if (du[j] != 0)
-					for (var k = 0; k < inc.ColumnCount; k++)
-						inc[i, j] += dk[i, k] / du[j] * currentDisplacements[k];
-
-			return inc;
-		}
-		
-		/// <summary>
-		///		Calculate the secant stiffness increment.
-		/// </summary>
-		/// <param name="currentStiffness">The stiffness matrix from current iteration.</param>
-		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
-		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
-		/// <param name="currentResidual">The residual force vector from current iteration.</param>
-		/// <param name="lastResidual">The residual force vector from last iteration.</param>
-		///  <returns><see cref="Matrix{T}"/></returns>
-		public static Matrix<double> SecantIncrement(Matrix<double> currentStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements, Vector<double> currentResidual, Vector<double> lastResidual)
-		{
-			// Calculate the variation of displacements and residual as vectors
-			Vector<double>
-				dDisp = currentDisplacements - lastDisplacements,
-				dRes  = currentResidual      - lastResidual;
-
-			return
-				((dRes - currentStiffness * dDisp) / dDisp.Norm(2)).ToColumnMatrix() * dDisp.ToRowMatrix();
-		}
-		
 		/// <summary>
 		///     Correct results from last load step after not achieving convergence.
 		/// </summary>
@@ -349,7 +337,7 @@ namespace andrefmello91.FEMAnalysis
 		private void Initiate(int? monitoredIndex)
 		{
 			_monitoredIndex = monitoredIndex;
-			
+
 			// Initiate solution values
 			_currentIteration = new IterationResult(FemInput.NumberOfDoFs);
 			_lastIteration    = _currentIteration.Clone();
@@ -359,9 +347,9 @@ namespace andrefmello91.FEMAnalysis
 			Simplify(GlobalStiffness, ForceVector, FemInput.ConstraintIndex);
 
 			// Calculate initial displacements
-			var fi             = ForceVector / NumLoadSteps;
+			var fi = ForceVector / NumLoadSteps;
 			DisplacementVector = GlobalStiffness!.Solve(fi);
-			
+
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
 			FemInput.Elements.UpdateDisplacements();
@@ -375,7 +363,7 @@ namespace andrefmello91.FEMAnalysis
 			// Initiate first iteration
 			_currentIteration.Number = 1;
 
-			while ((int) _currentIteration <= MaxIterations)
+			while (true)
 			{
 				// Calculate element forces
 				FemInput.Elements.CalculateForces();
@@ -384,7 +372,7 @@ namespace andrefmello91.FEMAnalysis
 				ResidualUpdate();
 
 				// Check convergence or if analysis must stop
-				if (ConvergenceReached || StopCheck())
+				if (IterativeStop())
 					return;
 
 				// Update stiffness and displacements
@@ -397,9 +385,37 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
+		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.
+		/// </summary>
+		/// <remarks>
+		///     If the maximum number of iterations is reached, <see cref="Stop" /> is set to true.
+		/// </remarks>
+		/// <returns>
+		///     True if convergence is reached or the maximum number of iterations is reached.
+		/// </returns>
+		private bool IterativeStop()
+		{
+			// Check if one stop condition is reached
+			Stop = (int) _currentIteration >= MaxIterations    || ResidualForces.ContainsNaNOrInfinity() ||
+			       DisplacementVector!.ContainsNaNOrInfinity() || GlobalStiffness!.ContainsNaN();
+
+			switch (Stop)
+			{
+				// Check if maximum number of iterations is reached
+				case true:
+					StopMessage = $"Convergence not reached at load step {(int) CurrentLoadStep}";
+					return Stop;
+
+				default:
+					return
+						VerifyConvergence(Convergence(_currentIteration.ResidualForces, CurrentLoadStep.Forces));
+			}
+		}
+
+		/// <summary>
 		///     Update residual force <see cref="Vector{T}" />.
 		/// </summary>
-		private void ResidualUpdate() => 
+		private void ResidualUpdate() =>
 			ResidualForces = FemInput.AssembleInternalForces() - CurrentLoadStep.Forces;
 
 		/// <summary>
@@ -438,7 +454,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Create load step
 				_loadSteps.Add(new LoadStepResult(loadStep, f));
-				
+
 				// Iterate
 				Iterate();
 
@@ -455,22 +471,6 @@ namespace andrefmello91.FEMAnalysis
 				// Increment load step
 				loadStep++;
 			}
-		}
-
-		/// <summary>
-		///     Check if analysis must stop.
-		/// </summary>
-		private bool StopCheck()
-		{
-			// Check if one stop condition is reached
-			Stop = (int) _currentIteration == MaxIterations    || ResidualForces.ContainsNaNOrInfinity() ||
-			       DisplacementVector!.ContainsNaNOrInfinity() || GlobalStiffness!.ContainsNaN();
-
-			// Check if maximum number of iterations is reached
-			if (Stop)
-				StopMessage = $"Convergence not reached at load step {(int) CurrentLoadStep}";
-
-			return Stop;
 		}
 
 		/// <summary>
