@@ -17,7 +17,12 @@ namespace andrefmello91.FEMAnalysis
 		#region Properties
 
 		/// <summary>
-		///     Get the values of monitored displacements.
+		///		Values of calcultated load step results.
+		/// </summary>
+		public List<LoadStepResult> LoadStepResults { get; }
+		
+		/// <summary>
+		///     Values of monitored displacements.
 		/// </summary>
 		public List<MonitoredDisplacement> MonitoredDisplacements { get; }
 
@@ -28,9 +33,18 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Output data constructor.
 		/// </summary>
-		/// <param name="monitoredDisplacements">The values of monitored displacements.</param>
-		public FEMOutput([NotNull] IEnumerable<MonitoredDisplacement> monitoredDisplacements) =>
-			MonitoredDisplacements = monitoredDisplacements.ToList();
+		/// <param name="loadStepResults">The values of load step results.</param>
+		public FEMOutput([NotNull] IEnumerable<LoadStepResult> loadStepResults)
+		{
+			LoadStepResults = loadStepResults
+				.Where(ls => ls.IsCalculated)
+				.ToList();
+
+			MonitoredDisplacements = LoadStepResults
+				.Where( ls => ls.MonitoredDisplacement.HasValue)
+				.Select(ls => ls.MonitoredDisplacement!.Value)
+				.ToList();
+		}
 
 		#endregion
 
