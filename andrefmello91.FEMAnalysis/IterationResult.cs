@@ -43,9 +43,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Create an iteration object with elements composed by zero..
 		/// </summary>
-		/// <param name="numberOfDofs">The number of degrees of freedom.</param>
-		public IterationResult(int numberOfDofs)
-			: this(Vector<double>.Build.Dense(numberOfDofs), Vector<double>.Build.Dense(numberOfDofs), Matrix<double>.Build.Dense(numberOfDofs, numberOfDofs))
+		/// <param name="numberOfDoFs">The number of degrees of freedom.</param>
+		public IterationResult(int numberOfDoFs)
+			: this(Vector<double>.Build.Dense(numberOfDoFs), Vector<double>.Build.Dense(numberOfDoFs), Matrix<double>.Build.Dense(numberOfDoFs, numberOfDoFs))
 		{
 		}
 
