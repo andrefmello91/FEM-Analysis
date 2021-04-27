@@ -139,6 +139,11 @@ namespace andrefmello91.FEMAnalysis
 			set => OngoingIteration.ResidualForces = value;
 		}
 
+		/// <summary>
+		///		Get the load factor of the current iteration.
+		/// </summary>
+		private double LoadFactor => (double) (int) CurrentLoadStep / NumLoadSteps;
+		
 		#endregion
 
 		#region Constructors
@@ -266,13 +271,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     null if no monitored index was provided.
 		/// </returns>
-		public FEMOutput? GenerateOutput() =>
-			!_monitoredIndex.HasValue
-				? null
-				: new FEMOutput(_loadSteps
-					.Where(ls => ls.IsCalculated)
-					.Select(ls => ls.MonitoredDisplacement!.Value)
-					.ToList());
+		public FEMOutput GenerateOutput() => new (_loadSteps);
 
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
@@ -308,7 +307,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private void CorrectResults()
 		{
-			// Set displacements from last load step
+			// Set displacements from last (current now) load step
 			DisplacementVector = LastLoadStep.Displacements;
 			GlobalStiffness    = LastLoadStep.Stiffness;
 			FemInput.Grips.SetDisplacements(DisplacementVector);
@@ -326,16 +325,20 @@ namespace andrefmello91.FEMAnalysis
 		{
 			_monitoredIndex = monitoredIndex;
 
-			// Initiate solution values
+			// Initiate lists solution values
+			_loadSteps.Clear();
+			_loadSteps.Add(new LoadStepResult(ForceVector / NumLoadSteps, 1));
+			
+			_iterations.Clear();
 			for (var i = 0; i < 3; i++)
 				_iterations.Add(new IterationResult(FemInput.NumberOfDoFs));
-
+			
 			// Get the initial stiffness and force vector simplified
 			GlobalStiffness = FemInput.AssembleStiffness();
 			Simplify(GlobalStiffness, ForceVector, FemInput.ConstraintIndex);
 
 			// Calculate initial displacements
-			var fi = ForceVector / NumLoadSteps;
+			var fi = CurrentLoadStep.Forces;
 			DisplacementVector = GlobalStiffness!.Solve(fi);
 
 			// Update displacements in grips and elements
@@ -346,7 +349,7 @@ namespace andrefmello91.FEMAnalysis
 			FemInput.Elements.CalculateForces();
 
 			// Update residual
-			ResidualForces = FemInput.AssembleInternalForces() - fi;
+			UpdateResidual();
 		}
 
 		/// <summary>
@@ -357,10 +360,10 @@ namespace andrefmello91.FEMAnalysis
 			// Clear iteration list
 			if ((int) CurrentLoadStep > 1)
 			{
-				var lastIt = CurrentSolution.Clone();
-				var curIt  = OngoingIteration.Clone();
+				var curSol = CurrentSolution.Clone();
+				var ongIt  = OngoingIteration.Clone();
 				_iterations.Clear();
-				_iterations.AddRange(new[] { lastIt, curIt });
+				_iterations.AddRange(new[] { curSol, ongIt });
 			}
 
 			// Initiate first iteration
@@ -424,10 +427,10 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private void SaveLoadStepResults()
 		{
-			var curLoadStep = CurrentLoadStep;
-			curLoadStep.IsCalculated  = true;
-			curLoadStep.Displacements = DisplacementVector!;
-			curLoadStep.Stiffness     = GlobalStiffness!;
+			CurrentLoadStep.IsCalculated  = true;
+			CurrentLoadStep.Convergence   = OngoingIteration.Convergence;
+			CurrentLoadStep.Displacements = DisplacementVector!;
+			CurrentLoadStep.Stiffness     = GlobalStiffness!;
 
 			if (!_monitoredIndex.HasValue)
 				return;
@@ -436,7 +439,7 @@ namespace andrefmello91.FEMAnalysis
 			var disp = Length.FromMillimeters(DisplacementVector![_monitoredIndex.Value]);
 
 			// Set to load step
-			curLoadStep.MonitoredDisplacement = new MonitoredDisplacement(disp, (double) (int) curLoadStep / NumLoadSteps);
+			CurrentLoadStep.MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
 		}
 
 		/// <summary>
@@ -446,34 +449,34 @@ namespace andrefmello91.FEMAnalysis
 		private void StepAnalysis(bool simulate)
 		{
 			// Initiate first load step
-			var loadStep = 1;
+			CurrentLoadStep.Number = 1;
 
 			// Step-by-step analysis
 			do
 			{
 				// Get the force vector
-				var f = (double) loadStep / NumLoadSteps * ForceVector;
-
-				// Create load step
-				_loadSteps.Add(new LoadStepResult(loadStep, f));
-
+				CurrentLoadStep.Forces = LoadFactor * ForceVector;
+				
 				// Iterate
 				Iterate();
 
 				// Verify if convergence was not reached
 				if (Stop)
-				{
-					CorrectResults();
-					return;
-				}
+					goto CorrectResults;
 
 				// Set load step results
 				SaveLoadStepResults();
 
+				// Create load step
+				_loadSteps.Add(CurrentLoadStep.Clone());
+
 				// Increment load step
-				loadStep++;
-				
-			} while (simulate || loadStep <= NumLoadSteps);
+				CurrentLoadStep.Number++;
+
+			} while (simulate || (int) CurrentLoadStep <= NumLoadSteps);
+			
+			CorrectResults:
+				CorrectResults();
 		}
 
 		/// <summary>
