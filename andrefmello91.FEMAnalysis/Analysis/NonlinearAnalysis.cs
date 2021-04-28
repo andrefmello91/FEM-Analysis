@@ -222,9 +222,13 @@ namespace andrefmello91.FEMAnalysis
 			// Increment elements of stiffness matrix
 			for (var i = 0; i < inc.RowCount; i++)
 			for (var j = 0; j < inc.ColumnCount; j++)
-				if (du[j] != 0)
-					for (var k = 0; k < inc.ColumnCount; k++)
-						inc[i, j] += dk[i, k] / du[j] * currentDisplacements[k];
+			{
+				if (du[j] == 0)
+					continue;
+
+				for (var k = 0; k < inc.ColumnCount; k++)
+					inc[i, j] += dk[i, k] / du[j] * currentDisplacements[k];
+			}
 
 			return inc;
 		}
