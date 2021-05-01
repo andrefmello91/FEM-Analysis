@@ -85,8 +85,12 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Methods
 
+		#region Interface Implementations
+
 		/// <inheritdoc />
 		public LoadStepResult Clone() => new(Number, Forces.Clone(), Displacements.Clone(), Stiffness.Clone());
+
+		#endregion
 
 		#endregion
 

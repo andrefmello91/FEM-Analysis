@@ -126,6 +126,11 @@ namespace andrefmello91.FEMAnalysis
 		private IterationResult LastSolution => _iterations[^3];
 
 		/// <summary>
+		///     Get the load factor of the current iteration.
+		/// </summary>
+		private double LoadFactor => (double) (int) CurrentLoadStep / NumLoadSteps;
+
+		/// <summary>
 		///     The results of the ongoing iteration.
 		/// </summary>
 		private IterationResult OngoingIteration => _iterations[^1];
@@ -139,11 +144,6 @@ namespace andrefmello91.FEMAnalysis
 			set => OngoingIteration.ResidualForces = value;
 		}
 
-		/// <summary>
-		///		Get the load factor of the current iteration.
-		/// </summary>
-		private double LoadFactor => (double) (int) CurrentLoadStep / NumLoadSteps;
-		
 		#endregion
 
 		#region Constructors
@@ -275,7 +275,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     null if no monitored index was provided.
 		/// </returns>
-		public FEMOutput GenerateOutput() => new (_loadSteps);
+		public FEMOutput GenerateOutput() => new(_loadSteps);
 
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
@@ -332,11 +332,11 @@ namespace andrefmello91.FEMAnalysis
 			// Initiate lists solution values
 			_loadSteps.Clear();
 			_loadSteps.Add(new LoadStepResult(ForceVector / NumLoadSteps, 1));
-			
+
 			_iterations.Clear();
 			for (var i = 0; i < 3; i++)
 				_iterations.Add(new IterationResult(FemInput.NumberOfDoFs));
-			
+
 			// Get the initial stiffness and force vector simplified
 			GlobalStiffness = FemInput.AssembleStiffness();
 			Simplify(GlobalStiffness, ForceVector, FemInput.ConstraintIndex);
@@ -348,7 +348,7 @@ namespace andrefmello91.FEMAnalysis
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
 			FemInput.Elements.UpdateDisplacements();
-			
+
 			// Calculate element forces
 			FemInput.Elements.CalculateForces();
 
@@ -394,7 +394,6 @@ namespace andrefmello91.FEMAnalysis
 
 				// Check convergence or if analysis must stop
 				OngoingIteration.Convergence = ForceConvergence(OngoingIteration.ResidualForces, CurrentLoadStep.Forces);
-				
 			} while (!IterativeStop());
 		}
 
@@ -460,7 +459,7 @@ namespace andrefmello91.FEMAnalysis
 			{
 				// Get the force vector
 				CurrentLoadStep.Forces = LoadFactor * ForceVector;
-				
+
 				// Iterate
 				Iterate();
 
@@ -476,11 +475,10 @@ namespace andrefmello91.FEMAnalysis
 
 				// Increment load step
 				CurrentLoadStep.Number++;
-
 			} while (simulate || (int) CurrentLoadStep <= NumLoadSteps);
-			
+
 			CorrectResults:
-				CorrectResults();
+			CorrectResults();
 		}
 
 		/// <summary>

@@ -201,6 +201,18 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
+		///     Get the displacement <see cref="Vector" /> from this element's grips.
+		/// </summary>
+		/// <returns>
+		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
+		/// </returns>
+		public static Vector<double> GetDisplacementsFromGrips<TFiniteElement>([NotNull] this TFiniteElement element)
+			where TFiniteElement : IFiniteElement =>
+			element.Grips
+				.SelectMany(g => new[] { g.Displacement.X.Millimeters, g.Displacement.Y.Millimeters })
+				.ToVector();
+
+		/// <summary>
 		///     Get global indexes of the degrees of freedom of a collection of grips.
 		/// </summary>
 		/// <param name="grips">A collection of <see cref="IGrip" />'s.</param>
@@ -278,18 +290,6 @@ namespace andrefmello91.FEMAnalysis
 			foreach (var grip in grips)
 				grip.SetReactions(globalReactionVector);
 		}
-
-		/// <summary>
-		///     Get the displacement <see cref="Vector" /> from this element's grips.
-		/// </summary>
-		/// <returns>
-		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
-		/// </returns>
-		public static Vector<double> GetDisplacementsFromGrips<TFiniteElement>([NotNull] this TFiniteElement element)
-			where TFiniteElement : IFiniteElement =>
-			element.Grips
-				.SelectMany(g => new[] { g.Displacement.X.Millimeters, g.Displacement.Y.Millimeters })
-				.ToVector();
 
 		/// <summary>
 		///     Update the displacement <see cref="Vector" /> for this element.

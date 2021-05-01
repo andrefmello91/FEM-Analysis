@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
@@ -11,10 +10,13 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Finite element input class.
 	/// </summary>
-	/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement"/>.</typeparam>
+	/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement" />.</typeparam>
 	public interface IFEMInput<TFiniteElement>
 		where TFiniteElement : IFiniteElement
 	{
+
+		#region Properties
+
 		/// <summary>
 		///     Get the index of constrained degrees of freedom.
 		/// </summary>
@@ -42,16 +44,22 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the number of degrees of freedom (DoFs).
 		/// </summary>
 		public int NumberOfDoFs { get; }
+
+		#endregion
+
 	}
 
 	/// <summary>
 	///     Default finite element input class.
 	/// </summary>
-	/// <inheritdoc cref="IFEMInput{TFiniteElement}"/>
+	/// <inheritdoc cref="IFEMInput{TFiniteElement}" />
 	public class FEMInput<TFiniteElement> : IFEMInput<TFiniteElement>
 		where TFiniteElement : IFiniteElement
 	{
+
 		#region Properties
+
+		#region Interface Implementations
 
 		/// <inheritdoc />
 		public List<int> ConstraintIndex { get; }
@@ -70,11 +78,13 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+		#endregion
+
 		#region Constructors
 
-		/// <inheritdoc cref="FEMInput{IFiniteElement}(IEnumerable{IFiniteElement}, IEnumerable{IGrip})"/>
+		/// <inheritdoc cref="FEMInput{IFiniteElement}(IEnumerable{IFiniteElement}, IEnumerable{IGrip})" />
 		/// <remarks>
-		///		Grips are taken from <paramref name="elements"/>.
+		///     Grips are taken from <paramref name="elements" />.
 		/// </remarks>
 		public FEMInput(IEnumerable<TFiniteElement> elements)
 			: this(elements, elements.SelectMany(e => e.Grips).Distinct().OrderBy(g => g.Number).ToList())
@@ -98,13 +108,17 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Methods
-		
+
+		#region Object override
+
 		/// <inheritdoc />
 		public override string ToString() =>
 			$"Number of grips: {Grips.Count}\n" +
 			$"Number of elements: {Elements.Count}\n" +
 			$"Force vector: \n{ForceVector}\n" +
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
+
+		#endregion
 
 		#endregion
 

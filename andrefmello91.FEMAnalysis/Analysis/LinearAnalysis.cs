@@ -2,17 +2,18 @@
 
 namespace andrefmello91.FEMAnalysis
 {
-    /// <summary>
-    ///     Linear analysis class.
-    /// </summary>
-    public class LinearAnalysis : Analysis<IFiniteElement>
+	/// <summary>
+	///     Linear analysis class.
+	/// </summary>
+	public class LinearAnalysis : Analysis<IFiniteElement>
 	{
+
 		#region Constructors
 
 		/// <summary>
 		///     Linear analysis constructor.
 		/// </summary>
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public LinearAnalysis(IFEMInput<IFiniteElement> femInput)
 			: base(femInput)
 		{
@@ -22,11 +23,11 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Methods
 
-        /// <summary>
-        ///     Execute the analysis.
-        /// </summary>
-        /// <param name="loadFactor">The load factor to multiply <see cref="Analysis{TFiniteElement}.ForceVector" /> (default: 1).</param>
-        public void Execute(double loadFactor = 1)
+		/// <summary>
+		///     Execute the analysis.
+		/// </summary>
+		/// <param name="loadFactor">The load factor to multiply <see cref="Analysis{TFiniteElement}.ForceVector" /> (default: 1).</param>
+		public void Execute(double loadFactor = 1)
 		{
 			// Set force vector
 			ForceVector = FemInput.ForceVector * loadFactor;
@@ -39,17 +40,18 @@ namespace andrefmello91.FEMAnalysis
 
 			// Set displacements to grips
 			FemInput.Grips.SetDisplacements(DisplacementVector);
-			
+
 			// Update element displacements
 			FemInput.Elements.UpdateDisplacements();
-			
+
 			// Calculate element forces
 			FemInput.Elements.CalculateForces();
 
 			// Set Reactions
 			FemInput.Grips.SetReactions(GetReactions());
 		}
-        #endregion
+
+		#endregion
 
 	}
 }

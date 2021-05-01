@@ -33,7 +33,7 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public bool Equals(MonitoredDisplacement other) => LoadFactor.Approx(other.LoadFactor, 1E-6) && Displacement.Approx(other.Displacement, PlaneDisplacement.Tolerance);
-		
+
 		/// <inheritdoc />
 		public int CompareTo(MonitoredDisplacement other) =>
 			LoadFactor.Approx(other.LoadFactor, 1E-6)

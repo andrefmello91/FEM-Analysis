@@ -17,10 +17,10 @@ namespace andrefmello91.FEMAnalysis
 		#region Properties
 
 		/// <summary>
-		///		Values of calcultated load step results.
+		///     Values of calcultated load step results.
 		/// </summary>
 		public List<LoadStepResult> LoadStepResults { get; }
-		
+
 		/// <summary>
 		///     Values of monitored displacements.
 		/// </summary>
@@ -41,7 +41,7 @@ namespace andrefmello91.FEMAnalysis
 				.ToList();
 
 			MonitoredDisplacements = LoadStepResults
-				.Where( ls => ls.MonitoredDisplacement.HasValue)
+				.Where(ls => ls.MonitoredDisplacement.HasValue)
 				.Select(ls => ls.MonitoredDisplacement!.Value)
 				.ToList();
 		}

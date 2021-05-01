@@ -12,33 +12,33 @@ namespace andrefmello91.FEMAnalysis
 	public enum AnalysisType
 	{
 		/// <summary>
-		///		Linear-elastic analysis.
+		///     Linear-elastic analysis.
 		/// </summary>
 		Linear,
-		
+
 		/// <summary>
-		///		Nonlinear analysis.
+		///     Nonlinear analysis.
 		/// </summary>
 		Nonlinear
 	}
 
 	/// <summary>
-	///		Nonlinear solution procedures.
+	///     Nonlinear solution procedures.
 	/// </summary>
 	public enum NonLinearSolver
 	{
 		/// <summary>
-		///		Newton-Raphson nonlinear solver.
+		///     Newton-Raphson nonlinear solver.
 		/// </summary>
 		NewtonRaphson,
-		
+
 		/// <summary>
-		///		Modified Newton-Raphson nonlinear solver.
+		///     Modified Newton-Raphson nonlinear solver.
 		/// </summary>
 		ModifiedNewtonRaphson,
-		
+
 		/// <summary>
-		///		Secant Method nonlinear solver.
+		///     Secant Method nonlinear solver.
 		/// </summary>
 		Secant
 	}
@@ -147,12 +147,12 @@ namespace andrefmello91.FEMAnalysis
 		void CalculateForces();
 
 		/// <summary>
-		///		Update displacements in this element.
+		///     Update displacements in this element.
 		/// </summary>
 		void UpdateDisplacements();
-		
+
 		/// <summary>
-		///		Update stiffness of this element.
+		///     Update stiffness of this element.
 		/// </summary>
 		void UpdateStiffness();
 
