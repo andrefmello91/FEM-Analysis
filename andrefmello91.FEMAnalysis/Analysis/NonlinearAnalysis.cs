@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
@@ -207,42 +208,23 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the tangent stiffness increment.
 		/// </summary>
-		/// <param name="currentStiffness">The stiffness matrix from current iteration.</param>
-		/// <param name="lastStiffness">The stiffness matrix from last iteration.</param>
+		/// <param name="currentInternalForces">The internal force vector from current iteration.</param>
+		/// <param name="lastInternalForces">The internal force vector from last iteration.</param>
 		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
 		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
 		/// <returns>
 		///     <see cref="Matrix{T}" />
 		/// </returns>
-		public static Matrix<double> TangentIncrement(Matrix<double> currentStiffness, Matrix<double> lastStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements)
+		public static Matrix<double> TangentIncrement(Vector<double> currentInternalForces, Vector<double> lastInternalForces, Vector<double> currentDisplacements, Vector<double> lastDisplacements)
 		{
-			// Get displacement variation
-			var du = currentDisplacements - lastDisplacements;
-
-			// Get stiffness variation
-			var dk = currentStiffness - lastStiffness;
-
-			var inc = Matrix<double>.Build.Dense(dk.RowCount, dk.ColumnCount);
-
-			// Increment elements of stiffness matrix
-			for (var i = 0; i < inc.RowCount; i++)
-			for (var j = 0; j < inc.ColumnCount; j++)
-			{
-				if (du[j] == 0)
-					continue;
-
-				for (var k = 0; k < inc.ColumnCount; k++)
-				{
-					if (dk[i, k] == 0)
-						continue;
-					
-					inc[i, j] += dk[i, k] / du[j] * currentDisplacements[k];
-				}
-			}
-
-			return inc;
+			// Get variations
+			var dF = currentInternalForces - lastInternalForces;
+			var dU = currentDisplacements  - lastDisplacements;
+			
+			return
+				dF.ToColumnMatrix() * dU.ToRowMatrix();
 		}
-
+		
 		/// <summary>
 		///     Calculate the force based convergence.
 		/// </summary>
@@ -303,10 +285,12 @@ namespace andrefmello91.FEMAnalysis
 				// For Newton-Raphson
 				default:
 					// Update stiffness in elements
-					// FemInput.Elements.UpdateStiffness();
+					FemInput.Elements.UpdateStiffness();
 
 					// Set new values
-					GlobalStiffness += TangentIncrement(CurrentSolution.Stiffness, LastSolution.Stiffness, CurrentSolution.Displacements, LastSolution.Displacements);
+					GlobalStiffness = FemInput.AssembleStiffness();
+					
+					// GlobalStiffness += TangentIncrement(CurrentSolution.InternalForces, LastSolution.InternalForces, CurrentSolution.Displacements, LastSolution.Displacements);
 
 					break;
 			}
@@ -371,15 +355,8 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private void Iterate()
 		{
-			// Clear iteration list
-			if ((int) CurrentLoadStep > 1)
-			{
-				var curSol = CurrentSolution.Clone();
-				var ongIt  = OngoingIteration.Clone();
-				_iterations.Clear();
-				_iterations.AddRange(new[] { curSol, ongIt });
-			}
-
+			ClearIterations();
+			
 			// Initiate first iteration
 			OngoingIteration.Number = 0;
 
@@ -396,7 +373,7 @@ namespace andrefmello91.FEMAnalysis
 				UpdateDisplacements();
 				UpdateStiffness();
 
-				if ((int) OngoingIteration == 15)
+				if ((int) OngoingIteration == 10)
 				{
 					
 				}
@@ -412,6 +389,22 @@ namespace andrefmello91.FEMAnalysis
 			} while (!IterativeStop());
 		}
 
+		/// <summary>
+		///		Clear the iterations lists.
+		/// </summary>
+		private void ClearIterations()
+		{
+			// Clear iteration list
+			if ((int) CurrentLoadStep <= 1 || (int) OngoingIteration < 3)
+				return;
+			
+			_iterations.RemoveRange(..^2);
+
+			// var curSol = CurrentSolution.Clone();
+			// var ongIt  = OngoingIteration.Clone();
+			// _iterations.AddRange(new[] { curSol, ongIt });
+
+		}
 		/// <summary>
 		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.
 		/// </summary>

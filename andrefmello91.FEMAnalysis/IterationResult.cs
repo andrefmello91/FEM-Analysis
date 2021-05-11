@@ -30,7 +30,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The internal force vector of this iteration.
 		/// </summary>
-		public Vector<double> InternalForces { get; private set; }
+		public Vector<double> InternalForces { get; set; }
 		
 		/// <summary>
 		///     The residual force vector of this iteration.
