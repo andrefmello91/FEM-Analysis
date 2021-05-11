@@ -1,4 +1,5 @@
-﻿using andrefmello91.Extensions;
+﻿using System.Collections.Generic;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace andrefmello91.FEMAnalysis
@@ -27,9 +28,14 @@ namespace andrefmello91.FEMAnalysis
 		public int Number { get; set; }
 
 		/// <summary>
+		///     The internal force vector of this iteration.
+		/// </summary>
+		public Vector<double> InternalForces { get; private set; }
+		
+		/// <summary>
 		///     The residual force vector of this iteration.
 		/// </summary>
-		public Vector<double> ResidualForces { get; set; }
+		public Vector<double> ResidualForces { get; private set; }
 
 		/// <summary>
 		///     The stiffness matrix of this iteration.
@@ -60,12 +66,31 @@ namespace andrefmello91.FEMAnalysis
 			Displacements  = displacements;
 			ResidualForces = residualForces;
 			Stiffness      = stiffness;
+			InternalForces = Vector<double>.Build.Dense(displacements.Count);
 		}
 
 		#endregion
 
 		#region Methods
 
+		/// <summary>
+		///     Calculate the convergence of this iteration.
+		/// </summary>
+		/// <param name="appliedForces">The applied forces of the current load step.</param>
+		public void CalculateConvergence(IEnumerable<double> appliedForces) =>
+			Convergence = NonlinearAnalysis.ForceConvergence(ResidualForces, appliedForces);
+
+		/// <summary>
+		///		Update forces in this iteration.
+		/// </summary>
+		/// <param name="appliedForces">The vector of applied forces of the current load step.</param>
+		/// <param name="internalForces">The vector of internal forces.</param>
+		public void UpdateForces(Vector<double> appliedForces, Vector<double> internalForces)
+		{
+			InternalForces = internalForces;
+			ResidualForces = internalForces - appliedForces;
+		}
+		
 		#region Interface Implementations
 
 		/// <inheritdoc />

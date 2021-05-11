@@ -136,13 +136,18 @@ namespace andrefmello91.FEMAnalysis
 		private IterationResult OngoingIteration => _iterations[^1];
 
 		/// <summary>
-		///     Get/set the residual force vector of current iteration.
+		///     Get/set the internal force vector of current iteration.
 		/// </summary>
-		private Vector<double> ResidualForces
+		private Vector<double> InternalForces
 		{
-			get => OngoingIteration.ResidualForces;
-			set => OngoingIteration.ResidualForces = value;
+			get => OngoingIteration.InternalForces;
+			set => OngoingIteration.UpdateForces(CurrentLoadStep.Forces, value);
 		}
+
+		/// <summary>
+		///     Get the residual force vector of current iteration.
+		/// </summary>
+		private Vector<double> ResidualForces => OngoingIteration.ResidualForces;
 
 		#endregion
 
@@ -227,7 +232,12 @@ namespace andrefmello91.FEMAnalysis
 					continue;
 
 				for (var k = 0; k < inc.ColumnCount; k++)
+				{
+					if (dk[i, k] == 0)
+						continue;
+					
 					inc[i, j] += dk[i, k] / du[j] * currentDisplacements[k];
+				}
 			}
 
 			return inc;
@@ -238,7 +248,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="residualForces">The residual forces of the current iteration.</param>
 		/// <param name="appliedForces">The applied forces of the current load step.</param>
-		private static double ForceConvergence(IEnumerable<double> residualForces, IEnumerable<double> appliedForces)
+		internal static double ForceConvergence(IEnumerable<double> residualForces, IEnumerable<double> appliedForces)
 		{
 			double
 				num = residualForces.Sum(n => n * n),
@@ -293,10 +303,10 @@ namespace andrefmello91.FEMAnalysis
 				// For Newton-Raphson
 				default:
 					// Update stiffness in elements
-					FemInput.Elements.UpdateStiffness();
+					// FemInput.Elements.UpdateStiffness();
 
 					// Set new values
-					GlobalStiffness = FemInput.AssembleStiffness();
+					GlobalStiffness += TangentIncrement(CurrentSolution.Stiffness, LastSolution.Stiffness, CurrentSolution.Displacements, LastSolution.Displacements);
 
 					break;
 			}
@@ -352,8 +362,8 @@ namespace andrefmello91.FEMAnalysis
 			// Calculate element forces
 			FemInput.Elements.CalculateForces();
 
-			// Update residual
-			UpdateResidual();
+			// Update internal forces
+			InternalForces = FemInput.AssembleInternalForces();
 		}
 
 		/// <summary>
@@ -386,14 +396,19 @@ namespace andrefmello91.FEMAnalysis
 				UpdateDisplacements();
 				UpdateStiffness();
 
-				// Calculate element forces
+				if ((int) OngoingIteration == 15)
+				{
+					
+				}
+					// Calculate element forces
 				FemInput.Elements.CalculateForces();
 
-				// Update residual
-				UpdateResidual();
+				// Update internal forces
+				InternalForces = FemInput.AssembleInternalForces();
 
-				// Check convergence or if analysis must stop
-				OngoingIteration.Convergence = ForceConvergence(OngoingIteration.ResidualForces, CurrentLoadStep.Forces);
+				// Calculate convergence
+				OngoingIteration.CalculateConvergence(CurrentLoadStep.Forces);
+				
 			} while (!IterativeStop());
 		}
 
@@ -494,11 +509,11 @@ namespace andrefmello91.FEMAnalysis
 			FemInput.Elements.UpdateDisplacements();
 		}
 
-		/// <summary>
-		///     Update residual force <see cref="Vector{T}" />.
-		/// </summary>
-		private void UpdateResidual() =>
-			ResidualForces = FemInput.AssembleInternalForces() - CurrentLoadStep.Forces;
+		// /// <summary>
+		// ///     Update residual force <see cref="Vector{T}" />.
+		// /// </summary>
+		// private void UpdateResidual() =>
+		// 	ResidualForces = FemInput.AssembleInternalForces() - CurrentLoadStep.Forces;
 
 		/// <summary>
 		///     Returns true if achieved convergence.
