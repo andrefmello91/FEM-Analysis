@@ -283,16 +283,20 @@ namespace andrefmello91.FEMAnalysis
 					break;
 
 				// For Newton-Raphson
-				default:
-					// Update stiffness in elements
-					FemInput.Elements.UpdateStiffness();
-
-					// Set new values
-					GlobalStiffness = FemInput.AssembleStiffness();
+				case NonLinearSolver.NewtonRaphson:
+				case NonLinearSolver.ModifiedNewtonRaphson when (int) OngoingIteration == 1:
+					// // Update stiffness in elements
+					// FemInput.Elements.UpdateStiffness();
+					//
+					// // Set new values
+					// GlobalStiffness = FemInput.AssembleStiffness();
 					
-					// GlobalStiffness += TangentIncrement(CurrentSolution.InternalForces, LastSolution.InternalForces, CurrentSolution.Displacements, LastSolution.Displacements);
+					GlobalStiffness += TangentIncrement(CurrentSolution.InternalForces, LastSolution.InternalForces, CurrentSolution.Displacements, LastSolution.Displacements);
 
 					break;
+				
+				default:
+					return;
 			}
 
 			// Simplify
