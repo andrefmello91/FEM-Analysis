@@ -285,13 +285,13 @@ namespace andrefmello91.FEMAnalysis
 				// For Newton-Raphson
 				case NonLinearSolver.NewtonRaphson:
 				case NonLinearSolver.ModifiedNewtonRaphson when (int) OngoingIteration == 1:
-					// // Update stiffness in elements
-					// FemInput.Elements.UpdateStiffness();
-					//
-					// // Set new values
-					// GlobalStiffness = FemInput.AssembleStiffness();
+					// Update stiffness in elements
+					FemInput.UpdateStiffness();
 					
-					GlobalStiffness += TangentIncrement(CurrentSolution.InternalForces, LastSolution.InternalForces, CurrentSolution.Displacements, LastSolution.Displacements);
+					// Set new values
+					GlobalStiffness = FemInput.AssembleStiffness();
+					
+					// GlobalStiffness += TangentIncrement(CurrentSolution.InternalForces, LastSolution.InternalForces, CurrentSolution.Displacements, LastSolution.Displacements);
 
 					break;
 				
@@ -313,10 +313,10 @@ namespace andrefmello91.FEMAnalysis
 			DisplacementVector = LastLoadStep.Displacements;
 			GlobalStiffness    = LastLoadStep.Stiffness;
 			FemInput.Grips.SetDisplacements(DisplacementVector);
-			FemInput.Elements.UpdateDisplacements();
+			FemInput.UpdateDisplacements();
 
 			// Calculate element forces
-			FemInput.Elements.CalculateForces();
+			FemInput.CalculateForces();
 		}
 
 		/// <summary>
@@ -345,10 +345,10 @@ namespace andrefmello91.FEMAnalysis
 
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
-			FemInput.Elements.UpdateDisplacements();
+			FemInput.UpdateDisplacements();
 
 			// Calculate element forces
-			FemInput.Elements.CalculateForces();
+			FemInput.CalculateForces();
 
 			// Update internal forces
 			InternalForces = FemInput.AssembleInternalForces();
@@ -382,7 +382,7 @@ namespace andrefmello91.FEMAnalysis
 					
 				}
 					// Calculate element forces
-				FemInput.Elements.CalculateForces();
+				FemInput.CalculateForces();
 
 				// Update internal forces
 				InternalForces = FemInput.AssembleInternalForces();
@@ -499,7 +499,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
-			FemInput.Elements.UpdateDisplacements();
+			FemInput.UpdateDisplacements();
 		}
 
 		/// <summary>
