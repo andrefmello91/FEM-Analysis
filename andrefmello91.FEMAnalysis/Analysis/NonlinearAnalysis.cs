@@ -160,14 +160,14 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="nonlinearInput">The <see cref="IFEMInput{INonlinearElement}" />.</param>
 		/// <param name="solver">The <see cref="NonLinearSolver" /> to use.</param>
 		/// <param name="numLoadSteps">The number of load steps to perform (default: 50).</param>
-		/// <param name="tolerance">The convergence tolerance (default: 1E-6).</param>
+		/// <param name="tolerance">The convergence tolerance (default: 1E-3).</param>
 		/// <param name="maxIterations">Maximum number of iterations for each load step (default: 10000).</param>
 		/// <param name="minIterations">Minimum number of iterations for each load step (default: 2).</param>
 		public NonlinearAnalysis(
 			IFEMInput<IFiniteElement> nonlinearInput,
 			NonLinearSolver solver = NonLinearSolver.NewtonRaphson,
 			int numLoadSteps = 50,
-			double tolerance = 1E-6,
+			double tolerance = 1E-3,
 			int maxIterations = 10000,
 			int minIterations = 2)
 			: base(nonlinearInput)
