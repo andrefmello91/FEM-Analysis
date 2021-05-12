@@ -198,11 +198,11 @@ namespace andrefmello91.FEMAnalysis
 		{
 			// Calculate the variation of displacements and residual as vectors
 			Vector<double>
-				dDisp = currentDisplacements - lastDisplacements,
-				dRes  = currentResidual - lastResidual;
+				dU = currentDisplacements - lastDisplacements,
+				dR = currentResidual - lastResidual;
 
 			return
-				((dRes - currentStiffness * dDisp) / dDisp.Norm(2)).ToColumnMatrix() * dDisp.ToRowMatrix();
+				((dR - currentStiffness * dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
 		}
 
 		/// <summary>
