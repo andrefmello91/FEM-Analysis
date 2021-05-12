@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using andrefmello91.Extensions;
@@ -11,7 +12,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Output data class.
 	/// </summary>
-	public class FEMOutput
+	public class FEMOutput : IEnumerable<MonitoredDisplacement>
 	{
 
 		#region Properties
@@ -51,6 +52,12 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <summary>
+		///		Get the <see cref="MonitoredDisplacement"/> at this <paramref name="index"/>.
+		/// </summary>
+		/// <param name="index">The zero based index.</param>
+		public MonitoredDisplacement this[int index] => MonitoredDisplacements[index];
+		
+		/// <summary>
 		///     Export output data to a csv file.
 		/// </summary>
 		/// <param name="outputPath">The output file save location.</param>
@@ -83,5 +90,10 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+		/// <inheritdoc />
+		public IEnumerator<MonitoredDisplacement> GetEnumerator() => MonitoredDisplacements.GetEnumerator();
+
+		/// <inheritdoc />
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 }
