@@ -42,10 +42,10 @@ namespace andrefmello91.FEMAnalysis
 			FemInput.Grips.SetDisplacements(DisplacementVector);
 
 			// Update element displacements
-			FemInput.Elements.UpdateDisplacements();
+			FemInput.UpdateDisplacements();
 
 			// Calculate element forces
-			FemInput.Elements.CalculateForces();
+			FemInput.CalculateForces();
 
 			// Set Reactions
 			FemInput.Grips.SetReactions(GetReactions());

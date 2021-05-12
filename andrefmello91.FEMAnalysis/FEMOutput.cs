@@ -12,7 +12,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Output data class.
 	/// </summary>
-	public class FEMOutput : IEnumerable<MonitoredDisplacement>
+	public class FEMOutput : List<MonitoredDisplacement>
 	{
 
 		#region Properties
@@ -21,11 +21,6 @@ namespace andrefmello91.FEMAnalysis
 		///     Values of calcultated load step results.
 		/// </summary>
 		public List<LoadStepResult> LoadStepResults { get; }
-
-		/// <summary>
-		///     Values of monitored displacements.
-		/// </summary>
-		public List<MonitoredDisplacement> MonitoredDisplacements { get; }
 
 		#endregion
 
@@ -36,14 +31,10 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="loadStepResults">The values of load step results.</param>
 		public FEMOutput([NotNull] IEnumerable<LoadStepResult> loadStepResults)
+			: base (loadStepResults.Where(ls => ls.MonitoredDisplacement.HasValue).Select(ls => ls.MonitoredDisplacement!.Value))
 		{
 			LoadStepResults = loadStepResults
 				.Where(ls => ls.IsCalculated)
-				.ToList();
-
-			MonitoredDisplacements = LoadStepResults
-				.Where(ls => ls.MonitoredDisplacement.HasValue)
-				.Select(ls => ls.MonitoredDisplacement!.Value)
 				.ToList();
 		}
 
@@ -51,12 +42,6 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Methods
 
-		/// <summary>
-		///		Get the <see cref="MonitoredDisplacement"/> at this <paramref name="index"/>.
-		/// </summary>
-		/// <param name="index">The zero based index.</param>
-		public MonitoredDisplacement this[int index] => MonitoredDisplacements[index];
-		
 		/// <summary>
 		///     Export output data to a csv file.
 		/// </summary>
@@ -67,11 +52,11 @@ namespace andrefmello91.FEMAnalysis
 		public void Export(string outputPath, string fileName = "FEM_Output", LengthUnit unit = LengthUnit.Millimeter, string delimiter = ";")
 		{
 			// Get displacements and load factors as vectors
-			var disps = MonitoredDisplacements
+			var disps = this
 				.Select(m => m.Displacement.ToUnit(unit).Value)
 				.ToVector();
 
-			var lfs = MonitoredDisplacements
+			var lfs = this
 				.Select(m => m.LoadFactor)
 				.ToVector();
 
@@ -89,11 +74,5 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		#endregion
-
-		/// <inheritdoc />
-		public IEnumerator<MonitoredDisplacement> GetEnumerator() => MonitoredDisplacements.GetEnumerator();
-
-		/// <inheritdoc />
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 }

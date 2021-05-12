@@ -12,7 +12,7 @@ namespace andrefmello91.FEMAnalysis
 	///     Finite element input class.
 	/// </summary>
 	/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement" />.</typeparam>
-	public interface IFEMInput<TFiniteElement> : IEnumerable<TFiniteElement>
+	public interface IFEMInput<out TFiniteElement> : IEnumerable<TFiniteElement>
 		where TFiniteElement : IFiniteElement
 	{
 
@@ -22,11 +22,6 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the index of constrained degrees of freedom.
 		/// </summary>
 		public List<int> ConstraintIndex { get; }
-
-		/// <summary>
-		///     Get the elements of the finite element model.
-		/// </summary>
-		public List<TFiniteElement> Elements { get; }
 
 		/// <summary>
 		///     Get the external force <see cref="Vector" />.
@@ -54,7 +49,7 @@ namespace andrefmello91.FEMAnalysis
 	///     Default finite element input class.
 	/// </summary>
 	/// <inheritdoc cref="IFEMInput{TFiniteElement}" />
-	public class FEMInput<TFiniteElement> : IFEMInput<TFiniteElement>
+	public class FEMInput<TFiniteElement> : List<TFiniteElement>, IFEMInput<TFiniteElement>
 		where TFiniteElement : IFiniteElement
 	{
 
@@ -64,9 +59,6 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public List<int> ConstraintIndex { get; }
-
-		/// <inheritdoc />
-		public List<TFiniteElement> Elements { get; }
 
 		/// <inheritdoc />
 		public Vector<double> ForceVector { get; }
@@ -98,8 +90,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="elements">The collection containing all distinct <see cref="IFiniteElement" />'s in the model.</param>
 		/// <param name="grips">The collection containing all distinct <see cref="IGrip" />'s in the model.</param>
 		public FEMInput(IEnumerable<TFiniteElement> elements, IEnumerable<IGrip> grips)
+			: base(elements)
 		{
-			Elements        = elements.ToList();
 			Grips           = grips.ToList();
 			NumberOfDoFs    = 2 * Grips.Count;
 			ForceVector     = Grips.AssembleForceVector();
@@ -112,24 +104,12 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Object override
 
-		/// <summary>
-		///		Get the finite element at this <see cref="index"/>.
-		/// </summary>
-		/// <param name="index">The zero based index.</param>
-		public TFiniteElement this[int index] => Elements[index];
-		
-		/// <inheritdoc />
-		public IEnumerator<TFiniteElement> GetEnumerator() => Elements.GetEnumerator();
-
 		/// <inheritdoc />
 		public override string ToString() =>
+			$"Number of elements: {Count}\n" +
 			$"Number of grips: {Grips.Count}\n" +
-			$"Number of elements: {Elements.Count}\n" +
 			$"Force vector: \n{ForceVector}\n" +
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
-
-		/// <inheritdoc />
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		#endregion
 
