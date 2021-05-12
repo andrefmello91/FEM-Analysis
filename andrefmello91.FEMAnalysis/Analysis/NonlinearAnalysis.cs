@@ -373,7 +373,7 @@ namespace andrefmello91.FEMAnalysis
 				UpdateDisplacements();
 				UpdateStiffness();
 
-				if ((int) OngoingIteration == 10)
+				if ((int) OngoingIteration == 50)
 				{
 					
 				}
@@ -392,19 +392,15 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Clear the iterations lists.
 		/// </summary>
-		private void ClearIterations()
+		protected virtual void ClearIterations()
 		{
 			// Clear iteration list
-			if ((int) CurrentLoadStep <= 1 || (int) OngoingIteration < 3)
+			if ((int) CurrentLoadStep <= 1 || (int) OngoingIteration < 4)
 				return;
 			
 			_iterations.RemoveRange(..^2);
-
-			// var curSol = CurrentSolution.Clone();
-			// var ongIt  = OngoingIteration.Clone();
-			// _iterations.AddRange(new[] { curSol, ongIt });
-
 		}
+		
 		/// <summary>
 		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.
 		/// </summary>
@@ -501,12 +497,6 @@ namespace andrefmello91.FEMAnalysis
 			FemInput.Grips.SetDisplacements(DisplacementVector);
 			FemInput.Elements.UpdateDisplacements();
 		}
-
-		// /// <summary>
-		// ///     Update residual force <see cref="Vector{T}" />.
-		// /// </summary>
-		// private void UpdateResidual() =>
-		// 	ResidualForces = FemInput.AssembleInternalForces() - CurrentLoadStep.Forces;
 
 		/// <summary>
 		///     Returns true if achieved convergence.

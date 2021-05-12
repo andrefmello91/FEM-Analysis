@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
@@ -11,7 +12,7 @@ namespace andrefmello91.FEMAnalysis
 	///     Finite element input class.
 	/// </summary>
 	/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement" />.</typeparam>
-	public interface IFEMInput<TFiniteElement>
+	public interface IFEMInput<TFiniteElement> : IEnumerable<TFiniteElement>
 		where TFiniteElement : IFiniteElement
 	{
 
@@ -111,12 +112,24 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Object override
 
+		/// <summary>
+		///		Get the finite element at this <see cref="index"/>.
+		/// </summary>
+		/// <param name="index">The zero based index.</param>
+		public TFiniteElement this[int index] => Elements[index];
+		
+		/// <inheritdoc />
+		public IEnumerator<TFiniteElement> GetEnumerator() => Elements.GetEnumerator();
+
 		/// <inheritdoc />
 		public override string ToString() =>
 			$"Number of grips: {Grips.Count}\n" +
 			$"Number of elements: {Elements.Count}\n" +
 			$"Force vector: \n{ForceVector}\n" +
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
+
+		/// <inheritdoc />
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		#endregion
 

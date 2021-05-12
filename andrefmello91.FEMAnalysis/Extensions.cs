@@ -126,7 +126,7 @@ namespace andrefmello91.FEMAnalysis
 		{
 			var iForces = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
 
-			iForces.AddInternalForces(femInput.Elements);
+			iForces.AddInternalForces(femInput);
 
 			if (!simplify)
 				return iForces;
@@ -147,7 +147,7 @@ namespace andrefmello91.FEMAnalysis
 			var n         = femInput.NumberOfDoFs;
 			var stiffness = Matrix<double>.Build.Dense(n, n);
 
-			stiffness.AddStiffness(femInput.Elements);
+			stiffness.AddStiffness(femInput);
 
 			return stiffness;
 		}
