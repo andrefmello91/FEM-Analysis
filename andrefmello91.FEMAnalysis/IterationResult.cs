@@ -13,14 +13,24 @@ namespace andrefmello91.FEMAnalysis
 		#region Properties
 
 		/// <summary>
-		///     The convergence of this iteration.
+		///     The force convergence of this iteration.
 		/// </summary>
-		public double Convergence { get; set; }
+		public double ForceConvergence { get; private set; }
+		
+		/// <summary>
+		///     The displacement convergence of this iteration.
+		/// </summary>
+		public double DisplacementConvergence { get; private set; }
 
 		/// <summary>
 		///     The displacement vector of this iteration.
 		/// </summary>
 		public Vector<double> Displacements { get; set; }
+		
+		/// <summary>
+		///     The displacement increment vector of this iteration.
+		/// </summary>
+		public Vector<double> DisplacementIncrement { get; set; }
 
 		/// <summary>
 		///     The number of this iteration.
@@ -76,14 +86,21 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the convergence of this iteration.
 		/// </summary>
-		/// <param name="appliedForces">The applied forces of the current load step.</param>
-		public void CalculateConvergence(IEnumerable<double> appliedForces) =>
-			Convergence = NonlinearAnalysis.ForceConvergence(ResidualForces, appliedForces);
+		/// <param name="appliedForces">The applied forces of the current step.</param>
+		public void CalculateForceConvergence(IEnumerable<double> appliedForces) =>
+			ForceConvergence = NonlinearAnalysis.CalculateConvergence(ResidualForces, appliedForces);
+		
+		/// <summary>
+		///     Calculate the displacement convergence of this iteration.
+		/// </summary>
+		/// <param name="initialIncrement">The displacement increment of the first iteration.</param>
+		public void CalculateDisplacementConvergence(IEnumerable<double> initialIncrement) =>
+			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
 
 		/// <summary>
 		///		Update forces in this iteration.
 		/// </summary>
-		/// <param name="appliedForces">The vector of applied forces of the current load step.</param>
+		/// <param name="appliedForces">The vector of applied forces of the current step.</param>
 		/// <param name="internalForces">The vector of internal forces.</param>
 		public void UpdateForces(Vector<double> appliedForces, Vector<double> internalForces)
 		{
