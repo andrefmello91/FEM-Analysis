@@ -32,11 +32,15 @@ namespace andrefmello91.FEMAnalysis
 			// Set force vector
 			ForceVector = FemInput.ForceVector * loadFactor;
 
-			// Assemble and simplify global stiffness and force vector
+			// Assemble stiffness
 			UpdateStiffness();
-
+			
+			// Simplify global stiffness and force vector
+			var stiffness = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex);
+			var forces    = SimplifiedForces(ForceVector, FemInput.ConstraintIndex);
+			
 			// Solve
-			DisplacementVector = CalculateDisplacements(GlobalStiffness!, ForceVector)!;
+			DisplacementVector = CalculateDisplacements(stiffness, forces)!;
 
 			// Set displacements to grips
 			FemInput.Grips.SetDisplacements(DisplacementVector);
