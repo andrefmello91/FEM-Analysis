@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.Statistics;
 using UnitsNet;
+using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -33,6 +35,11 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private int _monitoredIndex;
 
+		/// <summary>
+		///		The value and index of the maximum force.
+		/// </summary>
+		private (double Value, int Index) _maxForce;
+		
 		/// <summary>
 		///		The vector of displacement increments for displacement control.
 		/// </summary>
@@ -129,7 +136,6 @@ namespace andrefmello91.FEMAnalysis
 		/// </remarks>
 		public double DisplacementTolerance { get; set; } = 1E-8;
 
-		
 		/// <summary>
 		///		Get/set the type of analysis control.
 		/// </summary>
@@ -162,7 +168,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private double LoadFactor => Control is AnalysisControl.Force 
 			? (double) (int) CurrentStep / NumberOfSteps
-			: InternalForces[_monitoredIndex] / ForceVector![_monitoredIndex];
+			: CurrentStep.Forces[_maxForce.Index] / _maxForce.Value;
 
 		/// <summary>
 		///     The results of the ongoing iteration.
@@ -187,6 +193,14 @@ namespace andrefmello91.FEMAnalysis
 		///		Get the displacement increment for the first iteration of the current step.
 		/// </summary>
 		private Vector<double> FirstIncrement => _iterations.Find(i => (int) i == 1)!.DisplacementIncrement;
+		
+		/// <summary>
+		///		The lenght increment for each step.
+		/// </summary>
+		/// <remarks>
+		///		Default: 0.001 mm
+		/// </remarks>
+		public Length Increment { get; set; } = Length.FromMillimeters(1E-2);
 		
 		#endregion
 
@@ -350,12 +364,21 @@ namespace andrefmello91.FEMAnalysis
 
 			// Initiate lists solution values
 			_steps.Clear();
-			_steps.Add(new StepResult(ForceVector / NumberOfSteps, 1));
-
+			_steps.Add(new StepResult(FemInput.NumberOfDoFs, 1));
+			
 			_iterations.Clear();
 			for (var i = 0; i < 3; i++)
 				_iterations.Add(new IterationResult(FemInput.NumberOfDoFs));
 
+			// Get maximum force
+			_maxForce = (ForceVector!.AbsoluteMaximum(), ForceVector!.AbsoluteMaximumIndex());
+
+			// Get displacement increment
+			_displacementIncrement = DisplacementIncrement();
+
+			// Get initial forces
+			CurrentStep.Forces = GetStepForces();
+			
 			// Get the initial stiffness and force vector simplified
 			GlobalStiffness = FemInput.AssembleStiffness();
 			var stiffness = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex);
@@ -363,9 +386,6 @@ namespace andrefmello91.FEMAnalysis
 			
 			// Calculate initial displacements
 			DisplacementVector = stiffness.Solve(fi);
-
-			// Get displacement increment
-			_displacementIncrement = DisplacementIncrement();
 			
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
@@ -373,7 +393,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Calculate element forces
 			FemInput.CalculateForces();
-
+			
 			// Update internal forces
 			InternalForces = FemInput.AssembleInternalForces();
 		}
@@ -387,12 +407,12 @@ namespace andrefmello91.FEMAnalysis
 
 			if (Control is AnalysisControl.Force)
 				return d;
-
-			// Set increments
+		
+			// Set the increment
 			for (int i = 0; i < d.Count; i++)
 				if (!FemInput.ConstraintIndex.Contains(i) && ForceVector[i] != 0)
 				{
-					d[i] = DisplacementVector![i];
+					d[i] = Increment.Millimeters * ForceVector[i] / _maxForce.Value;
 					KnownDisplacementIndex.Add(i);
 				}
 
@@ -417,7 +437,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Increase iteration count
 				OngoingIteration.Number++;
-
+				
 				// Update stiffness and displacements
 				UpdateDisplacements();
 				UpdateStiffness();
@@ -426,7 +446,7 @@ namespace andrefmello91.FEMAnalysis
 				FemInput.CalculateForces();
 
 				// Update internal forces
-				InternalForces = FemInput.AssembleInternalForces();
+				InternalForces = GetInternalForces();
 
 				// Calculate convergence
 				OngoingIteration.CalculateForceConvergence(CurrentStep.Forces);
@@ -445,6 +465,23 @@ namespace andrefmello91.FEMAnalysis
 				return;
 			
 			_iterations.RemoveRange(..^2);
+		}
+
+		/// <summary>
+		///		Get the internal force vector.
+		/// </summary>
+		private Vector<double> GetInternalForces()
+		{
+			var fi = FemInput.AssembleInternalForces();
+
+			if (Control is AnalysisControl.Force)
+				return fi;
+
+			// Simplify where displacement is known
+			foreach (var i in KnownDisplacementIndex)
+				fi[i] = 0;
+
+			return fi;
 		}
 		
 		/// <summary>
@@ -494,6 +531,24 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
+		///		Set monitored 
+		/// </summary>
+		private void SetMonitoredDisplacements()
+		{
+			var i = _monitoredIndex;
+			
+			// Get maximum external force
+			var maxForce = _steps.Select(s => s.Forces[i]).MaximumAbsolute();
+
+			foreach (var step in _steps)
+			{
+				var loadFactor   = step.Forces[i] / maxForce;
+				var displacement = (Length) step.Displacements[i].As(LengthUnit.Millimeter);
+				step.MonitoredDisplacement = new MonitoredDisplacement(displacement, loadFactor);
+			}
+		}
+		
+		/// <summary>
 		///     Execute step by step analysis.
 		/// </summary>
 		/// <param name="simulate">Set true to execute analysis until convergence is not achieved (structural failure).</param>
@@ -535,13 +590,20 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private Vector<double> GetStepForces()
 		{
-			var f = Control switch
+			switch (Control)
 			{
-				AnalysisControl.Displacement => GlobalStiffness! * ((int) CurrentStep * _displacementIncrement),
-				_                            => LoadFactor * ForceVector
-			};
+				case AnalysisControl.Displacement:
+					// Get the equivalent forces
+					var di = CurrentStep.Displacements + _displacementIncrement;
+					// var fi = GlobalStiffness! * di;
 
-			return SimplifiedForces(f, FemInput.ConstraintIndex);
+					return
+						SimplifiedForces(Vector<double>.Build.Dense(di.Count), FemInput.ConstraintIndex, GlobalStiffness!, di);
+
+				default:
+					return
+						SimplifiedForces(LoadFactor * ForceVector, FemInput.ConstraintIndex);
+			}
 		}
 
 		/// <summary>
@@ -550,11 +612,22 @@ namespace andrefmello91.FEMAnalysis
 		private void UpdateDisplacements()
 		{
 			// Get simplified stiffness
-			var stiffness = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex);
+			var index = Control is AnalysisControl.Force
+				? FemInput.ConstraintIndex
+				: FemInput.ConstraintIndex
+					.Concat(KnownDisplacementIndex)
+					.ToList();
+		
+			var stiffness = SimplifiedStiffness(GlobalStiffness!, index, false);
+			
+			// Simplify residual
+			var residual = Control is AnalysisControl.Force
+				? CurrentSolution.ResidualForces
+				: InternalForces;
 			
 			// Increment displacements
-			OngoingIteration.DisplacementIncrement =  stiffness.Solve(CurrentSolution.ResidualForces);
-			DisplacementVector                     -= OngoingIteration.DisplacementIncrement;
+			OngoingIteration.DisplacementIncrement =  -stiffness.Solve(residual);
+			DisplacementVector                     += OngoingIteration.DisplacementIncrement;
 
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);

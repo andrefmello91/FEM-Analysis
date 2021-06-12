@@ -137,8 +137,9 @@ namespace andrefmello91.FEMAnalysis
 		///  <param name="appliedDisplacements">The vector of known applied displacements.</param>
 		public static Vector<double> SimplifiedForces(Vector<double> forceVector, IEnumerable<int> constraintIndexes, Matrix<double> stiffness, Vector<double> appliedDisplacements)
 		{
-			// Simplify by contraints
-			var simplifiedForces = SimplifiedForces(forceVector, constraintIndexes);
+			// Simplify by constraints
+			var simplifiedForces = forceVector.Clone();
+			var knownDispIndex   = new List<int>();
 			
 			// Clear the row in the force vector
 			for (int i = 0; i < appliedDisplacements.Count; i++)
@@ -148,11 +149,19 @@ namespace andrefmello91.FEMAnalysis
 				if (di.ApproxZero())
 					continue;
 				
+				// Add to known displacement index
+				knownDispIndex.Add(i);
+				
 				// Subtract equivalent forces from force vector
 				simplifiedForces -= stiffness.Column(i) * di;
 			}
 
-			return simplifiedForces;
+			// Set displacements to force vector
+			foreach (var i in knownDispIndex)
+				simplifiedForces[i] = appliedDisplacements[i];
+			
+
+			return SimplifiedForces(simplifiedForces, constraintIndexes);
 		}
 		
 		/// <summary>
