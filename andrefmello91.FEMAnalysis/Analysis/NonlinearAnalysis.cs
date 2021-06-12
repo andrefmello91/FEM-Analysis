@@ -38,6 +38,11 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private Vector<double> FirstIncrement => _iterations.Find(i => (int) i == 1)!.DisplacementIncrement;
 
+		/// <summary>
+		///		The initial parameter for calculating the current stiffness parameter.
+		/// </summary>
+		private double _k0;
+		
 		#endregion
 
 		#region Properties
@@ -152,9 +157,9 @@ namespace andrefmello91.FEMAnalysis
 		private IterationResult LastSolution => _iterations[^3];
 
 		/// <summary>
-		///     Get the load factor of the current iteration.
+		///     Get the load factor of the current step.
 		/// </summary>
-		private double LoadFactor => (double) (int) CurrentStep / NumberOfSteps;
+		private double LoadFactor { get; set; }
 
 		/// <summary>
 		///     The results of the ongoing iteration.
@@ -337,10 +342,11 @@ namespace andrefmello91.FEMAnalysis
 		private void Initiate(int? monitoredIndex)
 		{
 			_monitoredIndex = monitoredIndex;
-
+			LoadFactor      = StepIncrement(false);
+			
 			// Initiate lists solution values
 			_steps.Clear();
-			_steps.Add(new StepResult(ForceVector / NumberOfSteps, 1));
+			_steps.Add(new StepResult(LoadFactor * ForceVector, 1));
 
 			_iterations.Clear();
 			for (var i = 0; i < 3; i++)
@@ -368,13 +374,20 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Iterate to find solution.
 		/// </summary>
-		private void Iterate()
+		/// <inheritdoc cref="StepAnalysis"/>
+		private void Iterate(bool simulate)
 		{
 			ClearIterations();
-			
+
+			// Add iteration
+			_iterations.Add(OngoingIteration.Clone());
+
 			// Initiate first iteration
 			OngoingIteration.Number = 0;
 
+			// Do initial steps
+			PredictorStep(simulate);
+			
 			// Iterate
 			do
 			{
@@ -403,6 +416,45 @@ namespace andrefmello91.FEMAnalysis
 				OngoingIteration.CalculateDisplacementConvergence(FirstIncrement);
 
 			} while (!IterativeStop());
+		}
+
+		/// <summary>
+		///		Steps to perform at the beginning of a load step.
+		/// </summary>
+		/// <inheritdoc cref="StepAnalysis"/>
+		private void PredictorStep(bool simulate)
+		{
+			// Increment load step
+			if ((int) CurrentStep > 1)
+				LoadFactor += StepIncrement(simulate);
+				
+			// Get the force vector
+			CurrentStep.Forces = LoadFactor * ForceVector;
+
+			if (!simulate)
+				return;
+			
+			// Calculate the initial increment
+			OngoingIteration.DisplacementIncrement = GlobalStiffness!.Solve(CurrentStep.Forces);
+
+		}
+
+		/// <summary>
+		///		Calculate the current stiffness parameter for defining the load increment.
+		/// </summary>
+		private double CurrentStiffnessParameter()
+		{
+			var inc = OngoingIteration.DisplacementIncrement;
+
+			var k = (CurrentStep.Forces.ToRowMatrix() * inc)[0] / (inc.ToRowMatrix() * inc)[0];
+
+			if ((int) CurrentStep > 1)
+				return k / _k0;
+			
+			// Set initial
+			_k0 = k;
+			
+			return 1;
 		}
 
 		/// <summary>
@@ -478,11 +530,8 @@ namespace andrefmello91.FEMAnalysis
 			// Step-by-step analysis
 			do
 			{
-				// Get the force vector
-				CurrentStep.Forces = LoadFactor * ForceVector;
-
 				// Iterate
-				Iterate();
+				Iterate(simulate);
 
 				// Verify if convergence was not reached
 				if (Stop)
@@ -502,6 +551,12 @@ namespace andrefmello91.FEMAnalysis
 			CorrectResults();
 		}
 
+		/// <summary>
+		///		Get the step increment.
+		/// </summary>
+		/// <inheritdoc cref="StepAnalysis"/>
+		private double StepIncrement(bool simulate) => 1D / NumberOfSteps;
+		
 		/// <summary>
 		///     Update displacements.
 		/// </summary>
