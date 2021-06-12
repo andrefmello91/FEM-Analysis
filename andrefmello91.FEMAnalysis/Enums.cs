@@ -36,4 +36,27 @@
 		/// </summary>
 		Secant
 	}
+	
+	/// <summary>
+	///     Types of nonlinear analysis control.
+	/// </summary>
+	public enum AnalysisControl
+	{
+		/// <summary>
+		///     Control the analysis by increasing the applied forces.
+		/// </summary>
+		/// <remarks>
+		///     This cannot predict the full response of the model.
+		/// </remarks>
+		Force,
+
+		/// <summary>
+		///     Control the analysis by increasing the displacements.
+		/// </summary>
+		/// <remarks>
+		///     This can predict the full response of the model.
+		/// </remarks>
+		Displacement
+	}
+
 }
