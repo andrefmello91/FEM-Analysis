@@ -396,11 +396,7 @@ namespace andrefmello91.FEMAnalysis
 				UpdateDisplacements();
 				UpdateStiffness();
 
-				if ((int) OngoingIteration == 50)
-				{
-					
-				}
-					// Calculate element forces
+				// Calculate element forces
 				FemInput.CalculateForces();
 
 				// Update internal forces
