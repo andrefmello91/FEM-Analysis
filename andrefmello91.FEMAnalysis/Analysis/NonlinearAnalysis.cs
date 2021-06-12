@@ -172,7 +172,7 @@ namespace andrefmello91.FEMAnalysis
 		private Vector<double> InternalForces
 		{
 			get => OngoingIteration.InternalForces;
-			set => OngoingIteration.UpdateForces(CurrentStep.Forces, value);
+			set => OngoingIteration.UpdateForces(SimplifiedForces(CurrentStep.Forces, FemInput.ConstraintIndex), value);
 		}
 
 		/// <summary>
@@ -288,8 +288,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
 		/// </summary>
-		/// <param name="simplify">Simplify stiffness?</param>
-		protected override void UpdateStiffness(bool simplify = true)
+		protected override void UpdateStiffness()
 		{
 			switch (Solver)
 			{
@@ -314,10 +313,6 @@ namespace andrefmello91.FEMAnalysis
 				default:
 					return;
 			}
-
-			// Simplify
-			if (simplify)
-				Simplify(GlobalStiffness, null, FemInput.ConstraintIndex);
 		}
 
 		/// <summary>
@@ -354,11 +349,11 @@ namespace andrefmello91.FEMAnalysis
 
 			// Get the initial stiffness and force vector simplified
 			GlobalStiffness = FemInput.AssembleStiffness();
-			Simplify(GlobalStiffness, ForceVector, FemInput.ConstraintIndex);
+			var stiffness = SimplifiedStiffness(GlobalStiffness, FemInput.ConstraintIndex);
 
 			// Calculate initial displacements
-			var fi = CurrentStep.Forces;
-			DisplacementVector = GlobalStiffness!.Solve(fi);
+			var fi = SimplifiedForces(CurrentStep.Forces, FemInput.ConstraintIndex);
+			DisplacementVector = stiffness.Solve(fi);
 
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(DisplacementVector);
@@ -435,7 +430,9 @@ namespace andrefmello91.FEMAnalysis
 				return;
 			
 			// Calculate the initial increment
-			OngoingIteration.DisplacementIncrement = GlobalStiffness!.Solve(CurrentStep.Forces);
+			var stiffness = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex);
+			var f0        = SimplifiedForces(CurrentStep.Forces, FemInput.ConstraintIndex);
+			OngoingIteration.DisplacementIncrement = stiffness.Solve(f0);
 
 		}
 
@@ -563,7 +560,8 @@ namespace andrefmello91.FEMAnalysis
 		private void UpdateDisplacements()
 		{
 			// Increment displacements
-			OngoingIteration.DisplacementIncrement = -GlobalStiffness!.Solve(CurrentSolution.ResidualForces);
+			var stiffness = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex);
+			OngoingIteration.DisplacementIncrement = -stiffness.Solve(CurrentSolution.ResidualForces);
 			DisplacementVector                     += OngoingIteration.DisplacementIncrement;
 
 			// Update displacements in grips and elements
