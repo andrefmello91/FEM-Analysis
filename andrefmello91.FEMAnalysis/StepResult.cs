@@ -1,4 +1,5 @@
-﻿using andrefmello91.Extensions;
+﻿using System.Collections.Generic;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace andrefmello91.FEMAnalysis
@@ -6,7 +7,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Class for step results.
 	/// </summary>
-	public class StepResult : ICloneable<StepResult>
+	public class StepResult : List<IterationResult>, ICloneable<StepResult>
 	{
 
 		#region Properties
@@ -45,7 +46,7 @@ namespace andrefmello91.FEMAnalysis
 		///     The stiffness matrix of this step.
 		/// </summary>
 		public Matrix<double> Stiffness { get; set; }
-
+		
 		#endregion
 
 		#region Constructors
@@ -103,6 +104,44 @@ namespace andrefmello91.FEMAnalysis
 		///     <see cref="StepResult.Number" />
 		/// </returns>
 		public static explicit operator int(StepResult stepResult) => stepResult.Number;
+
+		/// <summary>
+		///		Check the step number.
+		/// </summary>
+		/// <returns>
+		///		True if the step number is equal to the right number.
+		/// </returns>
+		public static bool operator ==(StepResult left, int right) => left.Number == right;
+
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the step number is not equal to the right number.
+		/// </returns>
+		public static bool operator !=(StepResult left, int right) => left.Number != right;
+
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the step number is bigger than the right number.
+		/// </returns>
+		public static bool operator >(StepResult left, int right) => left.Number > right;
+
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the step number is smaller than the right number.
+		/// </returns>
+		public static bool operator <(StepResult left, int right) => left.Number < right;
+		
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the step number is bigger or equal to the right number.
+		/// </returns>
+		public static bool operator >=(StepResult left, int right) => left.Number >= right;
+
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the step number is smaller or equal to the right number.
+		/// </returns>
+		public static bool operator <=(StepResult left, int right) => left.Number <= right;
 
 		#endregion
 

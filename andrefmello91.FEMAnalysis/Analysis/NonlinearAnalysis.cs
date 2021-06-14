@@ -16,14 +16,6 @@ namespace andrefmello91.FEMAnalysis
 		#region Fields
 
 		/// <summary>
-		///     The list of iteration results.
-		/// </summary>
-		/// <remarks>
-		///     This is cleaned at the beginning of a step.
-		/// </remarks>
-		private readonly List<IterationResult> _iterations = new();
-
-		/// <summary>
 		///     The list of step results.
 		/// </summary>
 		private readonly List<StepResult> _steps = new();
@@ -36,7 +28,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Get the displacement increment for the first iteration of the current step.
 		/// </summary>
-		private Vector<double> FirstIncrement => _iterations.Find(i => (int) i == 1)!.DisplacementIncrement;
+		private Vector<double> FirstIncrement => CurrentStep.Find(i => (int) i == 1)!.DisplacementIncrement;
 
 		/// <summary>
 		///		The initial parameter for calculating the current stiffness parameter.
@@ -46,6 +38,27 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Properties
+
+		/// <summary>
+		///     The results of the ongoing iteration.
+		/// </summary>
+		public IterationResult OngoingIteration => CurrentStep.Any()
+			? CurrentStep[^1]
+			: LastStep[^1];
+
+		/// <summary>
+		///     The results of the current solution (last solved iteration [i - 1]).
+		/// </summary>
+		public IterationResult CurrentSolution => CurrentStep.Count > 1
+			? CurrentStep[^2]
+			: LastStep[^1];
+
+		/// <summary>
+		///     The results of the last solution (penultimate solved iteration [i - 2]).
+		/// </summary>
+		public IterationResult LastSolution => CurrentStep.Count > 2
+			? CurrentStep[^3]
+			: LastStep[^3];
 
 		/// <inheritdoc />
 		/// <remarks>
@@ -139,10 +152,6 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private StepResult CurrentStep => _steps[^1];
 
-		/// <summary>
-		///     The results of the current solution (last solved iteration [i - 1]).
-		/// </summary>
-		private IterationResult CurrentSolution => _iterations[^2];
 
 		/// <summary>
 		///     The last step result.
@@ -152,19 +161,9 @@ namespace andrefmello91.FEMAnalysis
 			: CurrentStep;
 
 		/// <summary>
-		///     The results of the last solution (penultimate solved iteration [i - 2]).
-		/// </summary>
-		private IterationResult LastSolution => _iterations[^3];
-
-		/// <summary>
 		///     Get the load factor of the current step.
 		/// </summary>
 		private double LoadFactor { get; set; }
-
-		/// <summary>
-		///     The results of the ongoing iteration.
-		/// </summary>
-		private IterationResult OngoingIteration => _iterations[^1];
 
 		/// <summary>
 		///     Get/set the internal force vector of current iteration.
@@ -343,9 +342,8 @@ namespace andrefmello91.FEMAnalysis
 			_steps.Clear();
 			_steps.Add(new StepResult(LoadFactor * ForceVector, 1));
 
-			_iterations.Clear();
 			for (var i = 0; i < 3; i++)
-				_iterations.Add(new IterationResult(FemInput.NumberOfDoFs));
+				CurrentStep.Add(new IterationResult(FemInput.NumberOfDoFs));
 
 			// Get the initial stiffness and force vector simplified
 			GlobalStiffness = FemInput.AssembleStiffness();
@@ -372,10 +370,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="StepAnalysis"/>
 		private void Iterate(bool simulate)
 		{
-			ClearIterations();
-
 			// Add iteration
-			_iterations.Add(OngoingIteration.Clone());
+			CurrentStep.Add(OngoingIteration.Clone());
 
 			// Initiate first iteration
 			OngoingIteration.Number = 0;
@@ -387,7 +383,7 @@ namespace andrefmello91.FEMAnalysis
 			do
 			{
 				// Add iteration
-				_iterations.Add(OngoingIteration.Clone());
+				CurrentStep.Add(OngoingIteration.Clone());
 
 				// Increase iteration count
 				OngoingIteration.Number++;
@@ -416,7 +412,7 @@ namespace andrefmello91.FEMAnalysis
 		private void PredictorStep(bool simulate)
 		{
 			// Increment load step
-			if ((int) CurrentStep > 1)
+			if (CurrentStep > 1)
 				LoadFactor += StepIncrement(simulate);
 				
 			// Get the force vector
@@ -441,26 +437,26 @@ namespace andrefmello91.FEMAnalysis
 
 			var k = (CurrentStep.Forces.ToRowMatrix() * inc)[0] / (inc.ToRowMatrix() * inc)[0];
 
-			if ((int) CurrentStep > 1)
+			if (CurrentStep > 1)
 				return k / _k0;
 			
 			// Set initial
-			_k0 = k;
+			_k0 =  k;
 			
 			return 1;
 		}
 
-		/// <summary>
-		///		Clear the iterations lists.
-		/// </summary>
-		protected virtual void ClearIterations()
-		{
-			// Clear iteration list
-			if ((int) CurrentStep <= 1 || (int) OngoingIteration < 4)
-				return;
-			
-			_iterations.RemoveRange(..^2);
-		}
+		// /// <summary>
+		// ///		Clear the iterations lists.
+		// /// </summary>
+		// protected virtual void ClearIterations()
+		// {
+		// 	// Clear iteration list
+		// 	if ((int) CurrentStep <= 1 || (int) OngoingIteration < 4)
+		// 		return;
+		// 	
+		// 	_iterations.RemoveRange(..^2);
+		// }
 		
 		/// <summary>
 		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.

@@ -127,6 +127,44 @@ namespace andrefmello91.FEMAnalysis
 		/// </returns>
 		public static explicit operator int(IterationResult iterationResult) => iterationResult.Number;
 
+		/// <summary>
+		///		Check the iteration number.
+		/// </summary>
+		/// <returns>
+		///		True if the iteration number is equal to the right number.
+		/// </returns>
+		public static bool operator ==(IterationResult left, int right) => left.Number == right;
+		
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the iteration number is bigger than the right number.
+		/// </returns>
+		public static bool operator >(IterationResult left, int right) => left.Number > right;
+
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the iteration number is smaller than the right number.
+		/// </returns>
+		public static bool operator <(IterationResult left, int right) => left.Number < right;
+		
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the iteration number is bigger or equal to the right number.
+		/// </returns>
+		public static bool operator >=(IterationResult left, int right) => left.Number >= right;
+
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the iteration number is smaller or equal to the right number.
+		/// </returns>
+		public static bool operator <=(IterationResult left, int right) => left.Number <= right;
+
+		/// <inheritdoc cref="op_Equality"/>
+		/// <returns>
+		///		True if the iteration number is not equal to the right number.
+		/// </returns>
+		public static bool operator !=(IterationResult left, int right) => left.Number != right;
+
 		#endregion
 
 	}
