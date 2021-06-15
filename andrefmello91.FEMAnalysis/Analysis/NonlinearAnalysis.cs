@@ -161,11 +161,6 @@ namespace andrefmello91.FEMAnalysis
 			: CurrentStep;
 
 		/// <summary>
-		///     Get the load factor of the current step.
-		/// </summary>
-		private double LoadFactor { get; set; }
-
-		/// <summary>
 		///     Get/set the internal force vector of current iteration.
 		/// </summary>
 		private Vector<double> InternalForces
@@ -336,12 +331,14 @@ namespace andrefmello91.FEMAnalysis
 		private void Initiate(int? monitoredIndex)
 		{
 			_monitoredIndex = monitoredIndex;
-			LoadFactor      = StepIncrement(false);
+			
+			// Get initial load factor
+			var lf0 = StepIncrement(false);
 			
 			// Initiate lists solution values
 			_steps.Clear();
-			_steps.Add(new StepResult(LoadFactor * ForceVector, 1));
-
+			_steps.Add(new StepResult(lf0 * ForceVector, 1) { LoadFactor = lf0 });
+			
 			for (var i = 0; i < 3; i++)
 				CurrentStep.Add(new IterationResult(FemInput.NumberOfDoFs));
 
@@ -413,10 +410,10 @@ namespace andrefmello91.FEMAnalysis
 		{
 			// Increment load step
 			if (CurrentStep > 1)
-				LoadFactor += StepIncrement(simulate);
+				CurrentStep.LoadFactor += StepIncrement(simulate);
 				
 			// Get the force vector
-			CurrentStep.Forces = LoadFactor * ForceVector;
+			CurrentStep.Forces = CurrentStep.LoadFactor * ForceVector;
 
 			if (!simulate)
 				return;
@@ -504,7 +501,7 @@ namespace andrefmello91.FEMAnalysis
 			var disp = Length.FromMillimeters(DisplacementVector![_monitoredIndex.Value]);
 
 			// Set to step
-			CurrentStep.MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
+			CurrentStep.MonitoredDisplacement = new MonitoredDisplacement(disp, CurrentStep.LoadFactor);
 		}
 
 		/// <summary>

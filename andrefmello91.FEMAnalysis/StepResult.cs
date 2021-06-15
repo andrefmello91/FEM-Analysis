@@ -16,6 +16,11 @@ namespace andrefmello91.FEMAnalysis
 		///     The convergence of this step.
 		/// </summary>
 		public double Convergence { get; set; }
+		
+		/// <summary>
+		///     The load factor of this step.
+		/// </summary>
+		public double LoadFactor { get; set; }
 
 		/// <summary>
 		///     The displacement vector of this step.
@@ -89,7 +94,10 @@ namespace andrefmello91.FEMAnalysis
 		#region Interface Implementations
 
 		/// <inheritdoc />
-		public StepResult Clone() => new(Number, Forces.Clone(), Displacements.Clone(), Stiffness.Clone());
+		public StepResult Clone() => new(Number, Forces.Clone(), Displacements.Clone(), Stiffness.Clone())
+		{
+			LoadFactor = LoadFactor
+		};
 
 		#endregion
 
