@@ -16,6 +16,14 @@ namespace andrefmello91.FEMAnalysis
 		///     The convergence of this iteration.
 		/// </summary>
 		public double ForceConvergence { get; private set; }
+		
+		/// <summary>
+		///     The load factor increment of this iteration.
+		/// </summary>
+		/// <remarks>
+		///		For use in Arc-Lenght control.
+		/// </remarks>
+		public double LoadFactorIncrement { get; set; }
 
 		/// <summary>
 		///     The displacement convergence of this iteration.
