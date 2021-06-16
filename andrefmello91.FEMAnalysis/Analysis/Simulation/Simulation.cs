@@ -26,8 +26,6 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			get => OngoingIteration.InternalForces;
 			set => OngoingIteration.UpdateForces(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex), value);
 		}
-
-		
 		
 		/// <inheritdoc />
 		internal Simulation(IFEMInput<IFiniteElement> nonlinearInput, NonLinearSolver solver = NonLinearSolver.NewtonRaphson) : base(nonlinearInput, solver)
@@ -85,7 +83,8 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		protected override void Iterate()
 		{
 			// Add iteration
-			CurrentStep.Add(OngoingIteration.Clone());
+			if (CurrentStep > 1)
+				CurrentStep.Add(IterationResult.FromStepResult(LastStep));
 
 			// Initiate first iteration
 			OngoingIteration.Number = 0;
@@ -136,7 +135,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 					OngoingIteration.LoadFactorIncrement = base.StepIncrement();
 
 					// Set initial residual
-					var intForces = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex) * DisplacementVector!;
+					var intForces = SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex) * OngoingIteration.Displacements;
 					OngoingIteration.UpdateForces(ForceVector!, intForces);
 
 					// Calculate the initial increment
@@ -154,11 +153,11 @@ namespace andrefmello91.FEMAnalysis.Simulation
 					
 					// Calculate increment
 					OngoingIteration.LoadFactorIncrement   = StepIncrement();
-					OngoingIteration.IncrementFromResidual = -SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex).Solve(CurrentSolution.ResidualForces);
+					OngoingIteration.IncrementFromResidual = -SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex).Solve(CurrentSolution.ResidualForces);
 					
 					// Increment displacements and load factor
-					DisplacementVector     += OngoingIteration.DisplacementIncrement;
-					CurrentStep.LoadFactor += OngoingIteration.LoadFactorIncrement;
+					OngoingIteration.Displacements += OngoingIteration.DisplacementIncrement;
+					CurrentStep.LoadFactor         += OngoingIteration.LoadFactorIncrement;
 					return;
 			}
 		}
@@ -183,16 +182,16 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		/// </summary>
 		private void IncrementDisplacements()
 		{
-			var stiffness = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex);
+			var stiffness = SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex);
 
 			switch ((int) CurrentStep)
 			{
 				// First iteration of first load step
 				case 1 when OngoingIteration <= 1:
 					// Calculate increment from residual and from full force vector
-					OngoingIteration.DisplacementIncrement         =  stiffness.Solve(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex));
+					OngoingIteration.IncrementFromExternal =  stiffness.Solve(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex));
 					OngoingIteration.IncrementFromResidual =  -stiffness.Solve(OngoingIteration.ResidualForces);
-					DisplacementVector                             += OngoingIteration.IncrementFromResidual + OngoingIteration.LoadFactorIncrement * OngoingIteration.DisplacementIncrement;
+					OngoingIteration.Displacements        += OngoingIteration.IncrementFromResidual + OngoingIteration.LoadFactorIncrement * OngoingIteration.DisplacementIncrement;
 			}
 			
 		}

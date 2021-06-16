@@ -84,6 +84,13 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <summary>
+		///		Create an iteration result from a load step result.
+		/// </summary>
+		/// <param name="stepResult">The result of a load step.</param>
+		public static IterationResult FromStepResult(StepResult stepResult) =>
+			new (stepResult.Displacements, Vector<double>.Build.Dense(stepResult.Displacements.Count), stepResult.Stiffness);
+		
+		/// <summary>
 		///     Calculate the convergence of this iteration.
 		/// </summary>
 		/// <param name="appliedForces">The applied forces of the current step.</param>
