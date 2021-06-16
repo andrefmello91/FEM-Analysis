@@ -99,6 +99,9 @@ namespace andrefmello91.FEMAnalysis
 			LoadFactor = LoadFactor
 		};
 
+		/// <inheritdoc />
+		public override string ToString() => $"Step {Number}";
+
 		#endregion
 
 		#endregion

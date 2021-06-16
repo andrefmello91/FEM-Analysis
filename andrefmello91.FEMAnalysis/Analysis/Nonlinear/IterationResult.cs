@@ -18,14 +18,6 @@ namespace andrefmello91.FEMAnalysis
 		public double ForceConvergence { get; private set; }
 		
 		/// <summary>
-		///     The load factor increment of this iteration.
-		/// </summary>
-		/// <remarks>
-		///		For use in Arc-Lenght control.
-		/// </remarks>
-		public double LoadFactorIncrement { get; set; }
-
-		/// <summary>
 		///     The displacement convergence of this iteration.
 		/// </summary>
 		public double DisplacementConvergence { get; private set; }
@@ -36,10 +28,10 @@ namespace andrefmello91.FEMAnalysis
 		public Vector<double> Displacements { get; set; }
 		
 		/// <summary>
-		///     The displacement increment vector of this iteration.
+		///     The displacement increment vector from external forces of this iteration.
 		/// </summary>
 		public Vector<double> DisplacementIncrement { get; set; }
-
+		
 		/// <summary>
 		///     The number of this iteration.
 		/// </summary>
@@ -120,6 +112,9 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public IterationResult Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone()) { Number = Number };
+
+		/// <inheritdoc />
+		public override string ToString() => $"Iteration {Number}";
 
 		#endregion
 
