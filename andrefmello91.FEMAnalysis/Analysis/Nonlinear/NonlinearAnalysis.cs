@@ -28,7 +28,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Field to store the DoF index for monitored displacements.
 		/// </summary>
-		private int? _monitoredIndex;
+		protected int? MonitoredIndex;
 
 		/// <summary>
 		///		Get the first iteration of the current step.
@@ -258,7 +258,7 @@ namespace andrefmello91.FEMAnalysis
 		public void Execute(int? monitoredIndex = null, bool simulate = false, double loadFactor = 1)
 		{
 			_simulate       = simulate;
-			_monitoredIndex = monitoredIndex;
+			MonitoredIndex = monitoredIndex;
 
 			// Get force vector
 			ForceVector = FemInput.ForceVector * loadFactor;
@@ -312,9 +312,7 @@ namespace andrefmello91.FEMAnalysis
 		protected void CorrectResults()
 		{
 			// Set displacements from last (current now) step
-			DisplacementVector = LastStep.Displacements;
-			GlobalStiffness    = LastStep.Stiffness;
-			FemInput.Grips.SetDisplacements(DisplacementVector);
+			FemInput.Grips.SetDisplacements(LastStep.Displacements);
 			FemInput.UpdateDisplacements();
 
 			// Calculate element forces
@@ -331,7 +329,7 @@ namespace andrefmello91.FEMAnalysis
 			
 			// Initiate lists solution values
 			Steps.Clear();
-			Steps.Add(new StepResult(lf0 * ForceVector, 1) { LoadFactor = lf0 });
+			Steps.Add(new StepResult(lf0 * ForceVector, lf0, 1));
 			
 			CurrentStep.Add(new IterationResult(FemInput.NumberOfDoFs));
 
@@ -341,7 +339,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Calculate initial displacements
 			var fi = SimplifiedForces(CurrentStep.Forces, FemInput.ConstraintIndex);
-			OngoingIteration.Displacements = stiffness.Solve(fi);
+			OngoingIteration.IncrementDisplacements(stiffness.Solve(fi));
 
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(OngoingIteration.Displacements);
@@ -361,7 +359,7 @@ namespace andrefmello91.FEMAnalysis
 		{
 			// Add iteration
 			if (CurrentStep > 1)
-				CurrentStep.Add(IterationResult.FromStepResult(LastStep));
+				CurrentStep.NewIteration();
 
 			// Initiate first iteration
 			OngoingIteration.Number = 0;
@@ -370,7 +368,7 @@ namespace andrefmello91.FEMAnalysis
 			do
 			{
 				// Add iteration
-				CurrentStep.Add(OngoingIteration.Clone());
+				CurrentStep.NewIteration();
 
 				// Increase iteration count
 				OngoingIteration.Number++;
@@ -420,27 +418,7 @@ namespace andrefmello91.FEMAnalysis
 						VerifyConvergence(OngoingIteration.DisplacementConvergence, DisplacementTolerance);
 			}
 		}
-
-		/// <summary>
-		///     Save step results after achieving convergence.
-		/// </summary>
-		protected void SaveLoadStepResults()
-		{
-			CurrentStep.IsCalculated  = true;
-			CurrentStep.Convergence   = OngoingIteration.ForceConvergence;
-			CurrentStep.Displacements = OngoingIteration.Displacements;
-			CurrentStep.Stiffness     = OngoingIteration.Stiffness;
-
-			if (!_monitoredIndex.HasValue)
-				return;
-
-			// Get displacement
-			var disp = Length.FromMillimeters(CurrentStep.Displacements[_monitoredIndex.Value]);
-
-			// Set to step
-			CurrentStep.MonitoredDisplacement = new MonitoredDisplacement(disp, CurrentStep.LoadFactor);
-		}
-
+		
 		/// <summary>
 		///     Execute step by step analysis.
 		/// </summary>
@@ -457,11 +435,8 @@ namespace andrefmello91.FEMAnalysis
 			{
 				// Increment load step
 				if (CurrentStep > 1)
-					CurrentStep.LoadFactor += StepIncrement();
+					CurrentStep.IncrementLoad(StepIncrement());
 				
-				// Get the force vector
-				CurrentStep.Forces = CurrentStep.LoadFactor * ForceVector;
-
 				// Iterate
 				Iterate();
 
@@ -470,7 +445,7 @@ namespace andrefmello91.FEMAnalysis
 					goto CorrectResults;
 
 				// Set step results
-				SaveLoadStepResults();
+				CurrentStep.SetResults(MonitoredIndex);
 
 				// Create step
 				Steps.Add(CurrentStep.Clone());
@@ -496,8 +471,7 @@ namespace andrefmello91.FEMAnalysis
 		{
 			// Increment displacements
 			var stiffness = SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex);
-			OngoingIteration.DisplacementIncrement =  -stiffness.Solve(CurrentSolution.ResidualForces);
-			OngoingIteration.Displacements        += OngoingIteration.DisplacementIncrement;
+			OngoingIteration.IncrementDisplacements(-stiffness.Solve(CurrentSolution.ResidualForces));
 
 			// Update displacements in grips and elements
 			FemInput.Grips.SetDisplacements(OngoingIteration.Displacements);

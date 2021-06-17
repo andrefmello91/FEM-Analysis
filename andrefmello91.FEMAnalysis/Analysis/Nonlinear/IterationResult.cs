@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using andrefmello91.Extensions;
+using andrefmello91.FEMAnalysis.Simulation;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace andrefmello91.FEMAnalysis
@@ -25,12 +26,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The displacement vector of this iteration.
 		/// </summary>
-		public Vector<double> Displacements { get; set; }
+		public Vector<double> Displacements { get; protected set; }
 		
 		/// <summary>
 		///     The displacement increment vector from external forces of this iteration.
 		/// </summary>
-		public Vector<double> DisplacementIncrement { get; set; }
+		public Vector<double> DisplacementIncrement { get; private set; }
 		
 		/// <summary>
 		///     The number of this iteration.
@@ -83,13 +84,17 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Methods
 
-		/// <summary>
-		///		Create an iteration result from a load step result.
-		/// </summary>
-		/// <param name="stepResult">The result of a load step.</param>
-		public static IterationResult FromStepResult(StepResult stepResult) =>
-			new (stepResult.Displacements, Vector<double>.Build.Dense(stepResult.Displacements.Count), stepResult.Stiffness);
-		
+		///  <summary>
+		/// 		Create an iteration result from a load step result.
+		///  </summary>
+		///  <param name="stepResult">The result of a load step.</param>
+		///  <param name="simulate">Set true if the performed analysis is a simulation.</param>
+		public static IterationResult FromStepResult(StepResult stepResult, bool simulate = false) => simulate switch
+		{
+			false => new IterationResult(stepResult.Displacements, Vector<double>.Build.Dense(stepResult.Displacements.Count), stepResult.Stiffness),
+			_     => new SimulationIterationResult(stepResult.Displacements, Vector<double>.Build.Dense(stepResult.Displacements.Count), stepResult.Stiffness)
+		};
+
 		/// <summary>
 		///     Calculate the convergence of this iteration.
 		/// </summary>
@@ -104,6 +109,16 @@ namespace andrefmello91.FEMAnalysis
 		public void CalculateDisplacementConvergence(IEnumerable<double> initialIncrement) =>
 			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
 
+		/// <summary>
+		///		Increment displacements of this iteration.
+		/// </summary>
+		/// <param name="displacementIncrement">The vector of displacement increments.</param>
+		public void IncrementDisplacements(Vector<double> displacementIncrement)
+		{
+			DisplacementIncrement =  displacementIncrement;
+			Displacements         += displacementIncrement;
+		}
+		
 		/// <summary>
 		///		Update forces in this iteration.
 		/// </summary>

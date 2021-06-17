@@ -52,11 +52,8 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			{
 				// Increment load step
 				if (CurrentStep > 1)
-					CurrentStep.LoadFactor += StepIncrement();
+					CurrentStep.IncrementLoad(StepIncrement());
 				
-				// Get the force vector
-				CurrentStep.Forces = CurrentStep.LoadFactor * ForceVector;
-
 				// Iterate
 				Iterate();
 
@@ -65,7 +62,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 					goto CorrectResults;
 
 				// Set step results
-				SaveLoadStepResults();
+				CurrentStep.SetResults(MonitoredIndex);
 
 				// Create step
 				Steps.Add(CurrentStep.Clone());
@@ -84,7 +81,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		{
 			// Add iteration
 			if (CurrentStep > 1)
-				CurrentStep.Add(IterationResult.FromStepResult(LastStep));
+				CurrentStep.NewIteration(true);
 
 			// Initiate first iteration
 			OngoingIteration.Number = 0;
@@ -93,7 +90,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			do
 			{
 				// Add iteration
-				CurrentStep.Add(OngoingIteration.Clone());
+				CurrentStep.NewIteration(true);
 
 				// Increase iteration count
 				OngoingIteration.Number++;
@@ -106,8 +103,8 @@ namespace andrefmello91.FEMAnalysis.Simulation
 				if (OngoingIteration == 1)
 					InitialIteration();
 
-				// Update forces
-				CurrentStep.Forces = CurrentStep.LoadFactor * ForceVector!;
+				else
+					CurrentStep.IncrementLoad(StepIncrement());
 				
 				// Calculate element forces
 				FemInput.CalculateForces();
@@ -127,15 +124,17 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		/// </summary>
 		private void InitialIteration()
 		{
+			var stiffness = SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex);
+
 			switch ((int) CurrentStep)
 			{
 				// First iteration of first load step
 				case 1:
 					// Set initial increment
-					OngoingIteration.LoadFactorIncrement = base.StepIncrement();
+					CurrentStep.IncrementLoad(base.StepIncrement());
 
 					// Set initial residual
-					var intForces = SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex) * OngoingIteration.Displacements;
+					var intForces = stiffness * OngoingIteration.Displacements;
 					OngoingIteration.UpdateForces(ForceVector!, intForces);
 
 					// Calculate the initial increment
@@ -151,13 +150,14 @@ namespace andrefmello91.FEMAnalysis.Simulation
 					// Check increment sign
 					CalculateStiffnessParameter();
 					
-					// Calculate increment
-					OngoingIteration.LoadFactorIncrement   = StepIncrement();
-					OngoingIteration.IncrementFromResidual = -SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex).Solve(CurrentSolution.ResidualForces);
+					// Calculate increments
+					var rInc = -stiffness.Solve(CurrentSolution.ResidualForces);
+					var fInc =  stiffness.Solve(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex));
 					
-					// Increment displacements and load factor
-					OngoingIteration.Displacements += OngoingIteration.DisplacementIncrement;
-					CurrentStep.LoadFactor         += OngoingIteration.LoadFactorIncrement;
+					// Set increments
+					CurrentStep.IncrementLoad(StepIncrement());
+					OngoingIteration.IncrementDisplacements(rInc, fInc);
+					
 					return;
 			}
 		}
@@ -189,9 +189,13 @@ namespace andrefmello91.FEMAnalysis.Simulation
 				// First iteration of first load step
 				case 1 when OngoingIteration <= 1:
 					// Calculate increment from residual and from full force vector
-					OngoingIteration.IncrementFromExternal =  stiffness.Solve(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex));
-					OngoingIteration.IncrementFromResidual =  -stiffness.Solve(OngoingIteration.ResidualForces);
-					OngoingIteration.Displacements        += OngoingIteration.IncrementFromResidual + OngoingIteration.LoadFactorIncrement * OngoingIteration.DisplacementIncrement;
+					var rInc = -stiffness.Solve(OngoingIteration.ResidualForces);
+					var fInc = stiffness.Solve(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex));
+
+					// Set increments
+					OngoingIteration.IncrementDisplacements(rInc, fInc);
+					
+					return;
 			}
 			
 		}

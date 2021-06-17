@@ -29,12 +29,12 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		/// <summary>
 		///     The displacement increment vector from residual forces of this iteration.
 		/// </summary>
-		public Vector<double> IncrementFromResidual { get; set; }
+		public Vector<double> IncrementFromResidual { get; private set; }
 		
 		/// <summary>
 		///     The displacement increment vector from external forces of this iteration.
 		/// </summary>
-		public Vector<double> IncrementFromExternal { get; set; }
+		public Vector<double> IncrementFromExternal { get; private set; }
 
 		/// <summary>
 		///		The parameter to set the sign of the load increments.
@@ -59,5 +59,21 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			ArcLength           = ArcLength,
 			StiffnessParameter  = StiffnessParameter
 		};
+
+		/// <summary>
+		///		Increment displacements of this iteration.
+		/// </summary>
+		/// <param name="incrementFromResidual">The displacement increment vector from residual forces of this iteration.</param>
+		/// <param name="incrementFromExternal">The displacement increment vector from external forces of this iteration.</param>
+		public void IncrementDisplacements(Vector<double>? incrementFromResidual, Vector<double>? incrementFromExternal)
+		{
+			if (incrementFromResidual is not null)
+				IncrementFromResidual = incrementFromResidual;
+
+			if (incrementFromExternal is not null)
+				IncrementFromExternal = incrementFromExternal;
+
+			Displacements += DisplacementIncrement;
+		}
 	}
 }

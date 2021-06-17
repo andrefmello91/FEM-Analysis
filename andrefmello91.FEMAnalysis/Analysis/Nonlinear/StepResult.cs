@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using andrefmello91.Extensions;
+using andrefmello91.FEMAnalysis.Simulation;
 using MathNet.Numerics.LinearAlgebra;
+using UnitsNet;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -20,7 +23,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The load factor of this step.
 		/// </summary>
-		public double LoadFactor { get; set; }
+		public double LoadFactor { get; private set; }
 
 		/// <summary>
 		///     The displacement vector of this step.
@@ -30,7 +33,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
-		public Vector<double> Forces { get; set; }
+		public Vector<double> Forces { get; private set; }
 
 		/// <summary>
 		///     The status of this step. True if it was calculated.
@@ -69,11 +72,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Create a step object.
 		/// </summary>
+		/// <param name="loadFactor">The load factor of this step.</param>
 		/// <param name="number">The number of this step.</param>
 		/// <param name="forces">The force vector of this step.</param>
-		public StepResult(Vector<double> forces, int number = 0)
+		public StepResult(Vector<double> forces, double loadFactor, int number = 0)
 			: this(number, forces, Vector<double>.Build.Dense(forces.Count), Matrix<double>.Build.Dense(forces.Count, forces.Count))
 		{
+			LoadFactor = loadFactor;
 		}
 
 		/// <inheritdoc cref="StepResult" />
@@ -93,6 +98,49 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Interface Implementations
 
+		/// <summary>
+		///		Add a new iteration in this load step.
+		/// </summary>
+		///  <param name="simulate">Set true if the performed analysis is a simulation.</param>
+		public void NewIteration(bool simulate = false) => Add(this.Any() ? this.Last().Clone() : IterationResult.FromStepResult(this, simulate));
+		
+		/// <summary>
+		///		Increment forces in this step.
+		/// </summary>
+		/// <param name="loadFactorIncrement">The increment of the load factor.</param>
+		public void IncrementLoad(double loadFactorIncrement)
+		{
+			if (this.Any() && this.Last() is SimulationIterationResult itResult)
+				itResult.LoadFactorIncrement = loadFactorIncrement;
+			
+			// Get the actual force multiplier
+			var lf = 1D + loadFactorIncrement / LoadFactor;
+			
+			// Update values
+			LoadFactor += loadFactorIncrement;
+			Forces     *= lf;
+		}
+		
+		/// <summary>
+		///     Set step results after achieving convergence.
+		/// </summary>
+		public void SetResults(int? monitoredIndex = null)
+		{
+			IsCalculated  = true;
+			Convergence   = this.Last().ForceConvergence;
+			Displacements = this.Last().Displacements;
+			Stiffness     = this.Last().Stiffness;
+
+			if (!monitoredIndex.HasValue)
+				return;
+
+			// Get displacement
+			var disp = Length.FromMillimeters(Displacements[monitoredIndex.Value]);
+
+			// Set to step
+			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
+		}
+		
 		/// <inheritdoc />
 		public StepResult Clone() => new(Number, Forces.Clone(), Displacements.Clone(), Stiffness.Clone())
 		{
