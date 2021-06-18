@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using andrefmello91.Extensions;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
@@ -47,14 +47,14 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			InitialStep();
 
 			// Initiate first step
-			CurrentStep.Number = 1;
+			CurrentLoadStep.Number = 1;
 
 			// Step-by-step analysis
 			do
 			{
 				// Increment load step
-				if (CurrentStep > 1)
-					CurrentStep.IncrementLoad(StepIncrement());
+				if (CurrentLoadStep > 1)
+					CurrentLoadStep.IncrementLoad(StepIncrement());
 				
 				// Iterate
 				Iterate();
@@ -64,13 +64,13 @@ namespace andrefmello91.FEMAnalysis.Simulation
 					goto CorrectResults;
 
 				// Set step results
-				CurrentStep.SetResults(MonitoredIndex);
+				CurrentLoadStep.SetResults(MonitoredIndex);
 
 				// Create step
-				Steps.Add(CurrentStep.Clone());
+				Steps.Add(CurrentLoadStep.Clone());
 
 				// Increment step
-				CurrentStep.Number++;
+				CurrentLoadStep.Number++;
 			} while (true);
 
 			CorrectResults:
@@ -82,8 +82,8 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		protected override void Iterate()
 		{
 			// Add iteration
-			if (CurrentStep > 1)
-				CurrentStep.NewIteration(true);
+			if (CurrentLoadStep > 1)
+				CurrentLoadStep.NewIteration(true);
 
 			// Initiate first iteration
 			OngoingIteration.Number = 0;
@@ -92,7 +92,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			do
 			{
 				// Add iteration
-				CurrentStep.NewIteration(true);
+				CurrentLoadStep.NewIteration(true);
 
 				// Increase iteration count
 				OngoingIteration.Number++;
@@ -106,7 +106,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 					InitialIteration();
 
 				else
-					CurrentStep.IncrementLoad(StepIncrement());
+					CurrentLoadStep.IncrementLoad(StepIncrement());
 				
 				// Calculate element forces
 				FemInput.CalculateForces();
@@ -115,7 +115,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 				InternalForces = FemInput.AssembleInternalForces();
 
 				// Calculate convergence
-				OngoingIteration.CalculateForceConvergence(CurrentStep.Forces);
+				OngoingIteration.CalculateForceConvergence(CurrentLoadStep.Forces);
 				OngoingIteration.CalculateDisplacementConvergence(FirstIteration.DisplacementIncrement);
 
 			} while (!IterativeStop());
@@ -128,12 +128,12 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		{
 			var stiffness = SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex);
 
-			switch ((int) CurrentStep)
+			switch ((int) CurrentLoadStep)
 			{
 				// First iteration of first load step
 				case 1:
 					// Set initial increment
-					CurrentStep.IncrementLoad(StepIncrement());
+					CurrentLoadStep.IncrementLoad(StepIncrement());
 
 					// Set initial residual
 					var intForces = stiffness * OngoingIteration.Displacements;
@@ -157,7 +157,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 					var fInc =  stiffness.Solve(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex));
 					
 					// Set increments
-					CurrentStep.IncrementLoad(StepIncrement());
+					CurrentLoadStep.IncrementLoad(StepIncrement());
 					OngoingIteration.IncrementDisplacements(rInc, fInc);
 					
 					return;
@@ -174,7 +174,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			switch ((int) OngoingIteration)
 			{
 				// First iteration of first load step
-				case 1 when CurrentStep == 1:
+				case 1 when CurrentLoadStep == 1:
 					return base.StepIncrement();
 				
 				// First iteration of any load step except the first
@@ -192,7 +192,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 				default:
 					
 					// Get accumulated increment until last iteration
-					var deltaU = CurrentStep.AccumulatedDisplacementIncrement(^2);
+					var deltaU = CurrentLoadStep.AccumulatedDisplacementIncrement(^2);
 					
 					// Calculate coefficients
 					var a1        = (dUf.ToRowMatrix() * dUf)[0];
@@ -245,7 +245,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		{
 			var stiffness = SimplifiedStiffness(OngoingIteration.Stiffness, FemInput.ConstraintIndex);
 
-			switch ((int) CurrentStep)
+			switch ((int) CurrentLoadStep)
 			{
 				// First iteration of first load step
 				case 1 when OngoingIteration <= 1:
@@ -266,7 +266,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		/// </summary>
 		private void CalculateArcLength()
 		{
-			switch ((int) CurrentStep)
+			switch ((int) CurrentLoadStep)
 			{
 				// First iteration of first load step
 				case 1 when OngoingIteration == 0:
@@ -292,9 +292,9 @@ namespace andrefmello91.FEMAnalysis.Simulation
 
 			var inc = OngoingIteration.DisplacementIncrement;
 
-			var k = (CurrentStep.Forces.ToRowMatrix() * inc)[0] / (inc.ToRowMatrix() * inc)[0];
+			var k = (CurrentLoadStep.Forces.ToRowMatrix() * inc)[0] / (inc.ToRowMatrix() * inc)[0];
 
 			OngoingIteration.StiffnessParameter = k / FirstIteration.StiffnessParameter;
 		}
 	}
-}
+}*/

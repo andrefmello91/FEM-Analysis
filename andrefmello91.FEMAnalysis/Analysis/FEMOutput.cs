@@ -20,7 +20,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Values of calcultated step results.
 		/// </summary>
-		public List<StepResult> LoadStepResults { get; }
+		public List<LoadStep> LoadStepResults { get; }
 
 		#endregion
 
@@ -30,7 +30,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Output data constructor.
 		/// </summary>
 		/// <param name="loadStepResults">The values of step results.</param>
-		public FEMOutput([NotNull] IEnumerable<StepResult> loadStepResults)
+		public FEMOutput([NotNull] IEnumerable<LoadStep> loadStepResults)
 			: base (loadStepResults.Where(ls => ls.MonitoredDisplacement.HasValue).Select(ls => ls.MonitoredDisplacement!.Value))
 		{
 			LoadStepResults = loadStepResults

@@ -14,6 +14,14 @@ namespace andrefmello91.FEMAnalysis
 		#region Properties
 
 		/// <summary>
+		///     Get/set when to stop analysis.
+		/// </summary>
+		/// <remarks>
+		///		If true, convergence was not reached in this iteration.
+		/// </remarks>
+		public bool Stop { get; set; }
+		
+		/// <summary>
 		///     The convergence of this iteration.
 		/// </summary>
 		public double ForceConvergence { get; private set; }
@@ -87,12 +95,12 @@ namespace andrefmello91.FEMAnalysis
 		///  <summary>
 		/// 		Create an iteration result from a load step result.
 		///  </summary>
-		///  <param name="stepResult">The result of a load step.</param>
+		///  <param name="loadStep">The result of a load step.</param>
 		///  <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		public static IterationResult FromStepResult(StepResult stepResult, bool simulate = false) => simulate switch
+		public static IterationResult FromStepResult(LoadStep loadStep, bool simulate = false) => simulate switch
 		{
-			false => new IterationResult(stepResult.Displacements, Vector<double>.Build.Dense(stepResult.Displacements.Count), stepResult.Stiffness),
-			_     => new SimulationIterationResult(stepResult.Displacements, Vector<double>.Build.Dense(stepResult.Displacements.Count), stepResult.Stiffness)
+			false => new IterationResult(loadStep.FinalDisplacements, Vector<double>.Build.Dense(loadStep.FinalDisplacements.Count), loadStep.Stiffness),
+			_     => new SimulationIterationResult(loadStep.FinalDisplacements, Vector<double>.Build.Dense(loadStep.FinalDisplacements.Count), loadStep.Stiffness)
 		};
 
 		/// <summary>
