@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using andrefmello91.Extensions;
 using andrefmello91.FEMAnalysis.Simulation;
@@ -28,7 +29,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The displacement vector of this step.
 		/// </summary>
-		public Vector<double> Displacements { get; set; }
+		public Vector<double> Displacements { get; private set; }
 
 		/// <summary>
 		///     The force vector of this step.
@@ -53,7 +54,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The stiffness matrix of this step.
 		/// </summary>
-		public Matrix<double> Stiffness { get; set; }
+		public Matrix<double> Stiffness { get; private set; }
 		
 		#endregion
 
@@ -140,7 +141,14 @@ namespace andrefmello91.FEMAnalysis
 			// Set to step
 			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
 		}
-		
+
+		/// <summary>
+		///		Get the accumulated displacement increment at this load step.
+		/// </summary>
+		/// <param name="finalIndex">The final index to consider increments.</param>
+		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex) =>
+			this[finalIndex].Displacements - Find(i => i == 1)!.Displacements;
+
 		/// <inheritdoc />
 		public StepResult Clone() => new(Number, Forces.Clone(), Displacements.Clone(), Stiffness.Clone())
 		{

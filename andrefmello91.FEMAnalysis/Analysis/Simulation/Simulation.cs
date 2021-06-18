@@ -1,4 +1,6 @@
-﻿using andrefmello91.Extensions;
+﻿using System;
+using andrefmello91.Extensions;
+using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace andrefmello91.FEMAnalysis.Simulation
@@ -131,7 +133,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 				// First iteration of first load step
 				case 1:
 					// Set initial increment
-					CurrentStep.IncrementLoad(base.StepIncrement());
+					CurrentStep.IncrementLoad(StepIncrement());
 
 					// Set initial residual
 					var intForces = stiffness * OngoingIteration.Displacements;
@@ -165,16 +167,75 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		/// <inheritdoc />
 		protected override double StepIncrement()
 		{
-			// Get the sign
-			var i = OngoingIteration.StiffnessParameter >= 0
-				?  1
-				: -1;
-
-			var dUf = OngoingIteration.DisplacementIncrement;
+			var dUf = OngoingIteration.IncrementFromExternal;
+			var dUr = OngoingIteration.IncrementFromResidual;
 			var dS  = OngoingIteration.ArcLength;
+			
+			switch ((int) OngoingIteration)
+			{
+				// First iteration of first load step
+				case 1 when CurrentStep == 1:
+					return base.StepIncrement();
+				
+				// First iteration of any load step except the first
+				case 1:
 
-			return
-				i * dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+					// Get the sign
+					var i = OngoingIteration.StiffnessParameter >= 0
+						? 1
+						: -1;
+
+					return
+						i * dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+				
+				// Any other iteration
+				default:
+					
+					// Get accumulated increment until last iteration
+					var deltaU = CurrentStep.AccumulatedDisplacementIncrement(^2);
+					
+					// Calculate coefficients
+					var a1        = (dUf.ToRowMatrix() * dUf)[0];
+					var dUrPlusDu = dUr + deltaU;
+					var a2        = (dUrPlusDu.ToRowMatrix() * dUf)[0];
+					var a3        = (dUrPlusDu.ToRowMatrix() * dUrPlusDu)[0] - dS * dS;
+					
+					// Calculate roots
+					var (r1, r2) = FindRoots.Quadratic(a3, 2 * a2, a1);
+					var d1    = r1.Real;
+					var d2    = r2.Real;
+					
+					// Choose value
+					var deltaU1 = deltaU + dUr + d1 * dUf;
+					var deltaU2 = deltaU + dUr + d2 * dUf;
+					var p1      = deltaU * deltaU1;
+					var p2      = deltaU * deltaU2;
+					
+					// Check products
+					switch (p1)
+					{
+						case >= 0 when p2 < 0:
+							return d1;
+
+						case < 0 when p2 >= 0:
+							return d2;
+
+						default:
+						{
+							// Calculate coefficients
+							var dUrPlusDu1 = dUr + deltaU1;
+							var dUrPlusDu2 = dUr + deltaU2;
+							var a21        = (dUrPlusDu1.ToRowMatrix() * dUf)[0];
+							var a22        = (dUrPlusDu2.ToRowMatrix() * dUf)[0];
+							var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - dS * dS;
+							var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - dS * dS;
+
+							return -a31 / a21 <= -a32 / a22
+								? d1
+								: d2;
+						}
+					}
+			}
 		}
 
 		/// <summary>

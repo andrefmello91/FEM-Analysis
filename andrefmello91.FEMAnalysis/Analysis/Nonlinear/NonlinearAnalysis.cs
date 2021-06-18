@@ -64,33 +64,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     The displacements of current step.
 		/// </remarks>
-		public override Vector<double>? DisplacementVector
-		{
-			get => CurrentStep.Displacements;
-			protected set
-			{
-				if (value is null)
-					return;
-
-				CurrentStep.Displacements = value;
-			}
-		}
+		public override Vector<double> DisplacementVector => CurrentStep.Displacements;
 
 		/// <inheritdoc />
 		/// <remarks>
 		///     The stiffness of current step.
 		/// </remarks>
-		public override Matrix<double>? GlobalStiffness
-		{
-			get => CurrentStep.Stiffness;
-			protected set
-			{
-				if (value is null)
-					return;
-
-				CurrentStep.Stiffness = value;
-			}
-		}
+		public override Matrix<double> GlobalStiffness => CurrentStep.Stiffness;
 
 		/// <summary>
 		///     Get/set the maximum number of iterations.
