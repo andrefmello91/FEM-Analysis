@@ -5,8 +5,8 @@ using andrefmello91.Extensions;
 using andrefmello91.FEMAnalysis.Simulation;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
-
 using static andrefmello91.FEMAnalysis.Analysis<andrefmello91.FEMAnalysis.IFiniteElement>;
+using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -19,24 +19,19 @@ namespace andrefmello91.FEMAnalysis
 		#region Properties
 
 		/// <summary>
-		///		The analysis parameters.
+		///     The status of this step. True if convergence was reached.
 		/// </summary>
-		public AnalysisParameters Parameters { get; }
+		public bool Converged { get; private set; }
 
 		/// <summary>
-		///     The convergence of this step.
+		///     The results of the current solution (last solved iteration [i - 1]).
 		/// </summary>
-		public double Convergence { get; set; }
-		
-		/// <summary>
-		///     The load factor of this step.
-		/// </summary>
-		public double LoadFactor { get; private set; }
+		public IterationResult CurrentSolution => this[^2];
 
 		/// <summary>
-		///     The displacement vector at the beginning of this step.
+		///     The displacement convergence of this step.
 		/// </summary>
-		public Vector<double> InitialDisplacements { get; }
+		public double DisplacementConvergence => OngoingIteration.DisplacementConvergence;
 
 		/// <summary>
 		///     The displacement vector at the end of this step.
@@ -44,14 +39,34 @@ namespace andrefmello91.FEMAnalysis
 		public Vector<double> FinalDisplacements => this.Last().Displacements;
 
 		/// <summary>
+		///     Get the first iteration of the current step.
+		/// </summary>
+		public IterationResult FirstIteration => Find(i => (int) i == 1)!;
+
+		/// <summary>
+		///     The force convergence of this step.
+		/// </summary>
+		public double ForceConvergence => OngoingIteration.ForceConvergence;
+
+		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
 		public Vector<double> Forces { get; private set; }
 
 		/// <summary>
-		///     The status of this step. True if it was calculated.
+		///     The displacement vector at the beginning of this step.
 		/// </summary>
-		public bool IsCalculated { get; set; }
+		public Vector<double> InitialDisplacements { get; }
+
+		/// <summary>
+		///     The results of the last solution (penultimate solved iteration [i - 2]).
+		/// </summary>
+		public IterationResult LastSolution => this[^3];
+
+		/// <summary>
+		///     The load factor of this step.
+		/// </summary>
+		public double LoadFactor { get; private set; }
 
 		/// <summary>
 		///     The monitored displacement of this step.
@@ -64,29 +79,27 @@ namespace andrefmello91.FEMAnalysis
 		public int Number { get; set; }
 
 		/// <summary>
-		///     The current stiffness matrix of this step (stiffness of the current iteration.
-		/// </summary>
-		public Matrix<double> Stiffness => this.Last().Stiffness;
-		
-		/// <summary>
-		///		Get the first iteration of the current step.
-		/// </summary>
-		public IterationResult FirstIteration => Find(i => (int) i == 1)!;
-
-		/// <summary>
 		///     The results of the ongoing iteration.
 		/// </summary>
 		public IterationResult OngoingIteration => this[^1];
 
 		/// <summary>
-		///     The results of the current solution (last solved iteration [i - 1]).
+		///     The analysis parameters.
 		/// </summary>
-		public IterationResult CurrentSolution => this[^2];
+		public AnalysisParameters Parameters { get; }
 
 		/// <summary>
-		///     The results of the last solution (penultimate solved iteration [i - 2]).
+		///     The current stiffness matrix of this step (stiffness of the current iteration.
 		/// </summary>
-		public IterationResult LastSolution => this[^3];
+		public Matrix<double> Stiffness => this.Last().Stiffness;
+
+		/// <summary>
+		///     Get/set when to stop analysis.
+		/// </summary>
+		/// <remarks>
+		///     If true, convergence was not reached at this load step.
+		/// </remarks>
+		public bool Stop { get; private set; }
 
 		#endregion
 
@@ -109,10 +122,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="number">The number of this step.</param>
 		/// <param name="forces">The force vector of this step.</param>
 		private LoadStep(Vector<double> forces, double loadFactor, AnalysisParameters parameters, int number = 0)
-			: this(number, forces, Vector<double>.Build.Dense(forces.Count), Matrix<double>.Build.Dense(forces.Count, forces.Count), parameters)
-		{
+			: this(number, forces, Vector<double>.Build.Dense(forces.Count), Matrix<double>.Build.Dense(forces.Count, forces.Count), parameters) =>
 			LoadFactor = loadFactor;
-		}
 
 		/// <inheritdoc cref="LoadStep" />
 		/// <param name="initialDisplacements">The initial displacement vector of this step.</param>
@@ -124,7 +135,7 @@ namespace andrefmello91.FEMAnalysis
 			Forces               = forces;
 			InitialDisplacements = initialDisplacements;
 			Parameters           = parameters;
-			
+
 			Add(new IterationResult(initialDisplacements, Vector<double>.Build.Dense(initialDisplacements.Count), stiffness));
 		}
 
@@ -133,19 +144,19 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <summary>
-		///		Do the initial load step of a nonlinear analysis procedure.
+		///     Do the initial load step of a nonlinear analysis procedure.
 		/// </summary>
 		/// <param name="femInput">The finite element input.</param>
 		/// <param name="loadFactor">The load factor of the first step. </param>
 		/// <param name="parameters">The analysis parameters.</param>
 		/// <returns>
-		///		The initial <see cref="LoadStep"/>.
+		///     The initial <see cref="LoadStep" />.
 		/// </returns>
 		public static LoadStep InitialStep(IFEMInput<IFiniteElement> femInput, double loadFactor, AnalysisParameters parameters)
 		{
 			var step      = new LoadStep(femInput.ForceVector * loadFactor, loadFactor, parameters, 1);
 			var iteration = step.OngoingIteration;
-			
+
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
 			var stiffness = SimplifiedStiffness(iteration.Stiffness, femInput.ConstraintIndex);
@@ -166,49 +177,90 @@ namespace andrefmello91.FEMAnalysis
 
 			return step;
 		}
-		
-		#region Interface Implementations
-		
-		/// <summary>
-		///		Add a new iteration in this load step.
-		/// </summary>
-		///  <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		public void NewIteration(bool simulate = false)
-		{
-			Add(
-				this.Any()
-					? this.Last().Clone()
-					: IterationResult.FromStepResult(this, simulate));
-			
-			// Increase iteration count
-			this.Last().Number++;
-		}
 
 		/// <summary>
-		///		Increment forces in this step.
+		///     Get the accumulated displacement increment from the beginning of this load step until a final index.
+		/// </summary>
+		/// <param name="finalIndex">The final index to consider increments.</param>
+		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex) =>
+			this[finalIndex].Displacements - InitialDisplacements;
+
+		/// <summary>
+		///     Get the total accumulated displacement increment at this load step.
+		/// </summary>
+		public Vector<double> AccumulatedDisplacementIncrement() => AccumulatedDisplacementIncrement(^1);
+
+
+		/// <summary>
+		///     Increment forces in this step.
 		/// </summary>
 		/// <param name="loadFactorIncrement">The increment of the load factor.</param>
 		public void IncrementLoad(double loadFactorIncrement)
 		{
 			if (this.Any() && this.Last() is SimulationIterationResult itResult)
 				itResult.LoadFactorIncrement = loadFactorIncrement;
-			
+
 			// Get the actual force multiplier
 			var lf = 1D + loadFactorIncrement / LoadFactor;
-			
+
 			// Update values
 			LoadFactor += loadFactorIncrement;
 			Forces     *= lf;
 		}
-		
+
+		/// <summary>
+		///     Iterate to find solution.
+		/// </summary>
+		/// <param name="femInput">The finite element input.</param>
+		public virtual void Iterate(IFEMInput<IFiniteElement> femInput)
+		{
+			// Initiate first iteration
+			foreach (var iteration in this)
+				iteration.Number = 0;
+
+			// Iterate
+			do
+			{
+				// Add iteration
+				NewIteration();
+
+				// Update stiffness and displacements
+				UpdateDisplacements(this, femInput);
+				UpdateStiffness(this, femInput);
+
+				// Calculate element forces
+				femInput.CalculateForces();
+
+				// Update internal forces
+				var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
+				var intForces = femInput.AssembleInternalForces();
+				OngoingIteration.UpdateForces(extForces, intForces);
+
+				// Calculate convergence
+				OngoingIteration.CalculateConvergence(extForces, FirstIteration.DisplacementIncrement);
+				
+			} while (!IterativeStop());
+		}
+
+		/// <summary>
+		///     Add a new iteration in this load step.
+		/// </summary>
+		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
+		public void NewIteration(bool simulate = false)
+		{
+			Add(this.Any()
+				? this.Last().Clone()
+				: IterationResult.FromStepResult(this, simulate));
+
+			// Increase iteration count
+			this.Last().Number++;
+		}
+
 		/// <summary>
 		///     Set step results after achieving convergence.
 		/// </summary>
 		public void SetResults(int? monitoredIndex = null)
 		{
-			IsCalculated  = true;
-			Convergence   = this.Last().ForceConvergence;
-
 			if (!monitoredIndex.HasValue)
 				return;
 
@@ -220,16 +272,24 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///		Get the accumulated displacement increment from the beginning of this load step until a final index.
+		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.
 		/// </summary>
-		/// <param name="finalIndex">The final index to consider increments.</param>
-		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex) =>
-			this[finalIndex].Displacements - InitialDisplacements;
+		/// <returns>
+		///     True if convergence is reached or the maximum number of iterations is reached.
+		/// </returns>
+		protected bool IterativeStop()
+		{
+			// Check if one stop condition is reached
+			Stop = OngoingIteration.CheckStopCondition(Parameters);
 
-		/// <summary>
-		///		Get the total accumulated displacement increment at this load step.
-		/// </summary>
-		public Vector<double> AccumulatedDisplacementIncrement() => AccumulatedDisplacementIncrement(^1);
+			// Check convergence
+			Converged = OngoingIteration.CheckConvergence(Parameters);
+
+			return
+				Stop || Converged;
+		}
+
+		#region Interface Implementations
 
 		/// <inheritdoc />
 		public LoadStep Clone() => new(Number, Forces.Clone(), FinalDisplacements.Clone(), Stiffness.Clone(), Parameters)
@@ -237,34 +297,9 @@ namespace andrefmello91.FEMAnalysis
 			LoadFactor = LoadFactor
 		};
 
-		/// <summary>
-		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.
-		/// </summary>
-		/// <remarks>
-		///     If the maximum number of iterations is reached, <see cref="IterationResult.Stop" /> is set to true.
-		/// </remarks>
-		/// <returns>
-		///     True if convergence is reached or the maximum number of iterations is reached.
-		/// </returns>
-		protected bool IterativeStop()
-		{
-			// Check if one stop condition is reached
-			OngoingIteration.Stop = OngoingIteration >= Parameters.MaxIterations           || OngoingIteration.ResidualForces.ContainsNaNOrInfinity() ||
-									OngoingIteration.Displacements.ContainsNaNOrInfinity() || OngoingIteration.Stiffness.ContainsNaN();
+		#endregion
 
-			return 
-				OngoingIteration.Stop ||
-				VerifyConvergence(OngoingIteration.ForceConvergence, Parameters.ForceTolerance) ||
-				VerifyConvergence(OngoingIteration.DisplacementConvergence, Parameters.DisplacementTolerance);
-		}
-		
-		/// <summary>
-		///     Returns true if achieved convergence.
-		/// </summary>
-		/// <param name="convergence"> Calculated convergence. </param>
-		/// <param name="tolerance">The required tolerance.</param>
-		/// <param name="minIterations">The minimum number of iterations.</param>
-		protected bool VerifyConvergence(double convergence, double tolerance, int minIterations = 2) => convergence <= tolerance && OngoingIteration >= minIterations;
+		#region Object override
 
 		/// <inheritdoc />
 		public override string ToString() => $"Load step {Number}";
@@ -284,40 +319,40 @@ namespace andrefmello91.FEMAnalysis
 		public static explicit operator int(LoadStep loadStep) => loadStep.Number;
 
 		/// <summary>
-		///		Check the step number.
+		///     Check the step number.
 		/// </summary>
 		/// <returns>
-		///		True if the step number is equal to the right number.
+		///     True if the step number is equal to the right number.
 		/// </returns>
 		public static bool operator ==(LoadStep left, int right) => left.Number == right;
 
-		/// <inheritdoc cref="op_Equality"/>
+		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
-		///		True if the step number is not equal to the right number.
+		///     True if the step number is not equal to the right number.
 		/// </returns>
 		public static bool operator !=(LoadStep left, int right) => left.Number != right;
 
-		/// <inheritdoc cref="op_Equality"/>
+		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
-		///		True if the step number is bigger than the right number.
+		///     True if the step number is bigger than the right number.
 		/// </returns>
 		public static bool operator >(LoadStep left, int right) => left.Number > right;
 
-		/// <inheritdoc cref="op_Equality"/>
+		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
-		///		True if the step number is smaller than the right number.
+		///     True if the step number is smaller than the right number.
 		/// </returns>
 		public static bool operator <(LoadStep left, int right) => left.Number < right;
-		
-		/// <inheritdoc cref="op_Equality"/>
+
+		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
-		///		True if the step number is bigger or equal to the right number.
+		///     True if the step number is bigger or equal to the right number.
 		/// </returns>
 		public static bool operator >=(LoadStep left, int right) => left.Number >= right;
 
-		/// <inheritdoc cref="op_Equality"/>
+		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
-		///		True if the step number is smaller or equal to the right number.
+		///     True if the step number is smaller or equal to the right number.
 		/// </returns>
 		public static bool operator <=(LoadStep left, int right) => left.Number <= right;
 

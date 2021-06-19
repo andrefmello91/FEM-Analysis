@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using andrefmello91.Extensions;
@@ -31,10 +30,10 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="loadStepResults">The values of step results.</param>
 		public FEMOutput([NotNull] IEnumerable<LoadStep> loadStepResults)
-			: base (loadStepResults.Where(ls => ls.MonitoredDisplacement.HasValue).Select(ls => ls.MonitoredDisplacement!.Value))
+			: base(loadStepResults.Where(ls => ls.MonitoredDisplacement.HasValue).Select(ls => ls.MonitoredDisplacement!.Value))
 		{
 			LoadStepResults = loadStepResults
-				.Where(ls => ls.IsCalculated)
+				.Where(ls => ls.Converged)
 				.ToList();
 		}
 
@@ -74,5 +73,6 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		#endregion
+
 	}
 }

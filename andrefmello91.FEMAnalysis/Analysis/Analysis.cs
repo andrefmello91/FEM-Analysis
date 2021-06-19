@@ -40,7 +40,7 @@ namespace andrefmello91.FEMAnalysis
 		public virtual Matrix<double>? GlobalStiffness { get; protected set; }
 
 		/// <summary>
-		///		The DoF indexes of known displacements for displacement control.
+		///     The DoF indexes of known displacements for displacement control.
 		/// </summary>
 		protected List<int> KnownDisplacementIndex { get; } = new();
 
@@ -73,18 +73,70 @@ namespace andrefmello91.FEMAnalysis
 				? globalStiffness.Solve(forceVector)
 				: null;
 
-		///  <summary>
-		/// 		Get the global stiffness simplified.
-		///  </summary>
-		///  <param name="stiffness">The global stiffness <see cref="Matrix{T}" /> to simplify.</param>
-		///  <param name="indexes">The DoF indexes to simplify matrix.</param>
-		///  <param name="simplifyZeroRows">Simplify matrix at rows containing only zero elements?</param>
+		/// <summary>
+		///     Get the force vector simplified by constraints.
+		/// </summary>
+		/// <param name="forceVector">The global force vector.</param>
+		/// <param name="constraintIndexes">The constrained DoF indexes.</param>
+		public static Vector<double> SimplifiedForces(Vector<double> forceVector, IEnumerable<int> constraintIndexes)
+		{
+			var simplifiedForces = forceVector.Clone();
+
+			// Clear the row in the force vector
+			foreach (var i in constraintIndexes)
+				simplifiedForces[i] = 0;
+
+			return simplifiedForces;
+		}
+
+
+		/// <summary>
+		///     Get the force vector simplified by constraints and known displacements.
+		/// </summary>
+		/// <inheritdoc cref="SimplifiedForces(Vector{double}, IEnumerable{int})" />
+		/// <param name="stiffness">The full global stiffness <see cref="Matrix{T}" /> (not simplified).</param>
+		/// <param name="appliedDisplacements">The vector of known applied displacements.</param>
+		public static Vector<double> SimplifiedForces(Vector<double> forceVector, IEnumerable<int> constraintIndexes, Matrix<double> stiffness, Vector<double> appliedDisplacements)
+		{
+			// Simplify by constraints
+			var simplifiedForces = forceVector.Clone();
+			var knownDispIndex   = new List<int>();
+
+			// Clear the row in the force vector
+			for (var i = 0; i < appliedDisplacements.Count; i++)
+			{
+				var di = appliedDisplacements[i];
+
+				if (di.ApproxZero())
+					continue;
+
+				// Add to known displacement index
+				knownDispIndex.Add(i);
+
+				// Subtract equivalent forces from force vector
+				simplifiedForces -= stiffness.Column(i) * di;
+			}
+
+			// Set displacements to force vector
+			foreach (var i in knownDispIndex)
+				simplifiedForces[i] = appliedDisplacements[i];
+
+
+			return SimplifiedForces(simplifiedForces, constraintIndexes);
+		}
+
+		/// <summary>
+		///     Get the global stiffness simplified.
+		/// </summary>
+		/// <param name="stiffness">The global stiffness <see cref="Matrix{T}" /> to simplify.</param>
+		/// <param name="indexes">The DoF indexes to simplify matrix.</param>
+		/// <param name="simplifyZeroRows">Simplify matrix at rows containing only zero elements?</param>
 		public static Matrix<double> SimplifiedStiffness(Matrix<double> stiffness, IEnumerable<int> indexes, bool simplifyZeroRows = true)
 		{
 			var simplifiedStiffness = stiffness.Clone();
 
 			var index = indexes.ToArray();
-			
+
 			// Clear the rows and columns in the stiffness matrix
 			simplifiedStiffness.ClearRows(index);
 			simplifiedStiffness.ClearColumns(index);
@@ -107,63 +159,11 @@ namespace andrefmello91.FEMAnalysis
 				// Set the diagonal element to 1
 				simplifiedStiffness[i, i] = 1;
 			}
-			
+
 
 			return simplifiedStiffness;
 		}
 
-		/// <summary>
-		///		Get the force vector simplified by constraints.
-		/// </summary>
-		/// <param name="forceVector">The global force vector.</param>
-		///  <param name="constraintIndexes">The constrained DoF indexes.</param>
-		public static Vector<double> SimplifiedForces(Vector<double> forceVector, IEnumerable<int> constraintIndexes)
-		{
-			var simplifiedForces = forceVector.Clone();
-			
-			// Clear the row in the force vector
-			foreach (var i in constraintIndexes)
-				simplifiedForces[i] = 0;
-
-			return simplifiedForces;
-		}
-
-
-		///  <summary>
-		/// 		Get the force vector simplified by constraints and known displacements.
-		///  </summary>
-		///  <inheritdoc cref="SimplifiedForces(Vector{double}, IEnumerable{int})"/>
-		///  <param name="stiffness">The full global stiffness <see cref="Matrix{T}" /> (not simplified).</param>
-		///  <param name="appliedDisplacements">The vector of known applied displacements.</param>
-		public static Vector<double> SimplifiedForces(Vector<double> forceVector, IEnumerable<int> constraintIndexes, Matrix<double> stiffness, Vector<double> appliedDisplacements)
-		{
-			// Simplify by constraints
-			var simplifiedForces = forceVector.Clone();
-			var knownDispIndex   = new List<int>();
-			
-			// Clear the row in the force vector
-			for (int i = 0; i < appliedDisplacements.Count; i++)
-			{
-				var di = appliedDisplacements[i];
-				
-				if (di.ApproxZero())
-					continue;
-				
-				// Add to known displacement index
-				knownDispIndex.Add(i);
-				
-				// Subtract equivalent forces from force vector
-				simplifiedForces -= stiffness.Column(i) * di;
-			}
-
-			// Set displacements to force vector
-			foreach (var i in knownDispIndex)
-				simplifiedForces[i] = appliedDisplacements[i];
-			
-
-			return SimplifiedForces(simplifiedForces, constraintIndexes);
-		}
-		
 		/// <summary>
 		///     Calculate the <see cref="Vector" /> of support reactions.
 		/// </summary>

@@ -36,7 +36,7 @@
 		/// </summary>
 		Secant
 	}
-	
+
 	/// <summary>
 	///     Types of nonlinear analysis control.
 	/// </summary>

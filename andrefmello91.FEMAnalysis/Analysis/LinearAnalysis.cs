@@ -34,11 +34,11 @@ namespace andrefmello91.FEMAnalysis
 
 			// Assemble stiffness
 			UpdateStiffness();
-			
+
 			// Simplify global stiffness and force vector
 			var stiffness = SimplifiedStiffness(GlobalStiffness!, FemInput.ConstraintIndex);
 			var forces    = SimplifiedForces(ForceVector, FemInput.ConstraintIndex);
-			
+
 			// Solve
 			DisplacementVector = CalculateDisplacements(stiffness, forces)!;
 
