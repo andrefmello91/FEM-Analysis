@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;

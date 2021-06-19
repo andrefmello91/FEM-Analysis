@@ -149,7 +149,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update displacements.
 		/// </summary>
-		public static void UpdateDisplacements(LoadStep step, IFEMInput<IFiniteElement> femInput)
+		public static void UpdateDisplacements<TIteration>(LoadStep<TIteration> step, IFEMInput<IFiniteElement> femInput)
+			where TIteration : class, IIteration
 		{
 			var ongIt  = step.OngoingIteration;
 			var curSol = step.CurrentSolution;
@@ -166,7 +167,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
 		/// </summary>
-		public static void UpdateStiffness(LoadStep step, IFEMInput<IFiniteElement> femInput)
+		public static void UpdateStiffness<TIteration>(LoadStep<TIteration> step, IFEMInput<IFiniteElement> femInput)
+			where TIteration : class, IIteration
 		{
 			var ongIt = step.OngoingIteration;
 
@@ -182,7 +184,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// For Newton-Raphson
 				case NonLinearSolver.NewtonRaphson:
-				case NonLinearSolver.ModifiedNewtonRaphson when ongIt == 1:
+				case NonLinearSolver.ModifiedNewtonRaphson when ongIt.Number == 1:
 					// Update stiffness in elements
 					femInput.UpdateStiffness();
 

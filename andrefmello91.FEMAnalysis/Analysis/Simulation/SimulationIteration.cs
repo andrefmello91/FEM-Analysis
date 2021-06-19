@@ -6,7 +6,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 	/// <summary>
 	///     Iteration result class for simulations.
 	/// </summary>
-	internal class SimulationIterationResult : IterationResult, ICloneable<SimulationIterationResult>
+	public class SimulationIteration : Iteration, ICloneable<SimulationIteration>
 	{
 
 		#region Properties
@@ -49,12 +49,12 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		#region Constructors
 
 		/// <inheritdoc />
-		internal SimulationIterationResult(int numberOfDoFs) : base(numberOfDoFs)
+		internal SimulationIteration(int numberOfDoFs) : base(numberOfDoFs)
 		{
 		}
 
 		/// <inheritdoc />
-		internal SimulationIterationResult(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness) : base(displacements, residualForces, stiffness)
+		internal SimulationIteration(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness) : base(displacements, residualForces, stiffness)
 		{
 		}
 
@@ -81,7 +81,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		#region Interface Implementations
 
 		/// <inheritdoc />
-		public new SimulationIterationResult Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone())
+		public new SimulationIteration Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone())
 		{
 			Number              = Number,
 			LoadFactorIncrement = LoadFactorIncrement,
