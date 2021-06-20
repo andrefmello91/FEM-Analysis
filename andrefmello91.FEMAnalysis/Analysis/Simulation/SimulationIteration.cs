@@ -6,7 +6,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 	/// <summary>
 	///     Iteration result class for simulations.
 	/// </summary>
-	public class SimulationIteration : Iteration, ICloneable<SimulationIteration>
+	public class SimulationIteration : Iteration, IIteration, ICloneable<SimulationIteration>
 	{
 
 		#region Properties
@@ -22,7 +22,7 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		/// <returns>
 		///     <see cref="IncrementFromResidual" /> + <see cref="LoadFactorIncrement" /> * <see cref="IncrementFromExternal" />
 		/// </returns>
-		public new Vector<double> DisplacementIncrement => IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal;
+		public override Vector<double> DisplacementIncrement => IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal;
 
 		/// <summary>
 		///     The displacement increment vector from external forces of this iteration.
@@ -49,12 +49,14 @@ namespace andrefmello91.FEMAnalysis.Simulation
 		#region Constructors
 
 		/// <inheritdoc />
-		internal SimulationIteration(int numberOfDoFs) : base(numberOfDoFs)
+		internal SimulationIteration(int numberOfDoFs)
+			: base(numberOfDoFs)
 		{
 		}
 
 		/// <inheritdoc />
-		internal SimulationIteration(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness) : base(displacements, residualForces, stiffness)
+		internal SimulationIteration(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness)
+			: base(displacements, residualForces, stiffness)
 		{
 		}
 
@@ -88,6 +90,9 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			ArcLength           = ArcLength,
 			StiffnessParameter  = StiffnessParameter
 		};
+		
+		/// <inheritdoc />
+		IIteration ICloneable<IIteration>.Clone() => Clone();
 
 		#endregion
 

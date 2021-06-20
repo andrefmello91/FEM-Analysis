@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
@@ -123,5 +124,91 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+	}
+	
+	/// <summary>
+	///		Interface for iterations.
+	/// </summary>
+	public interface IIteration : ICloneable<IIteration>
+	{
+		/// <summary>
+		///     The displacement convergence of this iteration.
+		/// </summary>
+		double DisplacementConvergence { get; }
+
+		/// <summary>
+		///     The displacement increment vector from external forces of this iteration.
+		/// </summary>
+		Vector<double> DisplacementIncrement { get; }
+
+		/// <summary>
+		///     The displacement vector of this iteration.
+		/// </summary>
+		Vector<double> Displacements { get; }
+
+		/// <summary>
+		///     The force convergence of this iteration.
+		/// </summary>
+		double ForceConvergence { get; }
+
+		/// <summary>
+		///     The internal force vector of this iteration.
+		/// </summary>
+		Vector<double> InternalForces { get; }
+
+		/// <summary>
+		///     The number of this iteration.
+		/// </summary>
+		int Number { get; set; }
+
+		/// <summary>
+		///     The residual force vector of this iteration.
+		/// </summary>
+		Vector<double> ResidualForces { get; }
+
+		/// <summary>
+		///     The stiffness matrix of this iteration.
+		/// </summary>
+		Matrix<double> Stiffness { get; set; }
+
+		/// <summary>
+		///     Calculate the convergence of this iteration.
+		/// </summary>
+		/// <param name="appliedForces">The applied forces of the current step.</param>
+		/// <param name="initialIncrement">The displacement increment of the first iteration.</param>
+		void CalculateConvergence(IEnumerable<double> appliedForces, IEnumerable<double> initialIncrement);
+
+		/// <summary>
+		///     Check convergence for this iteration.
+		/// </summary>
+		/// <param name="parameters">The analysis parameters.</param>
+		/// <returns>
+		///     True if this iteration number is equal or bigger than minimum iterations and force or displacement convergences are
+		///     smaller than their respective tolerances.
+		/// </returns>
+		bool CheckConvergence(AnalysisParameters parameters);
+
+		/// <summary>
+		///     Check the stop condition for this iteration.
+		/// </summary>
+		/// <inheritdoc cref="CheckConvergence" />
+		/// <returns>
+		///     True if this iteration number is equal or bigger than maximum number of iterations or any of tha analysis vectors
+		///     and matrix contains <see cref="double.NaN" />.
+		/// </returns>
+		bool CheckStopCondition(AnalysisParameters parameters);
+
+		/// <summary>
+		///     Increment displacements of this iteration.
+		/// </summary>
+		/// <param name="displacementIncrement">The vector of displacement increments.</param>
+		void IncrementDisplacements(Vector<double> displacementIncrement);
+
+		/// <summary>
+		///     Update forces in this iteration.
+		/// </summary>
+		/// <param name="appliedForces">The vector of applied forces of the current step.</param>
+		/// <param name="internalForces">The vector of internal forces.</param>
+		void UpdateForces(Vector<double> appliedForces, Vector<double> internalForces);
 	}
 }

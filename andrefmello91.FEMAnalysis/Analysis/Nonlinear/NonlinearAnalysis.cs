@@ -149,8 +149,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update displacements.
 		/// </summary>
-		public static void UpdateDisplacements<TIteration>(LoadStep<TIteration> step, IFEMInput<IFiniteElement> femInput)
-			where TIteration : class, IIteration
+		public static void UpdateDisplacements(LoadStep step, IFEMInput<IFiniteElement> femInput)
 		{
 			var ongIt  = step.OngoingIteration;
 			var curSol = step.CurrentSolution;
@@ -167,8 +166,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
 		/// </summary>
-		public static void UpdateStiffness<TIteration>(LoadStep<TIteration> step, IFEMInput<IFiniteElement> femInput)
-			where TIteration : class, IIteration
+		public static void UpdateStiffness(LoadStep step, IFEMInput<IFiniteElement> femInput)
 		{
 			var ongIt = step.OngoingIteration;
 
@@ -272,7 +270,7 @@ namespace andrefmello91.FEMAnalysis
 			var lf0 = StepIncrement();
 
 			// Do the initial step
-			var step = LoadStep.InitialStep(FemInput, lf0, Parameters);
+			var step = LoadStep.InitialStep(FemInput, lf0, Parameters, _simulate);
 
 			// Initiate lists solution values
 			Steps.Clear();
@@ -321,13 +319,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Create a new load step.
 		/// </summary>
-		private void NewStep()
-		{
-			Steps.Add(CurrentStep.Clone());
-
-			// Increment step
-			CurrentStep.Number++;
-		}
+		private void NewStep() => Steps.Add(LoadStep.FromLastStep(CurrentStep));
 
 		#region Interface Implementations
 

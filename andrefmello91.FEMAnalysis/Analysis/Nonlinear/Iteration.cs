@@ -6,102 +6,19 @@ using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
 {
-	public interface IIteration : ICloneable<IIteration>
-	{
-		/// <summary>
-		///     The displacement convergence of this iteration.
-		/// </summary>
-		double DisplacementConvergence { get; }
 
-		/// <summary>
-		///     The displacement increment vector from external forces of this iteration.
-		/// </summary>
-		Vector<double> DisplacementIncrement { get; }
-
-		/// <summary>
-		///     The displacement vector of this iteration.
-		/// </summary>
-		Vector<double> Displacements { get; }
-
-		/// <summary>
-		///     The force convergence of this iteration.
-		/// </summary>
-		double ForceConvergence { get; }
-
-		/// <summary>
-		///     The internal force vector of this iteration.
-		/// </summary>
-		Vector<double> InternalForces { get; }
-
-		/// <summary>
-		///     The number of this iteration.
-		/// </summary>
-		int Number { get; set; }
-
-		/// <summary>
-		///     The residual force vector of this iteration.
-		/// </summary>
-		Vector<double> ResidualForces { get; }
-
-		/// <summary>
-		///     The stiffness matrix of this iteration.
-		/// </summary>
-		Matrix<double> Stiffness { get; set; }
-
-		/// <summary>
-		///     Calculate the convergence of this iteration.
-		/// </summary>
-		/// <param name="appliedForces">The applied forces of the current step.</param>
-		/// <param name="initialIncrement">The displacement increment of the first iteration.</param>
-		void CalculateConvergence(IEnumerable<double> appliedForces, IEnumerable<double> initialIncrement);
-
-		/// <summary>
-		///     Check convergence for this iteration.
-		/// </summary>
-		/// <param name="parameters">The analysis parameters.</param>
-		/// <returns>
-		///     True if this iteration number is equal or bigger than minimum iterations and force or displacement convergences are
-		///     smaller than their respective tolerances.
-		/// </returns>
-		bool CheckConvergence(AnalysisParameters parameters);
-
-		/// <summary>
-		///     Check the stop condition for this iteration.
-		/// </summary>
-		/// <inheritdoc cref="CheckConvergence" />
-		/// <returns>
-		///     True if this iteration number is equal or bigger than maximum number of iterations or any of tha analysis vectors
-		///     and matrix contains <see cref="double.NaN" />.
-		/// </returns>
-		bool CheckStopCondition(AnalysisParameters parameters);
-
-		/// <summary>
-		///     Increment displacements of this iteration.
-		/// </summary>
-		/// <param name="displacementIncrement">The vector of displacement increments.</param>
-		void IncrementDisplacements(Vector<double> displacementIncrement);
-
-		/// <summary>
-		///     Update forces in this iteration.
-		/// </summary>
-		/// <param name="appliedForces">The vector of applied forces of the current step.</param>
-		/// <param name="internalForces">The vector of internal forces.</param>
-		void UpdateForces(Vector<double> appliedForces, Vector<double> internalForces);
-	}
-	
 	/// <summary>
 	///     Class for nonlinear iteration results.
 	/// </summary>
 	public class Iteration : IIteration, ICloneable<Iteration>
 	{
-
 		#region Properties
 
 		/// <inheritdoc/>
 		public double DisplacementConvergence { get; private set; }
 
 		/// <inheritdoc/>
-		public Vector<double> DisplacementIncrement { get; private set; }
+		public virtual Vector<double> DisplacementIncrement { get; private set; }
 
 		/// <inheritdoc/>
 		public Vector<double> Displacements { get; protected set; }
@@ -125,22 +42,14 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Constructors
 
-		/// <summary>
-		///     Create an iteration object with elements composed by zero..
-		/// </summary>
-		/// <param name="numberOfDoFs">The number of degrees of freedom.</param>
-		public Iteration(int numberOfDoFs)
+		/// <inheritdoc cref="From(int,bool)"/>
+		protected Iteration(int numberOfDoFs)
 			: this(Vector<double>.Build.Dense(numberOfDoFs), Vector<double>.Build.Dense(numberOfDoFs), Matrix<double>.Build.Dense(numberOfDoFs, numberOfDoFs))
 		{
 		}
 
-		/// <summary>
-		///     Create an iteration object.
-		/// </summary>
-		/// <param name="displacements">The displacement vector of this iteration.</param>
-		/// <param name="residualForces">The residual force vector of this iteration.</param>
-		/// <param name="stiffness">The stiffness matrix of this iteration.</param>
-		public Iteration(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness)
+		/// <inheritdoc cref="From(Vector{double}, Vector{double}, Matrix{double}, bool)"/>
+		protected Iteration(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness)
 		{
 			Displacements         = displacements;
 			ResidualForces        = residualForces;
@@ -154,12 +63,35 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <summary>
+		///     Create an iteration object.
+		/// </summary>
+		/// <param name="numberOfDoFs">The number of degrees of freedom.</param>
+		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
+		public static IIteration From(int numberOfDoFs, bool simulate = false) => simulate switch
+		{
+			false => new Iteration(numberOfDoFs),
+			_     => new SimulationIteration(numberOfDoFs)
+		};
+		
+		/// <summary>
+		///     Create an iteration object.
+		/// </summary>
+		/// <param name="displacements">The displacement vector of this iteration.</param>
+		/// <param name="residualForces">The residual force vector of this iteration.</param>
+		/// <param name="stiffness">The stiffness matrix of this iteration.</param>
+		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
+		public static IIteration From(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness, bool simulate = false) => simulate switch
+		{
+			false => new Iteration(displacements, residualForces, stiffness),
+			_     => new SimulationIteration(displacements, residualForces, stiffness)
+		};
+		
+		/// <summary>
 		///     Create an iteration result from a load step result.
 		/// </summary>
 		/// <param name="loadStep">A calculated load step.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		public static IIteration FromStepResult<TIteration>(LoadStep<TIteration> loadStep, bool simulate = false)
-			where TIteration : class, IIteration => simulate switch
+		public static IIteration FromStepResult(LoadStep loadStep, bool simulate = false) => simulate switch
 		{
 			false => new Iteration(loadStep.FinalDisplacements, Vector<double>.Build.Dense(loadStep.FinalDisplacements.Count), loadStep.Stiffness),
 			_     => new SimulationIteration(loadStep.FinalDisplacements, Vector<double>.Build.Dense(loadStep.FinalDisplacements.Count), loadStep.Stiffness)
