@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using andrefmello91.Extensions;
-using andrefmello91.FEMAnalysis.Simulation;
+using andrefmello91.FEMAnalysis;
 using MathNet.Numerics.LinearAlgebra;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 

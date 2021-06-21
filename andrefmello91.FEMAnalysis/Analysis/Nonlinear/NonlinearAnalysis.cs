@@ -266,11 +266,8 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		protected virtual void InitialStep()
 		{
-			// Get initial load factor
-			var lf0 = StepIncrement();
-
 			// Do the initial step
-			var step = LoadStep.InitialStep(FemInput, lf0, Parameters, _simulate);
+			var step = LoadStep.InitialStep(FemInput, Parameters, _simulate);
 
 			// Initiate lists solution values
 			Steps.Clear();
@@ -288,10 +285,6 @@ namespace andrefmello91.FEMAnalysis
 			// Step-by-step analysis
 			do
 			{
-				// Increment load step
-				if (CurrentStep > 1)
-					CurrentStep.IncrementLoad(StepIncrement());
-
 				// Iterate
 				CurrentStep.Iterate(FemInput);
 
@@ -313,13 +306,14 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the step increment.
 		/// </summary>
-		/// <inheritdoc cref="StepAnalysis" />
-		protected virtual double StepIncrement() => 1D / Parameters.NumberOfSteps;
+		/// <param name="numberOfSteps">The number of load steps.</param>
+		public static double StepIncrement(int numberOfSteps) => 1D / numberOfSteps;
 
 		/// <summary>
 		///     Create a new load step.
 		/// </summary>
-		private void NewStep() => Steps.Add(LoadStep.FromLastStep(CurrentStep));
+		///  <param name="incrementLoad">Increment load of the new step?</param>
+		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
 
 		#region Interface Implementations
 
