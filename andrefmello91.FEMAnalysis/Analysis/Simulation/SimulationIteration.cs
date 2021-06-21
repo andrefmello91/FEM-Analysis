@@ -1,7 +1,7 @@
 ﻿using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 
-namespace andrefmello91.FEMAnalysis.Simulation
+namespace andrefmello91.FEMAnalysis
 {
 	/// <summary>
 	///     Iteration result class for simulations.
@@ -91,6 +91,24 @@ namespace andrefmello91.FEMAnalysis.Simulation
 			StiffnessParameter  = StiffnessParameter
 		};
 		
+		/// <summary>
+		///		Calculate the current stiffness parameter for defining the sign of the load factor increment.
+		/// </summary>
+		public void CalculateStiffnessParameter(LoadStep step)
+		{
+			if (Number <= 1)
+			{
+				StiffnessParameter = 1;
+				return;
+			}
+
+			var inc = DisplacementIncrement;
+
+			var k = (step.Forces.ToRowMatrix() * inc)[0] / (inc.ToRowMatrix() * inc)[0];
+
+			StiffnessParameter = k / ((SimulationIteration) step.FirstIteration).StiffnessParameter;
+		}
+
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();
 

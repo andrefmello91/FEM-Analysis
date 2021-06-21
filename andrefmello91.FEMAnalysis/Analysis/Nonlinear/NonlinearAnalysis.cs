@@ -147,56 +147,6 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Update displacements.
-		/// </summary>
-		public static void UpdateDisplacements(LoadStep step, IFEMInput<IFiniteElement> femInput)
-		{
-			var ongIt  = step.OngoingIteration;
-			var curSol = step.CurrentSolution;
-
-			// Increment displacements
-			var stiffness = SimplifiedStiffness(ongIt.Stiffness, femInput.ConstraintIndex);
-			ongIt.IncrementDisplacements(-stiffness.Solve(curSol.ResidualForces));
-
-			// Update displacements in grips and elements
-			femInput.Grips.SetDisplacements(ongIt.Displacements);
-			femInput.UpdateDisplacements();
-		}
-
-		/// <summary>
-		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
-		/// </summary>
-		public static void UpdateStiffness(LoadStep step, IFEMInput<IFiniteElement> femInput)
-		{
-			var ongIt = step.OngoingIteration;
-
-			switch (step.Parameters.Solver)
-			{
-				case NonLinearSolver.Secant:
-					// Increment current stiffness
-					var curSol  = step.CurrentSolution;
-					var lastSol = step.LastSolution;
-
-					ongIt.Stiffness += SecantIncrement(curSol.Stiffness, curSol.Displacements, lastSol.Displacements, curSol.ResidualForces, lastSol.ResidualForces);
-					break;
-
-				// For Newton-Raphson
-				case NonLinearSolver.NewtonRaphson:
-				case NonLinearSolver.ModifiedNewtonRaphson when ongIt.Number == 1:
-					// Update stiffness in elements
-					femInput.UpdateStiffness();
-
-					// Set new values
-					ongIt.Stiffness = femInput.AssembleStiffness();
-
-					break;
-
-				default:
-					return;
-			}
-		}
-
-		/// <summary>
 		///     Calculate the convergence.
 		/// </summary>
 		/// <param name="numerator">

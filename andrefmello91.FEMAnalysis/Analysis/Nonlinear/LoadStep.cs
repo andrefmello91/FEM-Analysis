@@ -9,7 +9,7 @@ using UnitsNet;
 
 using static andrefmello91.FEMAnalysis.Analysis<andrefmello91.FEMAnalysis.IFiniteElement>;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
-// using static andrefmello91.FEMAnalysis.Simulation;
+using static andrefmello91.FEMAnalysis.Simulation;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -110,6 +110,19 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public Matrix<double> Stiffness => _iterations.Last().Stiffness;
 
+		/// <summary>
+		///		The required number of iterations for achieving convergence for this load step.
+		/// </summary>
+		public int RequiredIterations => _iterations.Count(i => i.Number > 0);
+
+		/// <summary>
+		///		The desired number of iterations for achieving convergence for this load step.
+		/// </summary>
+		/// <remarks>
+		///		Default : 5
+		///	</remarks>
+		public int DesiredIterations { get; set; } = 5;
+		
 		/// <summary>
 		///     Get/set when to stop analysis.
 		/// </summary>
@@ -276,9 +289,16 @@ namespace andrefmello91.FEMAnalysis
 				// Add iteration
 				NewIteration(_simulate);
 
-				// Update stiffness and displacements
-				UpdateDisplacements(this, femInput);
-				UpdateStiffness(this, femInput);
+				// Do the initial iteration
+				if(_simulate && OngoingIteration.Number == 1)
+					InitialIteration(femInput);
+				
+				else
+				{
+					// Update stiffness and displacements
+					UpdateDisplacements(femInput);
+					UpdateStiffness(femInput);
+				}
 
 				// Calculate element forces
 				femInput.CalculateForces();
@@ -308,7 +328,6 @@ namespace andrefmello91.FEMAnalysis
 			OngoingIteration.Number++;
 		}
 
-		/*
 		/// <summary>
 		///		Steps to perform at the initial iteration of a simulation.
 		/// </summary>
@@ -318,44 +337,116 @@ namespace andrefmello91.FEMAnalysis
 				return;
 			
 			var stiffness = SimplifiedStiffness(OngoingIteration.Stiffness, femInput.ConstraintIndex);
-
+			var ongIt     = (SimulationIteration) OngoingIteration;
+			
 			switch (Number)
 			{
 				// First iteration of first load step
 				case 1:
 					// Set initial increment
-					IncrementLoad();
+					ongIt.LoadFactorIncrement = StepIncrement(Parameters.NumberOfSteps);
 
 					// Set initial residual
-					var intForces = stiffness * OngoingIteration.Displacements;
-					OngoingIteration.UpdateForces(ForceVector!, intForces);
+					var intForces = stiffness * ongIt.Displacements;
+					ongIt.UpdateForces(_fullForceVector, intForces);
 
-					// Calculate the initial increment
-					IncrementDisplacements();
-
-					// Calculate arc length
-					CalculateArcLength();
+					// Calculate the initial increments
+					var dUr = -stiffness.Solve(ongIt.ResidualForces);
+					var dUf = stiffness.Solve(_fullForceVector);
+					ongIt.IncrementDisplacements(dUr, dUf);
 					
-					return;
+					// Calculate arc length
+					CalculateArcLength(this);
+					
+					break;
 				
 				// First iteration of any load step except the first
 				default:
 					// Check increment sign
-					CalculateStiffnessParameter();
+					ongIt.CalculateStiffnessParameter(this);
 					
 					// Calculate increments
 					var rInc = -stiffness.Solve(CurrentSolution.ResidualForces);
-					var fInc =  stiffness.Solve(SimplifiedForces(ForceVector!, FemInput.ConstraintIndex));
+					var fInc =  stiffness.Solve(SimplifiedForces(_fullForceVector, femInput.ConstraintIndex));
 					
 					// Set increments
-					CurrentStep.IncrementLoad(StepIncrement());
-					OngoingIteration.IncrementDisplacements(rInc, fInc);
+					ongIt.LoadFactorIncrement = StepIncrement(this);
+					ongIt.IncrementDisplacements(rInc, fInc);
 					
+					break;
+			}
+			
+			// Update displacements in grips and elements
+			femInput.Grips.SetDisplacements(ongIt.Displacements);
+			femInput.UpdateDisplacements();
+		}
+		
+		/// <summary>
+		///     Update displacements.
+		/// </summary>
+		private void UpdateDisplacements(IFEMInput<IFiniteElement> femInput)
+		{
+			var ongIt  = OngoingIteration;
+			var curSol = CurrentSolution;
+
+			// Increment displacements
+			var stiffness = SimplifiedStiffness(ongIt.Stiffness, femInput.ConstraintIndex);
+			
+			// Calculate increment from residual
+			var dUr = -stiffness.Solve(curSol.ResidualForces);
+			
+			if (!_simulate)
+				ongIt.IncrementDisplacements(dUr);
+			
+			else
+			{
+				var simIt = (SimulationIteration) ongIt;
+				
+				// Calculate increment from external forces
+				var dUf = stiffness.Solve(_fullForceVector);
+				
+				simIt.IncrementDisplacements(dUr, dUf);
+			}
+				
+			// Update displacements in grips and elements
+			femInput.Grips.SetDisplacements(ongIt.Displacements);
+			femInput.UpdateDisplacements();
+		}
+
+		/// <summary>
+		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
+		/// </summary>
+		private void UpdateStiffness(IFEMInput<IFiniteElement> femInput)
+		{
+			var ongIt = OngoingIteration;
+
+			switch (Parameters.Solver)
+			{
+				case NonLinearSolver.Secant:
+					// Increment current stiffness
+					var curSol  = CurrentSolution;
+					var lastSol = LastSolution;
+
+					ongIt.Stiffness += SecantIncrement(curSol.Stiffness, curSol.Displacements, lastSol.Displacements, curSol.ResidualForces, lastSol.ResidualForces);
+					break;
+
+				// For Newton-Raphson
+				case NonLinearSolver.NewtonRaphson:
+				case NonLinearSolver.ModifiedNewtonRaphson when ongIt.Number == 1:
+					// Update stiffness in elements
+					femInput.UpdateStiffness();
+
+					// Set new values
+					ongIt.Stiffness = femInput.AssembleStiffness();
+
+					break;
+
+				default:
 					return;
 			}
 		}
-		*/
-		
+
+
 		/// <summary>
 		///     Set step results after achieving convergence.
 		/// </summary>

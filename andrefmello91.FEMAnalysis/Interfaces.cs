@@ -210,5 +210,6 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="appliedForces">The vector of applied forces of the current step.</param>
 		/// <param name="internalForces">The vector of internal forces.</param>
 		void UpdateForces(Vector<double> appliedForces, Vector<double> internalForces);
+
 	}
 }
