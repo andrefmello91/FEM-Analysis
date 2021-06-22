@@ -15,7 +15,7 @@ namespace andrefmello91.FEMAnalysis
 		#region Properties
 
 		/// <inheritdoc/>
-		public double DisplacementConvergence { get; private set; }
+		public double DisplacementConvergence { get; protected set; }
 
 		/// <inheritdoc/>
 		public virtual Vector<double> DisplacementIncrement { get; private set; }
@@ -24,7 +24,7 @@ namespace andrefmello91.FEMAnalysis
 		public Vector<double> Displacements { get; protected set; }
 
 		/// <inheritdoc/>
-		public double ForceConvergence { get; private set; }
+		public double ForceConvergence { get; protected set; }
 
 		/// <inheritdoc/>
 		public Vector<double> InternalForces { get; set; }
@@ -105,7 +105,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc/>
-		public bool CheckConvergence(AnalysisParameters parameters) =>
+		public virtual bool CheckConvergence(AnalysisParameters parameters) =>
 			Number >= parameters.MinIterations &&
 			(ForceConvergence <= parameters.ForceTolerance || DisplacementConvergence <= parameters.DisplacementTolerance);
 

@@ -1,4 +1,5 @@
-﻿using andrefmello91.Extensions;
+﻿using System.Collections.Generic;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace andrefmello91.FEMAnalysis
@@ -10,11 +11,6 @@ namespace andrefmello91.FEMAnalysis
 	{
 
 		#region Properties
-
-		/// <summary>
-		///     The Arc-Length calculated for this iteration.
-		/// </summary>
-		public double ArcLength { get; set; }
 
 		/// <summary>
 		///     The displacement increment vector of this iteration.
@@ -87,7 +83,6 @@ namespace andrefmello91.FEMAnalysis
 		{
 			Number              = Number,
 			LoadFactorIncrement = LoadFactorIncrement,
-			ArcLength           = ArcLength,
 			StiffnessParameter  = StiffnessParameter
 		};
 		
@@ -108,6 +103,18 @@ namespace andrefmello91.FEMAnalysis
 
 			StiffnessParameter = k / ((SimulationIteration) step.FirstIteration).StiffnessParameter;
 		}
+
+		/// <summary>
+		///     Calculate the convergence of this iteration.
+		/// </summary>
+		/// <param name="initialIncrement">The displacement increment of the first iteration.</param>
+		public void CalculateConvergence(IEnumerable<double> initialIncrement) =>
+			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
+
+		/// <inheritdoc/>
+		public override bool CheckConvergence(AnalysisParameters parameters) =>
+			Number >= parameters.MinIterations &&
+			DisplacementConvergence <= parameters.DisplacementTolerance;
 
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();

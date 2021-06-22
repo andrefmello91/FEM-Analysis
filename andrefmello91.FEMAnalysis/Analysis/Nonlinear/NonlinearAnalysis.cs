@@ -247,6 +247,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Create step
 				NewStep();
+				
 			} while (_simulate || CurrentStep <= Parameters.NumberOfSteps);
 
 			CorrectResults:
