@@ -3,7 +3,7 @@ using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
-
+using UnitsNet;
 using static andrefmello91.FEMAnalysis.Analysis<andrefmello91.FEMAnalysis.IFiniteElement>;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
@@ -44,6 +44,22 @@ namespace andrefmello91.FEMAnalysis
 		{
 		}
 
+		///  <summary>
+		/// 		Create a load step from the last load step.
+		///  </summary>
+		///  <param name="lastStep">The last load step.</param>
+		public static SimulationStep FromLastStep(SimulationStep lastStep)
+		{
+			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
+			
+			newStep.DesiredIterations = lastStep.DesiredIterations;
+
+			// Update arc length
+			newStep.CalculateArcLength(lastStep.RequiredIterations);
+			
+			return newStep;
+		}
+
 		/// <inheritdoc />
 		public override void IncrementLoad(double loadFactorIncrement)
 		{
@@ -75,21 +91,22 @@ namespace andrefmello91.FEMAnalysis
 						continue;
 				}
 				
-				// Increment forces
-				else
-					IncrementLoad(IterationIncrement());
-				
-				// Update stiffness and displacements
-				UpdateDisplacements(femInput);
+				// Update stiffness
 				UpdateStiffness(femInput);
 
 				// Calculate element forces
 				femInput.CalculateForces();
 
 				// Update internal forces
-				var extForces = SimplifiedForces(FullForceVector, femInput.ConstraintIndex);
-				var intForces = femInput.AssembleInternalForces();
+				var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
+				var intForces = SimplifiedStiffness(OngoingIteration.Stiffness, femInput.ConstraintIndex) * OngoingIteration.Displacements;
 				OngoingIteration.UpdateForces(extForces, intForces);
+
+				// Update displacements
+				UpdateDisplacements(femInput);
+
+				// Increment forces
+				IncrementLoad(IterationIncrement());
 
 				// Calculate convergence
 				((SimulationIteration) OngoingIteration).CalculateConvergence(FirstIteration.DisplacementIncrement);
@@ -102,7 +119,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		private void InitialIteration(IFEMInput<IFiniteElement> femInput)
 		{
-			var ongIt     = (SimulationIteration) OngoingIteration;
+			var ongIt = (SimulationIteration) OngoingIteration;
 			
 			switch (Number)
 			{
@@ -112,11 +129,11 @@ namespace andrefmello91.FEMAnalysis
 					var stiffness = SimplifiedStiffness(OngoingIteration.Stiffness, femInput.ConstraintIndex);
 
 					// Set initial increment
-					IncrementLoad(StepIncrement(Parameters.NumberOfSteps));
+					IncrementLoad(0.1 * StepIncrement(Parameters.NumberOfSteps));
 
 					// Set initial residual
 					var intForces = stiffness * ongIt.Displacements;
-					ongIt.UpdateForces(FullForceVector, intForces);
+					ongIt.UpdateForces(Forces, intForces);
 
 					// Calculate the initial increments
 					var dUr = -stiffness.Solve(ongIt.ResidualForces);
@@ -168,12 +185,8 @@ namespace andrefmello91.FEMAnalysis
 			
 			switch ((int) ongIt)
 			{
-				// First iteration of first load step
-				case 1 when Number == 1:
-					return StepIncrement(Parameters.NumberOfSteps);
-				
 				// First iteration of any load step except the first
-				case 1:
+				case 1 when Number > 1:
 
 					// Get the sign
 					var i = ongIt.StiffnessParameter >= 0
@@ -190,10 +203,11 @@ namespace andrefmello91.FEMAnalysis
 					var deltaU = AccumulatedDisplacementIncrement(^2);
 					
 					// Calculate coefficients
+					var ds2       = dS * dS;
 					var a1        = (dUf.ToRowMatrix() * dUf)[0];
 					var dUrPlusDu = dUr + deltaU;
 					var a2        = (dUrPlusDu.ToRowMatrix() * dUf)[0];
-					var a3        = (dUrPlusDu.ToRowMatrix() * dUrPlusDu)[0] - dS * dS;
+					var a3        = (dUrPlusDu.ToRowMatrix() * dUrPlusDu)[0] - ds2;
 					
 					// Calculate roots
 					var (r1, r2) = FindRoots.Quadratic(a3, 2 * a2, a1);
@@ -222,8 +236,8 @@ namespace andrefmello91.FEMAnalysis
 							var dUrPlusDu2 = dUr + deltaU2;
 							var a21        = (dUrPlusDu1.ToRowMatrix() * dUf)[0];
 							var a22        = (dUrPlusDu2.ToRowMatrix() * dUf)[0];
-							var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - dS * dS;
-							var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - dS * dS;
+							var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - ds2;
+							var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - ds2;
 
 							return -a31 / a21 <= -a32 / a22
 								? d1

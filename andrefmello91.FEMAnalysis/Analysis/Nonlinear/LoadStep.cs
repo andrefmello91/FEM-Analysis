@@ -195,7 +195,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Do the initial load step of a nonlinear analysis procedure.
 		/// </summary>
-		/// <inheritdoc cref="From"/>
+		/// <inheritdoc cref="From(Vector{double},double,Vector{double},Matrix{double},AnalysisParameters,int,bool)"/>
 		/// <returns>
 		///     The initial <see cref="LoadStep" />.
 		/// </returns>
@@ -235,32 +235,24 @@ namespace andrefmello91.FEMAnalysis
 		///  <param name="incrementLoad">Increment load of the new step? If it's a <see cref="SimulationStep"/>, load is not increased.</param>
 		public static LoadStep FromLastStep(LoadStep lastStep, bool incrementLoad = true)
 		{
-			var newStep = From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, lastStep is SimulationStep);
+			if (lastStep is SimulationStep simulationStep)
+				return SimulationStep.FromLastStep(simulationStep);
 			
-			if (newStep is not SimulationStep simStep)
-			{
-				if (incrementLoad)
-					newStep.IncrementLoad();
-				
-				return newStep;
-			}
-
-			var simLastStep = (SimulationStep) lastStep;
+			var newStep = From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1);
 			
-			simStep.DesiredIterations = simLastStep.DesiredIterations;
-
-			// Update arc length
-			simStep.CalculateArcLength(simLastStep.RequiredIterations);
+			if (incrementLoad)
+				newStep.IncrementLoad();
 			
-			return simStep;
+			return newStep;
 		}
 
 		/// <summary>
 		///     Get the accumulated displacement increment from the beginning of this load step until a final index.
 		/// </summary>
 		/// <param name="finalIndex">The final index to consider increments.</param>
-		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex) =>
-			Iterations[finalIndex].Displacements - InitialDisplacements;
+		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex) => Iterations.Count < finalIndex.Value 
+			? Vector<double>.Build.Dense(InitialDisplacements.Count) 
+			: Iterations[finalIndex].Displacements - InitialDisplacements;
 
 		/// <summary>
 		///     Get the total accumulated displacement increment at this load step.
