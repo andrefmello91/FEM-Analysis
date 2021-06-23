@@ -286,20 +286,10 @@ namespace andrefmello91.FEMAnalysis
 				// Add iteration
 				NewIteration();
 
-				// Update stiffness and displacements
+				// Update displacements, stiffness and forces
 				UpdateDisplacements(femInput);
 				UpdateStiffness(femInput);
-
-				// Calculate element forces
-				femInput.CalculateForces();
-
-				// Update internal forces
-				var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
-				var intForces = femInput.AssembleInternalForces();
-				OngoingIteration.UpdateForces(extForces, intForces);
-
-				// Calculate convergence
-				OngoingIteration.CalculateConvergence(extForces, FirstIteration.DisplacementIncrement);
+				UpdateForces(femInput);
 				
 			} while (!IterativeStop());
 		}
@@ -319,6 +309,22 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 
+		/// <summary>
+		///		Update forces and calculate convergence.
+		/// </summary>
+		protected virtual void UpdateForces(IFEMInput<IFiniteElement> femInput)
+		{
+			// Calculate element forces
+			femInput.CalculateForces();
+
+			// Update internal forces
+			var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
+			var intForces = femInput.AssembleInternalForces();
+			OngoingIteration.UpdateForces(extForces, intForces);
+			
+			// Calculate convergence
+			OngoingIteration.CalculateConvergence(extForces, FirstIteration.DisplacementIncrement);
+		}
 		
 		/// <summary>
 		///     Update displacements.

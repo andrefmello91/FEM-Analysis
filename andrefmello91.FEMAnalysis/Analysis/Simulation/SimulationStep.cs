@@ -94,15 +94,8 @@ namespace andrefmello91.FEMAnalysis
 				// Update stiffness
 				UpdateStiffness(femInput);
 
-				// Calculate element forces
-				femInput.CalculateForces();
-
-				// Update internal forces
-				var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
-				var intForces = SimplifiedStiffness(OngoingIteration.Stiffness, femInput.ConstraintIndex) * OngoingIteration.Displacements;
-				OngoingIteration.UpdateForces(extForces, intForces);
-
-				// Update displacements
+				// Update forces and displacements
+				UpdateForces(femInput);
 				UpdateDisplacements(femInput);
 
 				// Increment forces
@@ -132,7 +125,7 @@ namespace andrefmello91.FEMAnalysis
 					IncrementLoad(0.1 * StepIncrement(Parameters.NumberOfSteps));
 
 					// Set initial residual
-					var intForces = stiffness * ongIt.Displacements;
+					var intForces = femInput.AssembleInternalForces();
 					ongIt.UpdateForces(Forces, intForces);
 
 					// Calculate the initial increments
@@ -171,6 +164,18 @@ namespace andrefmello91.FEMAnalysis
 			// Update displacements in grips and elements
 			femInput.Grips.SetDisplacements(ongIt.Displacements);
 			femInput.UpdateDisplacements();
+		}
+
+		/// <inheritdoc />
+		protected override void UpdateForces(IFEMInput<IFiniteElement> femInput)
+		{
+			// Calculate element forces
+			femInput.CalculateForces();
+
+			// Update internal forces
+			var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
+			var intForces = SimplifiedStiffness(OngoingIteration.Stiffness, femInput.ConstraintIndex) * OngoingIteration.Displacements;
+			OngoingIteration.UpdateForces(extForces, intForces);
 		}
 
 		/// <summary>
