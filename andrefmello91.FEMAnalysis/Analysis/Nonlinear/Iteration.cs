@@ -87,7 +87,7 @@ namespace andrefmello91.FEMAnalysis
 		};
 		
 		/// <summary>
-		///     Create an iteration result from a load step result.
+		///     Create an iteration from a load step result.
 		/// </summary>
 		/// <param name="loadStep">A calculated load step.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>

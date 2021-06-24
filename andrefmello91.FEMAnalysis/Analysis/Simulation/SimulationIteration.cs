@@ -35,11 +35,6 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public double LoadFactorIncrement { get; set; }
 
-		/// <summary>
-		///     The parameter to set the sign of the load increments.
-		/// </summary>
-		public double StiffnessParameter { get; set; }
-
 		#endregion
 
 		#region Constructors
@@ -83,27 +78,8 @@ namespace andrefmello91.FEMAnalysis
 		{
 			Number              = Number,
 			LoadFactorIncrement = LoadFactorIncrement,
-			StiffnessParameter  = StiffnessParameter
 		};
 		
-		/// <summary>
-		///		Calculate the current stiffness parameter for defining the sign of the load factor increment.
-		/// </summary>
-		public void CalculateStiffnessParameter(LoadStep step)
-		{
-			if (Number <= 1)
-			{
-				StiffnessParameter = 1;
-				return;
-			}
-
-			var inc = DisplacementIncrement;
-
-			var k = (step.Forces.ToRowMatrix() * inc)[0] / (inc.ToRowMatrix() * inc)[0];
-
-			StiffnessParameter = k / ((SimulationIteration) step.FirstIteration).StiffnessParameter;
-		}
-
 		/// <summary>
 		///     Calculate the convergence of this iteration.
 		/// </summary>

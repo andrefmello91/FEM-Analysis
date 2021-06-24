@@ -37,12 +37,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The results of the current solution (last solved iteration [i - 1]).
 		/// </summary>
-		public IIteration CurrentSolution => Iterations[^2];
+		public IIteration LastIteration => Iterations[^2];
 
 		/// <summary>
 		///     The displacement convergence of this step.
 		/// </summary>
-		public double DisplacementConvergence => OngoingIteration.DisplacementConvergence;
+		public double DisplacementConvergence => CurrentIteration.DisplacementConvergence;
 
 		/// <summary>
 		///     The displacement vector at the end of this step.
@@ -57,7 +57,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force convergence of this step.
 		/// </summary>
-		public double ForceConvergence => OngoingIteration.ForceConvergence;
+		public double ForceConvergence => CurrentIteration.ForceConvergence;
 
 		/// <summary>
 		///     The force vector of this step.
@@ -72,7 +72,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The results of the last solution (penultimate solved iteration [i - 2]).
 		/// </summary>
-		public IIteration LastSolution => Iterations[^3];
+		public IIteration PenultimateIteration => Iterations[^3];
 
 		/// <summary>
 		///     The load factor of this step.
@@ -92,7 +92,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The results of the ongoing iteration.
 		/// </summary>
-		public IIteration OngoingIteration => Iterations[^1];
+		public IIteration CurrentIteration => Iterations[^1];
 
 		/// <summary>
 		///     The analysis parameters.
@@ -201,11 +201,14 @@ namespace andrefmello91.FEMAnalysis
 		/// </returns>
 		public static LoadStep InitialStep(IFEMInput<IFiniteElement> femInput, AnalysisParameters parameters, bool simulate = false)
 		{
+			if (simulate)
+				return SimulationStep.InitialStep(femInput, parameters);
+			
 			var lf   = StepIncrement(parameters.NumberOfSteps);
 			
 			var step = From(femInput, lf, parameters, 1, simulate);
 			
-			var iteration = step.OngoingIteration;
+			var iteration = step.CurrentIteration;
 
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
@@ -305,7 +308,7 @@ namespace andrefmello91.FEMAnalysis
 				: Iteration.FromStepResult(this, simulate));
 
 			// Increase iteration count
-			OngoingIteration.Number++;
+			CurrentIteration.Number++;
 		}
 
 
@@ -320,10 +323,10 @@ namespace andrefmello91.FEMAnalysis
 			// Update internal forces
 			var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
 			var intForces = femInput.AssembleInternalForces();
-			OngoingIteration.UpdateForces(extForces, intForces);
+			CurrentIteration.UpdateForces(extForces, intForces);
 			
 			// Calculate convergence
-			OngoingIteration.CalculateConvergence(extForces, FirstIteration.DisplacementIncrement);
+			CurrentIteration.CalculateConvergence(extForces, FirstIteration.DisplacementIncrement);
 		}
 		
 		/// <summary>
@@ -331,18 +334,18 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		protected virtual void UpdateDisplacements(IFEMInput<IFiniteElement> femInput)
 		{
-			var ongIt  = OngoingIteration;
-			var curSol = CurrentSolution;
+			var curIt  = CurrentIteration;
+			var lastIt = LastIteration;
 
 			// Increment displacements
-			var stiffness = SimplifiedStiffness(ongIt.Stiffness, femInput.ConstraintIndex);
+			var stiffness = SimplifiedStiffness(curIt.Stiffness, femInput.ConstraintIndex);
 			
 			// Calculate increment from residual
-			var dUr = -stiffness.Solve(curSol.ResidualForces);
-			ongIt.IncrementDisplacements(dUr);
+			var dUr = -stiffness.Solve(lastIt.ResidualForces);
+			curIt.IncrementDisplacements(dUr);
 			
 			// Update displacements in grips and elements
-			femInput.Grips.SetDisplacements(ongIt.Displacements);
+			femInput.Grips.SetDisplacements(curIt.Displacements);
 			femInput.UpdateDisplacements();
 		}
 
@@ -351,26 +354,26 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		protected void UpdateStiffness(IFEMInput<IFiniteElement> femInput)
 		{
-			var ongIt = OngoingIteration;
+			var curIt = CurrentIteration;
 
 			switch (Parameters.Solver)
 			{
 				case NonLinearSolver.Secant:
 					// Increment current stiffness
-					var curSol  = CurrentSolution;
-					var lastSol = LastSolution;
+					var lastIt  = LastIteration;
+					var lastSol = PenultimateIteration;
 
-					ongIt.Stiffness += SecantIncrement(curSol.Stiffness, curSol.Displacements, lastSol.Displacements, curSol.ResidualForces, lastSol.ResidualForces);
+					curIt.Stiffness += SecantIncrement(lastIt.Stiffness, lastIt.Displacements, lastSol.Displacements, lastIt.ResidualForces, lastSol.ResidualForces);
 					break;
 
 				// For Newton-Raphson
 				case NonLinearSolver.NewtonRaphson:
-				case NonLinearSolver.ModifiedNewtonRaphson when ongIt.Number == 1:
+				case NonLinearSolver.ModifiedNewtonRaphson when curIt.Number == 1:
 					// Update stiffness in elements
 					femInput.UpdateStiffness();
 
 					// Set new values
-					ongIt.Stiffness = femInput.AssembleStiffness();
+					curIt.Stiffness = femInput.AssembleStiffness();
 
 					break;
 
@@ -404,10 +407,10 @@ namespace andrefmello91.FEMAnalysis
 		protected bool IterativeStop()
 		{
 			// Check if one stop condition is reached
-			Stop = OngoingIteration.CheckStopCondition(Parameters);
+			Stop = CurrentIteration.CheckStopCondition(Parameters);
 
 			// Check convergence
-			Converged = OngoingIteration.CheckConvergence(Parameters);
+			Converged = CurrentIteration.CheckConvergence(Parameters);
 
 			return
 				Stop || Converged;
