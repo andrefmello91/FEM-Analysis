@@ -76,8 +76,10 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public new SimulationIteration Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone())
 		{
-			Number              = Number,
-			LoadFactorIncrement = LoadFactorIncrement,
+			Number                = Number,
+			LoadFactorIncrement   = LoadFactorIncrement,
+			IncrementFromResidual = IncrementFromResidual,
+			IncrementFromExternal = IncrementFromExternal
 		};
 		
 		/// <summary>

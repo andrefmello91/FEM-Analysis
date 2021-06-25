@@ -107,7 +107,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the secant stiffness increment.
 		/// </summary>
-		/// <param name="currentStiffness">The stiffness matrix from current iteration.</param>
+		/// <param name="currentStiffness">The stiffness matrix from the last iteration.</param>
 		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
 		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
 		/// <param name="currentResidual">The residual force vector from current iteration.</param>
@@ -125,6 +125,13 @@ namespace andrefmello91.FEMAnalysis
 			return
 				((dR - currentStiffness * dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
 		}
+
+		/// <summary>
+		///		<inheritdoc cref="SecantIncrement(Matrix{double}, Vector{double}, Vector{double}, Vector{double}, Vector{double})"/>
+		/// </summary>
+		/// <inheritdoc cref="TangentIncrement(IIteration, IIteration)"/>
+		public static Matrix<double> SecantIncrement(IIteration currentIteration, IIteration lastIteration) =>
+			SecantIncrement(lastIteration.Stiffness, currentIteration.Displacements, lastIteration.Displacements, currentIteration.ResidualForces, lastIteration.ResidualForces);
 
 		/// <summary>
 		///     Calculate the tangent stiffness increment.
@@ -145,6 +152,14 @@ namespace andrefmello91.FEMAnalysis
 			return
 				dF.ToColumnMatrix() * dU.ToRowMatrix();
 		}
+
+		/// <summary>
+		///		<inheritdoc cref="TangentIncrement(Vector{double}, Vector{double}, Vector{double}, Vector{double})"/>
+		/// </summary>
+		/// <param name="currentIteration">The current iteration.</param>
+		/// <param name="lastIteration">The last solved iteration.</param>
+		public static Matrix<double> TangentIncrement(IIteration currentIteration, IIteration lastIteration) =>
+			TangentIncrement(currentIteration.InternalForces, lastIteration.InternalForces, currentIteration.Displacements, lastIteration.Displacements);
 
 		/// <summary>
 		///     Calculate the convergence.

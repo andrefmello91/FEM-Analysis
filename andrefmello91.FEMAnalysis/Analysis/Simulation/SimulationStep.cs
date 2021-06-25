@@ -96,12 +96,13 @@ namespace andrefmello91.FEMAnalysis
 			iteration.UpdateForces(extForces, intForces);
 
 			// Calculate the initial increments
-			var dUr = -stiffness.Solve(iteration.ResidualForces);
+			// var dUr = -stiffness.Solve(iteration.ResidualForces);
+			var dUr = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
 			var dUf = stiffness.Solve(fullForces);
 			iteration.IncrementDisplacements(dUr, dUf);
 					
 			// Calculate arc length
-			step.CalculateArcLength(0);
+			step.CalculateArcLength(0, 0);
 
 			// // Update displacements in grips and elements
 			// femInput.Grips.SetDisplacements(iteration.Displacements);
@@ -127,10 +128,15 @@ namespace andrefmello91.FEMAnalysis
 			// Set initial sign
 			newStep.Sign = GetSign(lastStep);
 
+			// Set desired iterations
 			newStep.DesiredIterations = lastStep.DesiredIterations;
 
+			// Add last step final iteration
+			newStep.Iterations.Clear();
+			newStep.Iterations.Add(lastStep.CurrentIteration.Clone());
+			
 			// Update arc length
-			newStep.CalculateArcLength(lastStep.RequiredIterations);
+			newStep.CalculateArcLength(lastStep.ArcLength, lastStep.RequiredIterations);
 			
 			return newStep;
 		}
@@ -159,15 +165,15 @@ namespace andrefmello91.FEMAnalysis
 			{
 				// Add iteration
 				NewIteration(true);
-
+				
 				// Update stiffness
 				UpdateStiffness(femInput);
-
-				// Update forces and displacements
-				UpdateForces(femInput);
+				
+				// Update displacements
 				UpdateDisplacements(femInput);
-
-				// Increment forces
+				
+				// Update and Increment forces
+				UpdateForces(femInput);
 				IncrementLoad(IterationIncrement());
 
 				// Calculate convergence
@@ -207,13 +213,15 @@ namespace andrefmello91.FEMAnalysis
 			// Update stiffness
 			UpdateStiffness(femInput);
 			stiffness = SimplifiedStiffness(CurrentIteration.Stiffness, femInput.ConstraintIndex);
-		
+			
+			// Increment load
+			IncrementLoad(IterationIncrement());
+
 			// Calculate increments
-			var rInc = -stiffness.Solve(LastIteration.ResidualForces);
+			var rInc = -stiffness.Solve(CurrentIteration.ResidualForces);
 			var fInc =  stiffness.Solve(SimplifiedForces(FullForceVector, femInput.ConstraintIndex));
 			
 			// Set increments
-			IncrementLoad(IterationIncrement());
 			curIt.IncrementDisplacements(rInc, fInc);
 			
 			// Update displacements in grips and elements
@@ -255,7 +263,7 @@ namespace andrefmello91.FEMAnalysis
 					
 					// Get accumulated increment until last iteration
 					var deltaU = AccumulatedDisplacementIncrement(^2);
-					
+
 					// Calculate coefficients
 					var ds2       = dS * dS;
 					var a1        = (dUf.ToRowMatrix() * dUf)[0];
@@ -292,7 +300,7 @@ namespace andrefmello91.FEMAnalysis
 							var a22        = (dUrPlusDu2.ToRowMatrix() * dUf)[0];
 							var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - ds2;
 							var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - ds2;
-
+							
 							return -a31 / a21 <= -a32 / a22
 								? d1
 								: d2;
@@ -323,12 +331,13 @@ namespace andrefmello91.FEMAnalysis
 			femInput.Grips.SetDisplacements(curIt.Displacements);
 			femInput.UpdateDisplacements();
 		}
-		
-		/// <summary>
-		///		Calculate the arc length.
-		/// </summary>
-		/// <param name="requiredIterations">The required iterations for achieving convergence in the last load step.</param>
-		private void CalculateArcLength(int requiredIterations)
+
+		///  <summary>
+		/// 		Calculate the arc length.
+		///  </summary>
+		///  <param name="lastArcLenght">The arc lenght of the last load step.</param>
+		///  <param name="requiredIterations">The required iterations for achieving convergence in the last load step.</param>
+		private void CalculateArcLength(double lastArcLenght, int requiredIterations)
 		{
 			switch (Number)
 			{
@@ -340,8 +349,7 @@ namespace andrefmello91.FEMAnalysis
 				
 				// First iteration of any load step except the first
 				default:
-					var ds0 = ArcLength;
-					ArcLength = ds0 * DesiredIterations / requiredIterations;
+					ArcLength = lastArcLenght * DesiredIterations / requiredIterations;
 					return;
 			}
 		}

@@ -37,7 +37,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The results of the current solution (last solved iteration [i - 1]).
 		/// </summary>
-		public IIteration LastIteration => Iterations[^2];
+		public IIteration LastIteration => Iterations.Count > 1
+			? Iterations[^2]
+			: Iteration.From(FullForceVector.Count, this is SimulationStep);
 
 		/// <summary>
 		///     The displacement convergence of this step.
@@ -72,7 +74,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The results of the last solution (penultimate solved iteration [i - 2]).
 		/// </summary>
-		public IIteration PenultimateIteration => Iterations[^3];
+		public IIteration PenultimateIteration => Iterations.Count > 2
+			? Iterations[^3]
+			: Iteration.From(FullForceVector.Count, this is SimulationStep);
 
 		/// <summary>
 		///     The load factor of this step.
@@ -253,9 +257,14 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the accumulated displacement increment from the beginning of this load step until a final index.
 		/// </summary>
 		/// <param name="finalIndex">The final index to consider increments.</param>
-		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex) => Iterations.Count < finalIndex.Value 
-			? Vector<double>.Build.Dense(InitialDisplacements.Count) 
-			: Iterations[finalIndex].Displacements - InitialDisplacements;
+		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex)
+		{
+			var iterations = Iterations.Where(i => i.Number > 0).ToList();
+			
+			return Iterations.Count < finalIndex.Value
+				? Vector<double>.Build.Dense(InitialDisplacements.Count)
+				: Iterations[finalIndex].Displacements - InitialDisplacements;
+		}
 
 		/// <summary>
 		///     Get the total accumulated displacement increment at this load step.
@@ -303,9 +312,10 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
 		protected void NewIteration(bool simulate = false)
 		{
-			Iterations.Add(this.Any()
-				? this.Last().Clone()
-				: Iteration.FromStepResult(this, simulate));
+			if (CurrentIteration.Number > 0)
+				Iterations.Add(this.Any()
+					? this.Last().Clone()
+					: Iteration.FromStepResult(this, simulate));
 
 			// Increase iteration count
 			CurrentIteration.Number++;
@@ -360,10 +370,7 @@ namespace andrefmello91.FEMAnalysis
 			{
 				case NonLinearSolver.Secant:
 					// Increment current stiffness
-					var lastIt  = LastIteration;
-					var lastSol = PenultimateIteration;
-
-					curIt.Stiffness += SecantIncrement(lastIt.Stiffness, lastIt.Displacements, lastSol.Displacements, lastIt.ResidualForces, lastSol.ResidualForces);
+					curIt.Stiffness += SecantIncrement(CurrentIteration, LastIteration);
 					break;
 
 				// For Newton-Raphson
