@@ -56,10 +56,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		The load factor for multiplying forces at the simulation.
 		/// </summary>
-		public double SimulationFactor { get; private set; }
+		public double SimulationFactor { get; private set; } = 1;
 
-		/// <inheritdoc />
-		public override Vector<double> Forces => SimulationFactor * base.Forces;
+		/// <summary>
+		///		The final force vector.
+		/// </summary>
+		public Vector<double> FinalForces => SimulationFactor * Forces;
 
 		/// <inheritdoc />
 		internal SimulationStep(Vector<double> fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0)
@@ -88,7 +90,7 @@ namespace andrefmello91.FEMAnalysis
 			step.Sign             = IncrementSign.Positive;
 			
 			// Set initial increment
-			step.IncrementSimulationLoad(1);
+			// step.IncrementSimulationLoad(1);
 			
 			var iteration = (SimulationIteration) step.CurrentIteration;
 
@@ -132,7 +134,6 @@ namespace andrefmello91.FEMAnalysis
 			
 			// Set initial sign
 			newStep.Sign             = GetSign(lastStep);
-			newStep.SimulationFactor = lastStep.SimulationFactor;
 			
 			// Set desired iterations
 			newStep.DesiredIterations = lastStep.DesiredIterations;
@@ -249,7 +250,7 @@ namespace andrefmello91.FEMAnalysis
 			femInput.CalculateForces();
 
 			// Update internal forces
-			var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
+			var extForces = SimplifiedForces(FinalForces, femInput.ConstraintIndex);
 			var intForces = femInput.AssembleInternalForces();
 			CurrentIteration.UpdateForces(extForces, intForces);
 		}
@@ -320,6 +321,19 @@ namespace andrefmello91.FEMAnalysis
 						}
 					}
 			}
+		}
+
+		/// <inheritdoc />
+		public override void SetResults(int? monitoredIndex = null)
+		{
+			if (!monitoredIndex.HasValue)
+				return;
+
+			// Get displacement
+			var disp = Length.FromMillimeters(FinalDisplacements[monitoredIndex.Value]);
+
+			// Set to step
+			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
 		}
 
 		/// <inheritdoc />

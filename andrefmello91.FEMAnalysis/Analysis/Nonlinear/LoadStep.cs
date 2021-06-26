@@ -64,7 +64,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
-		public virtual Vector<double> Forces => LoadFactor * FullForceVector;
+		public Vector<double> Forces => LoadFactor * FullForceVector;
 
 		/// <summary>
 		///     The displacement vector at the beginning of this step.
@@ -86,7 +86,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The monitored displacement of this step.
 		/// </summary>
-		public MonitoredDisplacement? MonitoredDisplacement { get; private set; }
+		public MonitoredDisplacement? MonitoredDisplacement { get; protected set; }
 
 		/// <summary>
 		///     The number of this step.
@@ -393,7 +393,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Set step results after achieving convergence.
 		/// </summary>
-		public void SetResults(int? monitoredIndex = null)
+		public virtual void SetResults(int? monitoredIndex = null)
 		{
 			if (!monitoredIndex.HasValue)
 				return;
