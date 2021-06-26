@@ -90,8 +90,8 @@ namespace andrefmello91.FEMAnalysis
 			step.Sign             = IncrementSign.Positive;
 			
 			// Set initial increment
-			// step.IncrementSimulationLoad(1);
-			
+			step.IncrementSimulationLoad(1);
+			step.SimulationFactor = 1;
 			var iteration = (SimulationIteration) step.CurrentIteration;
 
 			// Get the initial stiffness and force vector simplified
@@ -130,7 +130,7 @@ namespace andrefmello91.FEMAnalysis
 		///  <inheritdoc cref="LoadStep.FromLastStep"/>
 		public static SimulationStep FromLastStep(SimulationStep lastStep, bool incrementLoad = true)
 		{
-			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
+			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor * lastStep.SimulationFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
 			
 			// Set initial sign
 			newStep.Sign             = GetSign(lastStep);
@@ -333,7 +333,7 @@ namespace andrefmello91.FEMAnalysis
 			var disp = Length.FromMillimeters(FinalDisplacements[monitoredIndex.Value]);
 
 			// Set to step
-			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
+			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor * SimulationFactor);
 		}
 
 		/// <inheritdoc />
