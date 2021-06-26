@@ -64,7 +64,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
-		public Vector<double> Forces => LoadFactor * FullForceVector;
+		public virtual Vector<double> Forces => LoadFactor * FullForceVector;
 
 		/// <summary>
 		///     The displacement vector at the beginning of this step.
@@ -243,7 +243,7 @@ namespace andrefmello91.FEMAnalysis
 		public static LoadStep FromLastStep(LoadStep lastStep, bool incrementLoad = true)
 		{
 			if (lastStep is SimulationStep simulationStep)
-				return SimulationStep.FromLastStep(simulationStep);
+				return SimulationStep.FromLastStep(simulationStep, incrementLoad);
 			
 			var newStep = From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1);
 			
@@ -261,15 +261,15 @@ namespace andrefmello91.FEMAnalysis
 		{
 			var iterations = Iterations.Where(i => i.Number > 0).ToList();
 			
-			return Iterations.Count < finalIndex.Value
+			return iterations.Count < finalIndex.Value
 				? Vector<double>.Build.Dense(InitialDisplacements.Count)
-				: Iterations[finalIndex].Displacements - InitialDisplacements;
+				: iterations[finalIndex].Displacements - InitialDisplacements;
 		}
 
 		/// <summary>
 		///     Get the total accumulated displacement increment at this load step.
 		/// </summary>
-		public Vector<double> AccumulatedDisplacementIncrement() => AccumulatedDisplacementIncrement(^1);
+		public Vector<double> AccumulatedDisplacementIncrement() => FinalDisplacements - InitialDisplacements;
 
 		/// <summary>
 		///     Increment forces in this step by the default load factor increment.
@@ -280,7 +280,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Increment forces in this step by a custom load factor increment.
 		/// </summary>
 		/// <param name="loadFactorIncrement">The increment of the load factor.</param>
-		public virtual void IncrementLoad(double loadFactorIncrement) => LoadFactor += loadFactorIncrement;
+		public void IncrementLoad(double loadFactorIncrement) => LoadFactor += loadFactorIncrement;
 
 		/// <summary>
 		///     Iterate to find solution.
