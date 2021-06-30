@@ -54,14 +54,9 @@ namespace andrefmello91.FEMAnalysis
 		public int DesiredIterations { get; set; } = 5;
 
 		/// <summary>
-		///		The load factor for multiplying forces at the simulation.
+		///		The force vector increment for the.
 		/// </summary>
-		public double SimulationFactor { get; private set; } = 1;
-
-		/// <summary>
-		///		The final force vector.
-		/// </summary>
-		public Vector<double> FinalForces => SimulationFactor * Forces;
+		public Vector<double> ForceIncrement => ((SimulationIteration) CurrentIteration).LoadFactorIncrement * FullForceVector;
 
 		/// <inheritdoc />
 		internal SimulationStep(Vector<double> fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0)
@@ -87,19 +82,19 @@ namespace andrefmello91.FEMAnalysis
 			var step = (SimulationStep) From(femInput, StepIncrement(parameters.NumberOfSteps), parameters, 1, true);
 			
 			// Set initial sign
-			step.Sign             = IncrementSign.Positive;
+			step.Sign = IncrementSign.Positive;
 			
 			// Set initial increment
-			step.IncrementSimulationLoad(1);
-			step.SimulationFactor = 1;
 			var iteration = (SimulationIteration) step.CurrentIteration;
-
+			iteration.LoadFactorIncrement = 0.1;
+			
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
 			var stiffness = SimplifiedStiffness(iteration.Stiffness, femInput.ConstraintIndex);
 
 			// Calculate initial displacements
-			var extForces = SimplifiedForces(step.Forces, femInput.ConstraintIndex);
+			var extForces  = SimplifiedForces(step.Forces, femInput.ConstraintIndex);
+			var fullforces = SimplifiedForces(step.FullForceVector, femInput.ConstraintIndex);
 			
 			// Set initial residual
 			var intForces = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
@@ -108,9 +103,12 @@ namespace andrefmello91.FEMAnalysis
 			// Calculate the initial increments
 			// var dUr = -stiffness.Solve(iteration.ResidualForces);
 			var dUr = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
-			var dUf = stiffness.Solve(extForces);
+			var dUf = stiffness.Solve(fullforces);
 			iteration.IncrementDisplacements(dUr, dUf);
-					
+			
+			// Increment load factor
+			// step.IncrementLoad(iteration.LoadFactorIncrement);
+
 			// Calculate arc length
 			step.CalculateArcLength(0, 0);
 
@@ -130,10 +128,10 @@ namespace andrefmello91.FEMAnalysis
 		///  <inheritdoc cref="LoadStep.FromLastStep"/>
 		public static SimulationStep FromLastStep(SimulationStep lastStep, bool incrementLoad = true)
 		{
-			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor * lastStep.SimulationFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
+			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
 			
 			// Set initial sign
-			newStep.Sign             = GetSign(lastStep);
+			newStep.Sign = GetSign(lastStep);
 			
 			// Set desired iterations
 			newStep.DesiredIterations = lastStep.DesiredIterations;
@@ -152,17 +150,6 @@ namespace andrefmello91.FEMAnalysis
 			return newStep;
 		}
 
-		/// <summary>
-		///		Increment the simulation load factor.
-		/// </summary>
-		/// <param name="loadFactorIncrement">The load factor increment for the current iteration.</param>
-		private void IncrementSimulationLoad(double loadFactorIncrement)
-		{
-			((SimulationIteration) CurrentIteration).LoadFactorIncrement = loadFactorIncrement;
-
-			SimulationFactor += loadFactorIncrement;
-		}
-		
 		/// <inheritdoc />
 		public override void Iterate(IFEMInput<IFiniteElement> femInput)
 		{
@@ -177,6 +164,12 @@ namespace andrefmello91.FEMAnalysis
 			// Iterate
 			do
 			{
+				// Increment step load factor
+				IncrementLoad(((SimulationIteration) CurrentIteration).LoadFactorIncrement);
+				
+				// Update forces
+				UpdateForces(femInput);
+
 				// Add iteration
 				NewIteration(true);
 				
@@ -187,9 +180,12 @@ namespace andrefmello91.FEMAnalysis
 				UpdateDisplacements(femInput);
 				
 				// Update and Increment forces
-				UpdateForces(femInput);
-				IncrementSimulationLoad(IterationIncrement());
+				IterationIncrement();
 
+				// Update displacements in grips and elements
+				femInput.Grips.SetDisplacements(CurrentIteration.Displacements);
+				femInput.UpdateDisplacements();
+				
 				// Calculate convergence
 				((SimulationIteration) CurrentIteration).CalculateConvergence(FirstIteration.DisplacementIncrement);
 				
@@ -230,17 +226,18 @@ namespace andrefmello91.FEMAnalysis
 			
 			// Calculate increments
 			var rInc = -stiffness.Solve(CurrentIteration.ResidualForces);
-			var fInc =  stiffness.Solve(SimplifiedForces(Forces, femInput.ConstraintIndex));
+			var fInc =  stiffness.Solve(SimplifiedForces(FullForceVector, femInput.ConstraintIndex));
 			
 			// Set increments
 			curIt.IncrementDisplacements(rInc, fInc);
 			
+			// Increment load
+			IterationIncrement();
+			IncrementLoad(curIt.LoadFactorIncrement);
+			
 			// Update displacements in grips and elements
 			femInput.Grips.SetDisplacements(curIt.Displacements);
 			femInput.UpdateDisplacements();
-			
-			// Increment load
-			IncrementSimulationLoad(IterationIncrement());
 		}
 
 		/// <inheritdoc />
@@ -250,15 +247,15 @@ namespace andrefmello91.FEMAnalysis
 			femInput.CalculateForces();
 
 			// Update internal forces
-			var extForces = SimplifiedForces(FinalForces, femInput.ConstraintIndex);
+			var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
 			var intForces = femInput.AssembleInternalForces();
 			CurrentIteration.UpdateForces(extForces, intForces);
 		}
 
 		/// <summary>
-		///		Get the load increment for an iteration.
+		///		Calculate and set the load increment for the current iteration.
 		/// </summary>
-		private double IterationIncrement()
+		private void IterationIncrement()
 		{
 			var curIt = (SimulationIteration) CurrentIteration;
 			var dUf   = curIt.IncrementFromExternal;
@@ -269,8 +266,8 @@ namespace andrefmello91.FEMAnalysis
 			{
 				// First iteration of any load step except the first
 				case 1 when Number > 1:
-					return
-						(int) Sign * dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+					curIt.LoadFactorIncrement = (int) Sign * dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+					return;
 				
 				// Any other iteration
 				default:
@@ -300,10 +297,12 @@ namespace andrefmello91.FEMAnalysis
 					switch (p1)
 					{
 						case >= 0 when p2 < 0:
-							return d1;
+							curIt.LoadFactorIncrement = d1;
+							return;
 
 						case < 0 when p2 >= 0:
-							return d2;
+							curIt.LoadFactorIncrement = d2;
+							return;
 
 						default:
 						{
@@ -315,25 +314,14 @@ namespace andrefmello91.FEMAnalysis
 							var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - ds2;
 							var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - ds2;
 							
-							return -a31 / a21 <= -a32 / a22
-								? d1
-								: d2;
+							curIt.LoadFactorIncrement = 
+								-a31 / a21 <= -a32 / a22
+									? d1
+									: d2;
+							return;
 						}
 					}
 			}
-		}
-
-		/// <inheritdoc />
-		public override void SetResults(int? monitoredIndex = null)
-		{
-			if (!monitoredIndex.HasValue)
-				return;
-
-			// Get displacement
-			var disp = Length.FromMillimeters(FinalDisplacements[monitoredIndex.Value]);
-
-			// Set to step
-			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor * SimulationFactor);
 		}
 
 		/// <inheritdoc />
@@ -346,17 +334,12 @@ namespace andrefmello91.FEMAnalysis
 			var stiffness = SimplifiedStiffness(curIt.Stiffness, femInput.ConstraintIndex);
 			
 			// Calculate increment from residual
-			var dUr = -stiffness.Solve(curIt.ResidualForces);
+			var dUr = -stiffness.Solve(lastIt.ResidualForces);
 			
 			// Calculate increment from external forces
-			var f   = SimplifiedForces(Forces, femInput.ConstraintIndex);
+			var f   = SimplifiedForces(FullForceVector, femInput.ConstraintIndex);
 			var dUf = stiffness.Solve(f);
-			
 			curIt.IncrementDisplacements(dUr, dUf);
-				
-			// Update displacements in grips and elements
-			femInput.Grips.SetDisplacements(curIt.Displacements);
-			femInput.UpdateDisplacements();
 		}
 
 		///  <summary>

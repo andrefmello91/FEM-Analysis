@@ -393,7 +393,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Set step results after achieving convergence.
 		/// </summary>
-		public virtual void SetResults(int? monitoredIndex = null)
+		public void SetResults(int? monitoredIndex = null)
 		{
 			if (!monitoredIndex.HasValue)
 				return;

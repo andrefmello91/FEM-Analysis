@@ -60,16 +60,23 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="incrementFromResidual">The displacement increment vector from residual forces of this iteration.</param>
 		/// <param name="incrementFromExternal">The displacement increment vector from external forces of this iteration.</param>
-		public void IncrementDisplacements(Vector<double>? incrementFromResidual, Vector<double>? incrementFromExternal)
+		/// <param name="updateDisplacements">Update displacement vector?</param>
+		public void IncrementDisplacements(Vector<double>? incrementFromResidual, Vector<double>? incrementFromExternal, bool updateDisplacements = false)
 		{
 			if (incrementFromResidual is not null)
 				IncrementFromResidual = incrementFromResidual;
 
 			if (incrementFromExternal is not null)
 				IncrementFromExternal = incrementFromExternal;
-
-			Displacements += DisplacementIncrement;
+			
+			if (updateDisplacements)
+				UpdateDisplacements();
 		}
+
+		/// <summary>
+		///		Add the displacement increment to displacement vector.
+		/// </summary>
+		public void UpdateDisplacements() => Displacements += DisplacementIncrement;
 
 		#region Interface Implementations
 
