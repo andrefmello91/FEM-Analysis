@@ -86,7 +86,7 @@ namespace andrefmello91.FEMAnalysis
 			
 			// Set initial increment
 			var iteration = (SimulationIteration) step.CurrentIteration;
-			iteration.LoadFactorIncrement = 0.1;
+			iteration.LoadFactorIncrement = 0.05;
 			
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
@@ -104,13 +104,13 @@ namespace andrefmello91.FEMAnalysis
 			// var dUr = -stiffness.Solve(iteration.ResidualForces);
 			var dUr = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
 			var dUf = stiffness.Solve(fullforces);
-			iteration.IncrementDisplacements(dUr, dUf);
+			iteration.IncrementDisplacements(dUr, dUf, true);
 			
 			// Increment load factor
 			// step.IncrementLoad(iteration.LoadFactorIncrement);
 
 			// Calculate arc length
-			step.CalculateArcLength(0, 0);
+			step.ArcLength = InitialArcLenght((SimulationIteration) step.CurrentIteration);
 
 			// // Update displacements in grips and elements
 			// femInput.Grips.SetDisplacements(iteration.Displacements);
@@ -141,11 +141,11 @@ namespace andrefmello91.FEMAnalysis
 			newStep.Iterations.Add(lastStep.CurrentIteration.Clone());
 			
 			// Update arc length
-			newStep.CalculateArcLength(lastStep.ArcLength, lastStep.RequiredIterations);
+			newStep.CalculateArcLength(lastStep);
 			
 			// Increment load
 			if (incrementLoad)
-				newStep.IncrementLoad(StepIncrement(newStep.Parameters.NumberOfSteps));
+				newStep.IncrementLoad(0.05);
 			
 			return newStep;
 		}
@@ -160,6 +160,9 @@ namespace andrefmello91.FEMAnalysis
 			// Do the initial iteration
 			if (Number > 1)
 				InitialIteration(femInput);
+			
+			if (Converged)
+				return;
 			
 			// Iterate
 			do
@@ -183,6 +186,7 @@ namespace andrefmello91.FEMAnalysis
 				IterationIncrement();
 
 				// Update displacements in grips and elements
+				((SimulationIteration) CurrentIteration).UpdateDisplacements();
 				femInput.Grips.SetDisplacements(CurrentIteration.Displacements);
 				femInput.UpdateDisplacements();
 				
@@ -215,14 +219,13 @@ namespace andrefmello91.FEMAnalysis
 		private void InitialIteration(IFEMInput<IFiniteElement> femInput)
 		{
 			// Add iteration
-			// NewIteration(true);
+			NewIteration(true);
 
 			var curIt     = (SimulationIteration) CurrentIteration;
-			var stiffness = SimplifiedStiffness(CurrentIteration.Stiffness, femInput.ConstraintIndex);
 
 			// Update stiffness
 			UpdateStiffness(femInput);
-			stiffness = SimplifiedStiffness(CurrentIteration.Stiffness, femInput.ConstraintIndex);
+			var stiffness = SimplifiedStiffness(CurrentIteration.Stiffness, femInput.ConstraintIndex);
 			
 			// Calculate increments
 			var rInc = -stiffness.Solve(CurrentIteration.ResidualForces);
@@ -236,8 +239,12 @@ namespace andrefmello91.FEMAnalysis
 			IncrementLoad(curIt.LoadFactorIncrement);
 			
 			// Update displacements in grips and elements
+			curIt.UpdateDisplacements();
 			femInput.Grips.SetDisplacements(curIt.Displacements);
 			femInput.UpdateDisplacements();
+			
+			// Check convergence
+			Converged = CurrentIteration.CheckConvergence(Parameters);
 		}
 
 		/// <inheritdoc />
@@ -315,7 +322,7 @@ namespace andrefmello91.FEMAnalysis
 							var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - ds2;
 							
 							curIt.LoadFactorIncrement = 
-								-a31 / a21 <= -a32 / a22
+								-a31 / a21 < -a32 / a22
 									? d1
 									: d2;
 							return;
@@ -334,7 +341,7 @@ namespace andrefmello91.FEMAnalysis
 			var stiffness = SimplifiedStiffness(curIt.Stiffness, femInput.ConstraintIndex);
 			
 			// Calculate increment from residual
-			var dUr = -stiffness.Solve(lastIt.ResidualForces);
+			var dUr = -stiffness.Solve(curIt.ResidualForces);
 			
 			// Calculate increment from external forces
 			var f   = SimplifiedForces(FullForceVector, femInput.ConstraintIndex);
@@ -345,24 +352,29 @@ namespace andrefmello91.FEMAnalysis
 		///  <summary>
 		/// 		Calculate the arc length.
 		///  </summary>
-		///  <param name="lastArcLenght">The arc lenght of the last load step.</param>
-		///  <param name="requiredIterations">The required iterations for achieving convergence in the last load step.</param>
-		private void CalculateArcLength(double lastArcLenght, int requiredIterations)
+		///  <param name="lastStep">The last calculated load step.</param>
+		private void CalculateArcLength(SimulationStep lastStep)
 		{
 			switch (Number)
 			{
 				// First iteration of first load step
 				case 1:
-					var curIt = (SimulationIteration) CurrentIteration;
-					ArcLength = curIt.LoadFactorIncrement * (curIt.IncrementFromExternal.ToRowMatrix() * curIt.IncrementFromExternal)[0].Sqrt();
+					ArcLength = InitialArcLenght((SimulationIteration) CurrentIteration);
 					return;
 				
 				// First iteration of any load step except the first
 				default:
-					ArcLength = lastArcLenght * DesiredIterations / requiredIterations;
+					var dU  = lastStep.AccumulatedDisplacementIncrement();
+					var ds1 = (dU.ToRowMatrix() * dU)[0].Sqrt();
+					ArcLength = ds1 * DesiredIterations / lastStep.RequiredIterations;
 					return;
 			}
 		}
 
+		/// <summary>
+		///		Get the initial arc lenght.
+		/// </summary>
+		private static double InitialArcLenght(SimulationIteration initialIteration) =>
+			initialIteration.LoadFactorIncrement * (initialIteration.IncrementFromExternal.ToRowMatrix() * initialIteration.IncrementFromExternal)[0].Sqrt();
 	}
 }

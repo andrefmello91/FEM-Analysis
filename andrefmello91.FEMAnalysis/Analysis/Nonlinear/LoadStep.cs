@@ -32,7 +32,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The status of this step. True if convergence was reached.
 		/// </summary>
-		public bool Converged { get; private set; }
+		public bool Converged { get; protected set; }
 
 		/// <summary>
 		///     The results of the current solution (last solved iteration [i - 1]).
