@@ -260,7 +260,7 @@ namespace andrefmello91.FEMAnalysis
 				// Set step results
 				CurrentStep.SetResults(MonitoredIndex);
 
-				// break;
+				break;
 				
 				// Create step
 				NewStep();
