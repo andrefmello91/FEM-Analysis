@@ -79,14 +79,14 @@ namespace andrefmello91.FEMAnalysis
 		/// </returns>
 		internal static SimulationStep InitialStep(IFEMInput<IFiniteElement> femInput, AnalysisParameters parameters)
 		{
-			var step = (SimulationStep) From(femInput, 0.05, parameters, 1, true);
+			var step = (SimulationStep) From(femInput, StepIncrement(parameters.NumberOfSteps), parameters, 1, true);
 			
 			// Set initial sign
 			step.Sign = IncrementSign.Positive;
 			
 			// Set initial increment
 			var iteration = (SimulationIteration) step.CurrentIteration;
-			iteration.LoadFactorIncrement = 0.05;
+			iteration.LoadFactorIncrement = 0.1;
 			
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
@@ -126,11 +126,11 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		///  <inheritdoc cref="LoadStep.FromLastStep"/>
-		public static SimulationStep FromLastStep(SimulationStep lastStep, bool incrementLoad = true)
+		public static SimulationStep FromLastStep(SimulationStep lastStep, IFEMInput<IFiniteElement> femInput)
 		{
 			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
 			
-			// Set initial sign
+			// Set sign
 			newStep.Sign = GetSign(lastStep);
 			
 			// Set desired iterations
@@ -139,30 +139,29 @@ namespace andrefmello91.FEMAnalysis
 			// Add last step final iteration
 			newStep.Iterations.Clear();
 			newStep.Iterations.Add(lastStep.CurrentIteration.Clone());
+			newStep.CurrentIteration.Number = 0;
 			
 			// Update arc length
 			newStep.CalculateArcLength(lastStep);
 			
 			// Increment load
-			// if (incrementLoad)
-			// 	newStep.IncrementLoad(0.05);
-			
+			// newStep.IncrementLoad(0.05);
+
+			// Do the initial iteration
+			newStep.InitialIteration(femInput);
+
 			return newStep;
 		}
 
 		/// <inheritdoc />
 		public override void Iterate(IFEMInput<IFiniteElement> femInput)
 		{
+			if (Converged)
+				return;
+			
 			// Initiate first iteration
 			foreach (var iteration in Iterations)
 				iteration.Number = 0;
-
-			// Do the initial iteration
-			if (Number > 1)
-				InitialIteration(femInput);
-			
-			if (Converged)
-				return;
 			
 			// Iterate
 			while (true)
@@ -179,10 +178,6 @@ namespace andrefmello91.FEMAnalysis
 				// Update displacements
 				UpdateDisplacements(femInput);
 				
-				// Update stiffness
-				////////// Update code for increment sign
-				UpdateStiffness(femInput);
-				
 				// Update and Increment forces
 				IterationIncrement();
 
@@ -191,10 +186,16 @@ namespace andrefmello91.FEMAnalysis
 				
 				// Calculate convergence
 				((SimulationIteration) CurrentIteration).CalculateConvergence(FirstIteration.DisplacementIncrement);
+
+				// Check convergence or stop criteria
+				var stop = IterativeStop();
 				
-				if (IterativeStop())
+				// Update stiffness
+				UpdateStiffness(femInput);
+
+				if (stop)
 					return;
-				
+
 				// Update elements
 				UpdateElements(femInput);
 			}
@@ -215,16 +216,29 @@ namespace andrefmello91.FEMAnalysis
 		///		Get the initial increment sign for the next load step.
 		/// </summary>
 		/// <param name="lastLoadStep">The last completed load step.</param>
-		private static IncrementSign GetSign(SimulationStep lastLoadStep)
+		private static IncrementSign GetSign(SimulationStep lastLoadStep, bool byStiffness = true)
 		{
-			var df = lastLoadStep.Stiffness.Determinant();
-			var di = lastLoadStep.FirstIteration.Stiffness.Determinant();
+			double k0, kf;
 
-			return (df / di) switch
+			if (byStiffness)
 			{
-				>= 0                                                 => lastLoadStep.Sign,
-				< 0 when lastLoadStep.Sign is IncrementSign.Positive => IncrementSign.Negative,
-				_                                                    => IncrementSign.Positive
+				k0 = lastLoadStep.FirstIteration.Stiffness.Determinant();
+				kf = lastLoadStep.CurrentIteration.Stiffness.Determinant();
+			}
+
+			else
+			{
+				var df = lastLoadStep.CurrentIteration.DisplacementIncrement;
+				var di = lastLoadStep.FirstIteration.DisplacementIncrement;
+				var f  = lastLoadStep.FullForceVector;
+				k0 = (f.ToRowMatrix() * di)[0] / (di.ToRowMatrix() * di)[0];
+				kf = (f.ToRowMatrix() * df)[0] / (df.ToRowMatrix() * df)[0];
+			}
+
+			return (kf / k0) switch
+			{
+				>= 0 => lastLoadStep.Sign,
+				_    => (IncrementSign) (-(int) lastLoadStep.Sign)
 			};
 		}
 
@@ -241,7 +255,7 @@ namespace andrefmello91.FEMAnalysis
 			var curIt     = (SimulationIteration) CurrentIteration;
 
 			// Update stiffness
-			// UpdateStiffness(femInput);
+			UpdateStiffness(femInput);
 			var stiffness = SimplifiedStiffness(CurrentIteration.Stiffness, femInput.ConstraintIndex);
 			
 			// Calculate increments
@@ -252,6 +266,7 @@ namespace andrefmello91.FEMAnalysis
 			curIt.IncrementDisplacements(rInc, fInc);
 			
 			// Increment load
+			// curIt.LoadFactorIncrement = 0;
 			IterationIncrement();
 			IncrementLoad(curIt.LoadFactorIncrement);
 			
@@ -261,7 +276,8 @@ namespace andrefmello91.FEMAnalysis
 			femInput.UpdateDisplacements();
 			
 			// Check convergence
-			Converged = CurrentIteration.CheckConvergence(Parameters);
+			// curIt.CalculateConvergence(curIt.DisplacementIncrement);
+			// Converged = CurrentIteration.CheckConvergence(Parameters);
 		}
 
 		/// <inheritdoc />

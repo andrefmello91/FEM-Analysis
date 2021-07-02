@@ -239,11 +239,12 @@ namespace andrefmello91.FEMAnalysis
 		/// 		Create a load step from the last load step.
 		///  </summary>
 		///  <param name="lastStep">The last load step.</param>
+		///  <param name="femInput">The finite element input.</param>
 		///  <param name="incrementLoad">Increment load of the new step? If it's a <see cref="SimulationStep"/>, load is not increased.</param>
-		public static LoadStep FromLastStep(LoadStep lastStep, bool incrementLoad = true)
+		public static LoadStep FromLastStep(LoadStep lastStep, IFEMInput<IFiniteElement> femInput, bool incrementLoad = true)
 		{
 			if (lastStep is SimulationStep simulationStep)
-				return SimulationStep.FromLastStep(simulationStep, incrementLoad);
+				return SimulationStep.FromLastStep(simulationStep, femInput);
 			
 			var newStep = From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1);
 			
@@ -375,12 +376,13 @@ namespace andrefmello91.FEMAnalysis
 
 				// For Newton-Raphson
 				case NonLinearSolver.NewtonRaphson:
-				case NonLinearSolver.ModifiedNewtonRaphson when curIt.Number == 1:
+				case NonLinearSolver.ModifiedNewtonRaphson when Converged:
+					curIt.Stiffness += TangentIncrement(CurrentIteration, LastIteration);
 					// Update stiffness in elements
-					femInput.UpdateStiffness();
-
-					// Set new values
-					curIt.Stiffness = femInput.AssembleStiffness();
+					// femInput.UpdateStiffness();
+					//
+					// // Set new values
+					// curIt.Stiffness = femInput.AssembleStiffness();
 
 					break;
 
