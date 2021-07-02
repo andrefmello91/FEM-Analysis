@@ -53,10 +53,8 @@ namespace andrefmello91.FEMAnalysis
 		///	</remarks>
 		public int DesiredIterations { get; set; } = 15;
 
-		/// <summary>
-		///		The force vector increment for the.
-		/// </summary>
-		public Vector<double> ForceIncrement => ((SimulationIteration) CurrentIteration).LoadFactorIncrement * FullForceVector;
+		/// <inheritdoc />
+		public override double LoadFactorIncrement => AccumulatedLoadFactorIncrement(^1);
 
 		/// <inheritdoc />
 		internal SimulationStep(Vector<double> fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0)
@@ -131,7 +129,7 @@ namespace andrefmello91.FEMAnalysis
 			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
 			
 			// Set sign
-			newStep.Sign = GetSign(lastStep);
+			newStep.Sign = lastStep.Sign;
 			
 			// Set desired iterations
 			newStep.DesiredIterations = lastStep.DesiredIterations;
@@ -235,7 +233,15 @@ namespace andrefmello91.FEMAnalysis
 				kf = (f.ToRowMatrix() * df)[0] / (df.ToRowMatrix() * df)[0];
 			}
 
-			return (kf / k0) switch
+			var s0 = k0 >= 0
+				?  1
+				: -1;
+			
+			var sf = kf >= 0
+				?  1
+				: -1;
+			
+			return (sf / s0) switch
 			{
 				>= 0 => lastLoadStep.Sign,
 				_    => (IncrementSign) (-(int) lastLoadStep.Sign)
@@ -266,8 +272,8 @@ namespace andrefmello91.FEMAnalysis
 			curIt.IncrementDisplacements(rInc, fInc);
 			
 			// Increment load
-			// curIt.LoadFactorIncrement = 0;
-			IterationIncrement();
+			curIt.LoadFactorIncrement = 0;
+			// IterationIncrement();
 			IncrementLoad(curIt.LoadFactorIncrement);
 			
 			// Update displacements in grips and elements
@@ -330,31 +336,46 @@ namespace andrefmello91.FEMAnalysis
 					var p1      = deltaU * deltaU1;
 					var p2      = deltaU * deltaU2;
 					
+					// var p1 = (deltaU1.ToRowMatrix() * deltaU)[0];
+					// var p2 = (deltaU2.ToRowMatrix() * deltaU)[0];
+					//
+					// curIt.LoadFactorIncrement = p1 >= p2
+					// 	? d1
+					// 	: d2;
+
 					// Check products
 					switch (p1)
 					{
 						case >= 0 when p2 < 0:
 							curIt.LoadFactorIncrement = d1;
 							return;
-
+					
 						case < 0 when p2 >= 0:
 							curIt.LoadFactorIncrement = d2;
 							return;
-
+					
 						default:
 						{
-							// Calculate coefficients
-							var dUrPlusDu1 = dUr + deltaU1;
-							var dUrPlusDu2 = dUr + deltaU2;
-							var a21        = (dUrPlusDu1.ToRowMatrix() * dUf)[0];
-							var a22        = (dUrPlusDu2.ToRowMatrix() * dUf)[0];
-							var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - ds2;
-							var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - ds2;
+							// Check linear solution
+							var ls = -a3 / a2;
 							
-							curIt.LoadFactorIncrement = 
-								-a31 / a21 < -a32 / a22
-									? d1
-									: d2;
+							// Set the closest value
+							curIt.LoadFactorIncrement = (ls - d1).Abs() <= (ls - d2).Abs()
+								? d1
+								: d2;
+							
+							// // Calculate coefficients
+							// var dUrPlusDu1 = dUr + deltaU1;
+							// var dUrPlusDu2 = dUr + deltaU2;
+							// var a21        = (dUrPlusDu1.ToRowMatrix() * dUf)[0];
+							// var a22        = (dUrPlusDu2.ToRowMatrix() * dUf)[0];
+							// var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - ds2;
+							// var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - ds2;
+							//
+							// curIt.LoadFactorIncrement = 
+							// 	-a31 / a21 < -a32 / a22
+							// 		? d1
+							// 		: d2;
 							return;
 						}
 					}
@@ -381,6 +402,22 @@ namespace andrefmello91.FEMAnalysis
 			curIt.IncrementDisplacements(dUr, dUf);
 		}
 
+		/// <summary>
+		///		Get the accumulated load factor increment from the beginning of this step until the <paramref name="finalIndex"/> iteration.
+		/// </summary>
+		/// <param name="finalIndex">The required final index to get the increment.</param>
+		public double AccumulatedLoadFactorIncrement(Index finalIndex)
+		{
+			var iterations = Iterations.Where(i => i.Number > 0).ToList();
+
+			return iterations.Count < finalIndex.Value
+				? 0
+				: iterations.GetRange(0, finalIndex.Value + 1)
+					.Cast<SimulationIteration>()
+					.Select(i => i.LoadFactorIncrement)
+					.Sum();
+		}
+		
 		///  <summary>
 		/// 		Calculate the arc length.
 		///  </summary>
@@ -396,7 +433,7 @@ namespace andrefmello91.FEMAnalysis
 				
 				// First iteration of any load step except the first
 				default:
-					var dU  = lastStep.AccumulatedDisplacementIncrement();
+					var dU  = lastStep.DisplacementIncrement;
 					var ds1 = (dU.ToRowMatrix() * dU)[0].Sqrt();
 					ArcLength = ds1 * DesiredIterations / lastStep.RequiredIterations;
 					return;

@@ -47,6 +47,11 @@ namespace andrefmello91.FEMAnalysis
 		public double DisplacementConvergence => CurrentIteration.DisplacementConvergence;
 
 		/// <summary>
+		///		The total displacement increment at this step.
+		/// </summary>
+		public Vector<double> DisplacementIncrement => FinalDisplacements - InitialDisplacements;
+		
+		/// <summary>
 		///     The displacement vector at the end of this step.
 		/// </summary>
 		public Vector<double> FinalDisplacements => Iterations.Last().Displacements;
@@ -83,6 +88,11 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public double LoadFactor { get; protected set; }
 
+		/// <summary>
+		///		The load factor increment of this step.
+		/// </summary>
+		public virtual double LoadFactorIncrement => StepIncrement(Parameters.NumberOfSteps);
+		
 		/// <summary>
 		///     The monitored displacement of this step.
 		/// </summary>
@@ -266,11 +276,6 @@ namespace andrefmello91.FEMAnalysis
 				? Vector<double>.Build.Dense(InitialDisplacements.Count)
 				: iterations[finalIndex].Displacements - InitialDisplacements;
 		}
-
-		/// <summary>
-		///     Get the total accumulated displacement increment at this load step.
-		/// </summary>
-		public Vector<double> AccumulatedDisplacementIncrement() => FinalDisplacements - InitialDisplacements;
 
 		/// <summary>
 		///     Increment forces in this step by the default load factor increment.
