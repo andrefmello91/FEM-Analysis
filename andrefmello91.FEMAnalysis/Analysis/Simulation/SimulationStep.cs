@@ -104,21 +104,8 @@ namespace andrefmello91.FEMAnalysis
 			var dUf = stiffness.Solve(fullforces);
 			iteration.IncrementDisplacements(dUr, dUf, true);
 			
-			// Increment load factor
-			// step.IncrementLoad(iteration.LoadFactorIncrement);
-
 			// Calculate arc length
 			step.ArcLength = InitialArcLenght((SimulationIteration) step.CurrentIteration);
-
-			// // Update displacements in grips and elements
-			// femInput.Grips.SetDisplacements(iteration.Displacements);
-			// femInput.UpdateDisplacements();
-			//
-			// // Calculate element forces
-			// femInput.CalculateForces();
-			//
-			// // Update internal forces
-			// iteration.UpdateForces(fullForces, femInput.AssembleInternalForces());
 
 			return step;
 		}
@@ -142,9 +129,6 @@ namespace andrefmello91.FEMAnalysis
 			// Update arc length
 			newStep.CalculateArcLength(lastStep);
 			
-			// Increment load
-			// newStep.IncrementLoad(0.05);
-
 			// Do the initial iteration
 			newStep.InitialIteration(femInput);
 
@@ -189,7 +173,7 @@ namespace andrefmello91.FEMAnalysis
 				var stop = IterativeStop();
 				
 				// Update stiffness
-				UpdateStiffness(femInput);
+				UpdateStiffness();
 
 				if (stop)
 					return;
@@ -199,17 +183,6 @@ namespace andrefmello91.FEMAnalysis
 			}
 		}
 
-		/// <summary>
-		///		Update displacements in elements and calculate internal forces.
-		/// </summary>
-		private void UpdateElements(IFEMInput<IFiniteElement> femInput)
-		{
-			// Update elements
-			femInput.Grips.SetDisplacements(CurrentIteration.Displacements);
-			femInput.UpdateDisplacements();
-			femInput.CalculateForces();
-		}
-		
 		/// <summary>
 		///		Get the initial increment sign for the next load step.
 		/// </summary>
@@ -261,7 +234,7 @@ namespace andrefmello91.FEMAnalysis
 			var curIt     = (SimulationIteration) CurrentIteration;
 
 			// Update stiffness
-			UpdateStiffness(femInput);
+			UpdateStiffness();
 			var stiffness = SimplifiedStiffness(CurrentIteration.Stiffness, femInput.ConstraintIndex);
 			
 			// Calculate increments

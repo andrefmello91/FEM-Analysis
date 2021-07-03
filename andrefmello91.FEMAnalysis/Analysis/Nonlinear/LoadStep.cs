@@ -306,10 +306,21 @@ namespace andrefmello91.FEMAnalysis
 
 				// Update displacements, stiffness and forces
 				UpdateDisplacements(femInput);
-				UpdateStiffness(femInput);
+				UpdateStiffness();
 				UpdateForces(femInput);
 				
 			} while (!IterativeStop());
+		}
+
+		/// <summary>
+		///		Update displacements in elements and calculate internal forces.
+		/// </summary>
+		protected void UpdateElements(IFEMInput<IFiniteElement> femInput)
+		{
+			// Update elements
+			femInput.Grips.SetDisplacements(CurrentIteration.Displacements);
+			femInput.UpdateDisplacements();
+			femInput.CalculateForces();
 		}
 
 		/// <summary>
@@ -368,27 +379,22 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
 		/// </summary>
-		protected void UpdateStiffness(IFEMInput<IFiniteElement> femInput)
+		protected void UpdateStiffness()
 		{
-			var curIt = CurrentIteration;
-
+			if (Stop)
+				return;
+			
 			switch (Parameters.Solver)
 			{
 				case NonLinearSolver.Secant:
 					// Increment current stiffness
-					curIt.Stiffness += SecantIncrement(CurrentIteration, LastIteration);
+					CurrentIteration.Stiffness += SecantIncrement(CurrentIteration, LastIteration);
 					break;
 
 				// For Newton-Raphson
 				case NonLinearSolver.NewtonRaphson:
 				case NonLinearSolver.ModifiedNewtonRaphson when Converged:
-					curIt.Stiffness += TangentIncrement(CurrentIteration, LastIteration);
-					// Update stiffness in elements
-					// femInput.UpdateStiffness();
-					//
-					// // Set new values
-					// curIt.Stiffness = femInput.AssembleStiffness();
-
+					CurrentIteration.Stiffness += TangentIncrement(CurrentIteration, LastIteration);
 					break;
 
 				default:

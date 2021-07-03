@@ -262,6 +262,9 @@ namespace andrefmello91.FEMAnalysis
 
 				// break;
 				
+				if (!_simulate && CurrentStep >= Parameters.NumberOfSteps)
+					return;
+				
 				// Create step
 				NewStep();
 				
