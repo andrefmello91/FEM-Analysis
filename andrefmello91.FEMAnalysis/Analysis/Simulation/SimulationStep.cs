@@ -129,9 +129,6 @@ namespace andrefmello91.FEMAnalysis
 			// Update arc length
 			newStep.CalculateArcLength(lastStep);
 			
-			// Do the initial iteration
-			newStep.InitialIteration(femInput);
-
 			return newStep;
 		}
 
@@ -181,82 +178,6 @@ namespace andrefmello91.FEMAnalysis
 				// Update elements
 				UpdateElements(femInput);
 			}
-		}
-
-		/// <summary>
-		///		Get the initial increment sign for the next load step.
-		/// </summary>
-		/// <param name="lastLoadStep">The last completed load step.</param>
-		private static IncrementSign GetSign(SimulationStep lastLoadStep, bool byStiffness = true)
-		{
-			double k0, kf;
-
-			if (byStiffness)
-			{
-				k0 = lastLoadStep.FirstIteration.Stiffness.Determinant();
-				kf = lastLoadStep.CurrentIteration.Stiffness.Determinant();
-			}
-
-			else
-			{
-				var df = lastLoadStep.CurrentIteration.DisplacementIncrement;
-				var di = lastLoadStep.FirstIteration.DisplacementIncrement;
-				var f  = lastLoadStep.FullForceVector;
-				k0 = (f.ToRowMatrix() * di)[0] / (di.ToRowMatrix() * di)[0];
-				kf = (f.ToRowMatrix() * df)[0] / (df.ToRowMatrix() * df)[0];
-			}
-
-			var s0 = k0 >= 0
-				?  1
-				: -1;
-			
-			var sf = kf >= 0
-				?  1
-				: -1;
-			
-			return (sf / s0) switch
-			{
-				>= 0 => lastLoadStep.Sign,
-				_    => (IncrementSign) (-(int) lastLoadStep.Sign)
-			};
-		}
-
-		/// <summary>
-		///		Steps to perform at the initial iteration of any load step, except the first.
-		/// </summary>
-		private void InitialIteration(IFEMInput<IFiniteElement> femInput)
-		{
-			// Add iteration
-			NewIteration(true);
-
-			UpdateForces(femInput);
-			
-			var curIt     = (SimulationIteration) CurrentIteration;
-
-			// Update stiffness
-			UpdateStiffness();
-			var stiffness = SimplifiedStiffness(CurrentIteration.Stiffness, femInput.ConstraintIndex);
-			
-			// Calculate increments
-			var rInc = -stiffness.Solve(CurrentIteration.ResidualForces);
-			var fInc =  stiffness.Solve(SimplifiedForces(FullForceVector, femInput.ConstraintIndex));
-			
-			// Set increments
-			curIt.IncrementDisplacements(rInc, fInc);
-			
-			// Increment load
-			curIt.LoadFactorIncrement = 0;
-			// IterationIncrement();
-			IncrementLoad(curIt.LoadFactorIncrement);
-			
-			// Update displacements in grips and elements
-			curIt.UpdateDisplacements();
-			femInput.Grips.SetDisplacements(curIt.Displacements);
-			femInput.UpdateDisplacements();
-			
-			// Check convergence
-			// curIt.CalculateConvergence(curIt.DisplacementIncrement);
-			// Converged = CurrentIteration.CheckConvergence(Parameters);
 		}
 
 		/// <inheritdoc />
