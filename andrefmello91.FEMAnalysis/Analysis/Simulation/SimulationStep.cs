@@ -3,38 +3,16 @@ using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
-using UnitsNet;
 using static andrefmello91.FEMAnalysis.Analysis<andrefmello91.FEMAnalysis.IFiniteElement>;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
 {
 	/// <summary>
-	///		Enumeration for initial load increment sign.
-	/// </summary>
-	public enum IncrementSign
-	{
-		/// <summary>
-		///		For positive increment.
-		/// </summary>
-		Positive = 1,
-		
-		/// <summary>
-		///		For negative increment.
-		/// </summary>
-		Negative = -1
-	}
-	
-	/// <summary>
 	///		Class for simulation load steps
 	/// </summary>
 	public class SimulationStep : LoadStep
 	{
-		/// <summary>
-		///		The sign of the initial load increment.
-		/// </summary>
-		public IncrementSign Sign { get; private set; }
-		
 		/// <summary>
 		///     The Arc-Length calculated for this load step.
 		/// </summary>
@@ -79,9 +57,6 @@ namespace andrefmello91.FEMAnalysis
 		{
 			var step = (SimulationStep) From(femInput, StepIncrement(parameters.NumberOfSteps), parameters, 1, true);
 			
-			// Set initial sign
-			step.Sign = IncrementSign.Positive;
-			
 			// Set initial increment
 			var iteration = (SimulationIteration) step.CurrentIteration;
 			iteration.LoadFactorIncrement = 0.1;
@@ -99,7 +74,6 @@ namespace andrefmello91.FEMAnalysis
 			iteration.UpdateForces(extForces, intForces);
 
 			// Calculate the initial increments
-			// var dUr = -stiffness.Solve(iteration.ResidualForces);
 			var dUr = Vector<double>.Build.Dense(femInput.NumberOfDoFs);
 			var dUf = stiffness.Solve(fullforces);
 			iteration.IncrementDisplacements(dUr, dUf, true);
@@ -114,9 +88,6 @@ namespace andrefmello91.FEMAnalysis
 		public static SimulationStep FromLastStep(SimulationStep lastStep, IFEMInput<IFiniteElement> femInput)
 		{
 			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
-			
-			// Set sign
-			newStep.Sign = lastStep.Sign;
 			
 			// Set desired iterations
 			newStep.DesiredIterations = lastStep.DesiredIterations;
@@ -203,7 +174,7 @@ namespace andrefmello91.FEMAnalysis
 			{
 				// First iteration of any load step except the first
 				case 1 when Number > 1:
-					curIt.LoadFactorIncrement = (int) Sign * dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+					curIt.LoadFactorIncrement = dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
 					return;
 				
 				// Any other iteration
@@ -230,13 +201,6 @@ namespace andrefmello91.FEMAnalysis
 					var p1      = deltaU * deltaU1;
 					var p2      = deltaU * deltaU2;
 					
-					// var p1 = (deltaU1.ToRowMatrix() * deltaU)[0];
-					// var p2 = (deltaU2.ToRowMatrix() * deltaU)[0];
-					//
-					// curIt.LoadFactorIncrement = p1 >= p2
-					// 	? d1
-					// 	: d2;
-
 					// Check products
 					switch (p1)
 					{
@@ -258,18 +222,6 @@ namespace andrefmello91.FEMAnalysis
 								? d1
 								: d2;
 							
-							// // Calculate coefficients
-							// var dUrPlusDu1 = dUr + deltaU1;
-							// var dUrPlusDu2 = dUr + deltaU2;
-							// var a21        = (dUrPlusDu1.ToRowMatrix() * dUf)[0];
-							// var a22        = (dUrPlusDu2.ToRowMatrix() * dUf)[0];
-							// var a31        = (dUrPlusDu1.ToRowMatrix() * dUrPlusDu1)[0] - ds2;
-							// var a32        = (dUrPlusDu2.ToRowMatrix() * dUrPlusDu2)[0] - ds2;
-							//
-							// curIt.LoadFactorIncrement = 
-							// 	-a31 / a21 < -a32 / a22
-							// 		? d1
-							// 		: d2;
 							return;
 						}
 					}
