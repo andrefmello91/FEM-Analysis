@@ -107,7 +107,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc/>
 		public virtual bool CheckConvergence(AnalysisParameters parameters) =>
 			Number >= parameters.MinIterations &&
-			(ForceConvergence <= parameters.ForceTolerance || DisplacementConvergence <= parameters.DisplacementTolerance);
+			ForceConvergence <= parameters.ForceTolerance &&
+			DisplacementConvergence <= parameters.DisplacementTolerance;
 
 		/// <inheritdoc/>
 		public bool CheckStopCondition(AnalysisParameters parameters) =>

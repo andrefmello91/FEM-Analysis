@@ -284,7 +284,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Create a new load step.
 		/// </summary>
 		///  <param name="incrementLoad">Increment load of the new step?</param>
-		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, FemInput, incrementLoad));
+		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
 
 		#region Interface Implementations
 

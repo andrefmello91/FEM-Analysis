@@ -97,9 +97,7 @@ namespace andrefmello91.FEMAnalysis
 			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
 
 		/// <inheritdoc/>
-		public override bool CheckConvergence(AnalysisParameters parameters) =>
-			Number >= parameters.MinIterations &&
-			DisplacementConvergence <= parameters.DisplacementTolerance;
+		public override bool CheckConvergence(AnalysisParameters parameters) => base.CheckConvergence(parameters);
 
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();

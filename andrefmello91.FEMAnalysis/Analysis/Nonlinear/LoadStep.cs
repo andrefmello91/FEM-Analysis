@@ -251,10 +251,10 @@ namespace andrefmello91.FEMAnalysis
 		///  <param name="lastStep">The last load step.</param>
 		///  <param name="femInput">The finite element input.</param>
 		///  <param name="incrementLoad">Increment load of the new step? If it's a <see cref="SimulationStep"/>, load is not increased.</param>
-		public static LoadStep FromLastStep(LoadStep lastStep, IFEMInput<IFiniteElement> femInput, bool incrementLoad = true)
+		public static LoadStep FromLastStep(LoadStep lastStep, bool incrementLoad = true)
 		{
 			if (lastStep is SimulationStep simulationStep)
-				return SimulationStep.FromLastStep(simulationStep, femInput);
+				return SimulationStep.FromLastStep(simulationStep);
 			
 			var newStep = From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1);
 			

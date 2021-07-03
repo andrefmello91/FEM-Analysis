@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics;
@@ -29,7 +30,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///		Default : 5
 		///	</remarks>
-		public int DesiredIterations { get; set; } = 15;
+		public int DesiredIterations { get; set; } = 5;
 
 		/// <inheritdoc />
 		public override double LoadFactorIncrement => AccumulatedLoadFactorIncrement(^1);
@@ -85,7 +86,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		///  <inheritdoc cref="LoadStep.FromLastStep"/>
-		public static SimulationStep FromLastStep(SimulationStep lastStep, IFEMInput<IFiniteElement> femInput)
+		public static SimulationStep FromLastStep(SimulationStep lastStep)
 		{
 			var newStep = (SimulationStep) From(lastStep.FullForceVector, lastStep.LoadFactor, lastStep.FinalDisplacements, lastStep.Stiffness, lastStep.Parameters, lastStep.Number + 1, true);
 			
@@ -93,9 +94,9 @@ namespace andrefmello91.FEMAnalysis
 			newStep.DesiredIterations = lastStep.DesiredIterations;
 
 			// Add last step final iteration
-			newStep.Iterations.Clear();
-			newStep.Iterations.Add(lastStep.CurrentIteration.Clone());
-			newStep.CurrentIteration.Number = 0;
+			// newStep.Iterations.Clear();
+			// newStep.Iterations.Add(lastStep.CurrentIteration.Clone());
+			// newStep.CurrentIteration.Number = 0;
 			
 			// Update arc length
 			newStep.CalculateArcLength(lastStep);
@@ -129,13 +130,13 @@ namespace andrefmello91.FEMAnalysis
 				UpdateDisplacements(femInput);
 				
 				// Update and Increment forces
-				IterationIncrement();
+				IterationIncrement(femInput.ConstraintIndex);
 
 				// Update displacements in grips and elements
 				((SimulationIteration) CurrentIteration).UpdateDisplacements();
 				
 				// Calculate convergence
-				((SimulationIteration) CurrentIteration).CalculateConvergence(FirstIteration.DisplacementIncrement);
+				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
 
 				// Check convergence or stop criteria
 				var stop = IterativeStop();
@@ -163,7 +164,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Calculate and set the load increment for the current iteration.
 		/// </summary>
-		private void IterationIncrement()
+		private void IterationIncrement(IEnumerable<int> constraintIndex)
 		{
 			var curIt = (SimulationIteration) CurrentIteration;
 			var dUf   = curIt.IncrementFromExternal;
@@ -174,12 +175,19 @@ namespace andrefmello91.FEMAnalysis
 			{
 				// First iteration of any load step except the first
 				case 1 when Number > 1:
-					curIt.LoadFactorIncrement = dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+					
+					// Get stiffness determinant sign
+					var stiffness = CurrentIteration.Stiffness;
+					var sign = stiffness.Determinant() >= 0
+						?  1
+						: -1;
+					
+					curIt.LoadFactorIncrement = sign * dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+
 					return;
 				
 				// Any other iteration
 				default:
-					
 					// Get accumulated increment until last iteration
 					var deltaU = AccumulatedDisplacementIncrement(^2);
 
@@ -192,10 +200,10 @@ namespace andrefmello91.FEMAnalysis
 					
 					// Calculate roots
 					var (r1, r2) = FindRoots.Quadratic(a3, 2 * a2, a1);
-					var d1    = r1.Real;
-					var d2    = r2.Real;
+					var d1      = r1.Real;
+					var d2      = r2.Real;
 					
-					// Choose value
+					// Calculate increments and products
 					var deltaU1 = deltaU + dUr + d1 * dUf;
 					var deltaU2 = deltaU + dUr + d2 * dUf;
 					var p1      = deltaU * deltaU1;
