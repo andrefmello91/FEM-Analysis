@@ -1,4 +1,6 @@
-﻿#nullable enable
+﻿using static andrefmello91.FEMAnalysis.StiffnessMatrix;
+
+#nullable enable
 
 namespace andrefmello91.FEMAnalysis
 {

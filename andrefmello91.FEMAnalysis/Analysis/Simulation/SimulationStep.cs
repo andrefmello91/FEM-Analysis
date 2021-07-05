@@ -4,7 +4,9 @@ using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
+
 using static andrefmello91.FEMAnalysis.Analysis<andrefmello91.FEMAnalysis.IFiniteElement>;
+using static andrefmello91.FEMAnalysis.StiffnessMatrix;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
