@@ -141,11 +141,11 @@ namespace andrefmello91.FEMAnalysis
 			if (_unit == unit)
 				return;
 			
-			// Set
-			_unit = unit;
-			
 			// Multiply matrix
 			_value *= ForcePerLength.From(1, Unit).As(unit);
+			
+			// Set
+			_unit = unit;
 		}
 
 		/// <inheritdoc />
