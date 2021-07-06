@@ -53,11 +53,11 @@ namespace andrefmello91.FEMAnalysis
 			get => _unit;
 			set => ChangeUnit(value);
 		}
-		
+
 		/// <summary>
 		///		Get/set the matrix value of this object, with components in <see cref="Unit"/>.
 		/// </summary>
-		public Vector<double> Value { get; protected set; }
+		protected Vector<double> Value;
 
 		#endregion
 
@@ -198,7 +198,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the corresponding <see cref="Vector{T}" />.
 		/// </summary>
-		public static implicit operator Vector<double>(ComponentVector<TQuantity, TUnit> vector) => vector.Value;
+		public static implicit operator Vector<double>(ComponentVector<TQuantity, TUnit> vector) => vector.Value.Clone();
 
 		/// <inheritdoc cref="StiffnessMatrix.op_Equality" />
 		public static bool operator ==(ComponentVector<TQuantity, TUnit>? left, ComponentVector<TQuantity, TUnit>? right) => left.IsEqualTo(right);

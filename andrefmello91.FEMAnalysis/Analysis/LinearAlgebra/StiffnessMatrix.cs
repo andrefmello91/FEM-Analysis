@@ -62,7 +62,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The corresponding matrix, with components in <see cref="Unit" />.
 		/// </summary>
-		public Matrix<double> Value { get; protected set; }
+		protected Matrix<double> Value;
 
 		#endregion
 
@@ -84,7 +84,7 @@ namespace andrefmello91.FEMAnalysis
 		public StiffnessMatrix(Matrix<double> value, TUnit unit)
 		{
 			Value = value;
-			_unit  = unit;
+			_unit = unit;
 		}
 
 		#endregion
@@ -92,7 +92,9 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <inheritdoc cref="IUnitConvertible{T}.Convert" />
-		public StiffnessMatrix<TQuantity, TUnit> Convert(TUnit unit) => new(Quantity.From(1, Unit).As(unit) * Value, unit);
+		public StiffnessMatrix<TQuantity, TUnit> Convert(TUnit unit) => Unit.Equals(unit)
+			? Clone()
+			: new StiffnessMatrix<TQuantity, TUnit>(Quantity.From(1, Unit).As(unit) * Value, unit);
 
 		#region Interface Implementations
 
@@ -203,7 +205,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the corresponding <see cref="Matrix{T}" /> value of a <see cref="StiffnessMatrix" />.
 		/// </summary>
-		public static implicit operator Matrix<double>(StiffnessMatrix<TQuantity, TUnit> stiffnessMatrix) => stiffnessMatrix.Value;
+		public static implicit operator Matrix<double>(StiffnessMatrix<TQuantity, TUnit> stiffnessMatrix) => stiffnessMatrix.Value.Clone();
 
 		/// <returns>
 		///     True if objects are equal.
@@ -298,7 +300,7 @@ namespace andrefmello91.FEMAnalysis
 				: Convert(ForcePerLengthUnit.NewtonPerMillimeter).Value;
 
 			var f = forceVector.Unit is ForceUnit.Newton
-				? forceVector.Value
+				? forceVector
 				: forceVector.Convert(ForceUnit.Newton);
 			
 			// Solve
@@ -333,7 +335,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Assemble the global stiffness matrix.
 		/// </summary>
-		/// <param name="femInput">The <see cref="FEMInput{TFiniteElement}" /></param>
+		/// <param name="femInput">The <see cref="FEMInput" /></param>
 		public static StiffnessMatrix Assemble(IFEMInput femInput)
 		{
 			var stiffness = Zero(femInput.NumberOfDoFs);
@@ -409,15 +411,26 @@ namespace andrefmello91.FEMAnalysis
 		public static ForceVector operator *(StiffnessMatrix stiffnessMatrix, DisplacementVector displacementVector)
 		{
 			// Convert
-			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter);
+			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter).Value;
 			var d = displacementVector.Convert(LengthUnit.Millimeter);
 			
 			// Multiply
-			var f = k.Value * d.Value;
+			var f = k * d;
 
 			return
 				new ForceVector(f);
 		}
 
+		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.op_Addition" />
+		public static StiffnessMatrix operator +(StiffnessMatrix left, StiffnessMatrix right) => (StiffnessMatrix) ((StiffnessMatrix<ForcePerLength, ForcePerLengthUnit>) left + right);
+
+		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.op_Subtraction" />
+		public static StiffnessMatrix operator -(StiffnessMatrix left, StiffnessMatrix right) => (StiffnessMatrix) ((StiffnessMatrix<ForcePerLength, ForcePerLengthUnit>) left - right);
+
+		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.op_Multiply(double, StiffnessMatrix{TQuantity,TUnit}) " />
+		public static StiffnessMatrix operator *(double value, StiffnessMatrix right) => (StiffnessMatrix) (value * (StiffnessMatrix<ForcePerLength, ForcePerLengthUnit>) right);
+
+		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.op_Multiply(double, StiffnessMatrix{TQuantity,TUnit}) " />
+		public static StiffnessMatrix operator *(StiffnessMatrix left, double value) => value * left;
 	}
 }

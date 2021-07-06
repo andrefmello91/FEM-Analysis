@@ -74,6 +74,19 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="ICloneable.Clone"/>
 		public new DisplacementVector Clone() => (DisplacementVector) base.Clone();
+		
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Addition"/>
+		public static DisplacementVector operator +(DisplacementVector left, DisplacementVector right) => (DisplacementVector) ((ComponentVector<Length, LengthUnit>) left + right);
+		
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Subtraction"/>
+		public static DisplacementVector operator -(DisplacementVector left, DisplacementVector right) => (DisplacementVector) ((ComponentVector<Length, LengthUnit>) left - right);
+
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
+		public static DisplacementVector operator *(double value, DisplacementVector right) => (DisplacementVector) (value * (ComponentVector<Length, LengthUnit>) right);
+
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
+		public static DisplacementVector operator *(DisplacementVector left, double value) => value * left;
+
 	}
 
 }

@@ -93,5 +93,17 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="ICloneable.Clone"/>
 		public new ForceVector Clone() => (ForceVector) base.Clone();
+
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Addition"/>
+		public static ForceVector operator +(ForceVector left, ForceVector right) => (ForceVector) ((ComponentVector<Force, ForceUnit>) left + right);
+		
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Subtraction"/>
+		public static ForceVector operator -(ForceVector left, ForceVector right) => (ForceVector) ((ComponentVector<Force, ForceUnit>) left - right);
+
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
+		public static ForceVector operator *(double value, ForceVector right) => (ForceVector) (value * (ComponentVector<Force, ForceUnit>) right);
+
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
+		public static ForceVector operator *(ForceVector left, double value) => value * left;
 	}
 }
