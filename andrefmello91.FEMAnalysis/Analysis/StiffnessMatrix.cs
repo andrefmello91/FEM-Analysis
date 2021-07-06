@@ -10,19 +10,23 @@ using UnitsNet.Units;
 namespace andrefmello91.FEMAnalysis
 {
 	/// <summary>
-	///     Stiffness matrix class.
+	///		Generic stiffness matrix class.
 	/// </summary>
-	public class StiffnessMatrix : IUnitConvertible<ForcePerLengthUnit>, ICloneable<StiffnessMatrix>, IEquatable<StiffnessMatrix>
+	/// <typeparam name="TQuantity">The quantity that represents the value of components of the matrix.</typeparam>
+	/// <typeparam name="TUnit">The unit enumeration that represents the quantity of the components of the matrix.</typeparam>
+	public class StiffnessMatrix<TQuantity, TUnit> : IUnitConvertible<TUnit>, ICloneable<StiffnessMatrix<TQuantity, TUnit>>, IEquatable<StiffnessMatrix<TQuantity, TUnit>>
+		where TQuantity : IQuantity<TUnit>
+		where TUnit : Enum
 	{
-
+		
 		#region Fields
 
-		private ForcePerLengthUnit _unit;
+		private TUnit _unit;
 
 		/// <summary>
 		///     The corresponding matrix, with components in <see cref="Unit" />.
 		/// </summary>
-		private Matrix<double> _value;
+		protected Matrix<double> Value;
 
 		#endregion
 
@@ -31,7 +35,7 @@ namespace andrefmello91.FEMAnalysis
 		#region Interface Implementations
 
 		/// <inheritdoc />
-		public ForcePerLengthUnit Unit
+		public TUnit Unit
 		{
 			get => _unit;
 			set => ChangeUnit(value);
@@ -43,26 +47,192 @@ namespace andrefmello91.FEMAnalysis
 		public int[]? ConstraintIndex { get; set; }
 
 		/// <inheritdoc cref="Matrix{T}.RowCount"/>
-		public int Rows => _value.RowCount;
+		public int Rows => Value.RowCount;
 		
 		/// <inheritdoc cref="Matrix{T}.ColumnCount"/>
-		public int Columns => _value.ColumnCount;
+		public int Columns => Value.ColumnCount;
 
 		/// <summary>
 		///		Get/set the value at these indexes.
 		/// </summary>
 		/// <param name="rowIndex">The row of the required element.</param>
 		/// <param name="columnIndex">The column of the required element.</param>
-		public ForcePerLength this[int rowIndex, int columnIndex]
+		public TQuantity this[int rowIndex, int columnIndex]
 		{
-			get => ForcePerLength.From(_value[rowIndex, columnIndex], _unit);
-			set => _value[rowIndex, columnIndex] = value.As(_unit);
+			get => (TQuantity) Value[rowIndex, columnIndex].As(_unit);
+			set => Value[rowIndex, columnIndex] = value.As(_unit);
 		}
 
 		#endregion
 
 		#endregion
 
+		#region Constructors
+
+		/// <inheritdoc cref="StiffnessMatrix{T,T}(Matrix{double}, TUnit)" />
+		public StiffnessMatrix(double[,] value, TUnit unit)
+			: this(Matrix<double>.Build.DenseOfArray(value), unit)
+		{
+		}
+
+		/// <summary>
+		///     Create a stiffness matrix.
+		/// </summary>
+		/// <param name="value">The <see cref="Matrix{T}" /> or <see cref="double" /> array value.</param>
+		/// <param name="unit">The unit of <paramref name="value" />'s components</param>
+		public StiffnessMatrix(Matrix<double> value, TUnit unit)
+		{
+			Value = value;
+			_unit  = unit;
+		}
+
+		#endregion
+
+		#region Methods
+
+		/// <inheritdoc cref="IUnitConvertible{T}.Convert" />
+		public StiffnessMatrix<TQuantity, TUnit> Convert(TUnit unit) => new(Quantity.From(1, Unit).As(unit) * Value, unit);
+
+		#region Interface Implementations
+
+		/// <inheritdoc cref="Matrix{T}.Row(int)"/>
+		public Vector<double> Row(int index) => Value.Row(index);
+		
+		/// <inheritdoc cref="Matrix{T}.Column(int)"/>
+		public Vector<double> Column(int index) => Value.Column(index);
+
+		/// <inheritdoc cref="Matrix{T}.ClearRows(int[])"/>
+		public void ClearRows(params int[] indexes) => Value.ClearRows(indexes);
+		
+		/// <inheritdoc cref="Matrix{T}.ClearColumns(int[])"/>
+		public void ClearColumns(params int[] indexes) => Value.ClearColumns(indexes);
+
+		/// <inheritdoc cref="Matrix{T}.Clear"/>
+		public void Clear() => Value.Clear();
+		
+		/// <inheritdoc cref="Matrix{T}.Determinant"/>
+		public double Determinant() => Value.Determinant();
+		
+		/// <inheritdoc cref="Matrix{T}.Transpose()"/>
+		public StiffnessMatrix<TQuantity, TUnit> Transpose() => new (Value.Transpose(), _unit);
+
+		/// <summary>
+		///		Get the simplified stiffness matrix by the constrained DoFs.
+		/// </summary>
+		public Matrix<double> Simplified() => ConstraintIndex is not null
+			? StiffnessMatrix.SimplifiedStiffness(Value, ConstraintIndex)
+			: Value;
+		
+		/// <summary>
+		///		Transform this stiffness to another coordinate system.
+		/// </summary>
+		/// <param name="transformationMatrix">The transformation matrix.</param>
+		/// <returns>
+		///		A new <see cref="StiffnessMatrix"/> with transformed components.
+		/// </returns>
+		/// <exception cref="ArgumentException">If the dimensions of <paramref name="transformationMatrix"/> don't conform with this.</exception>
+		public StiffnessMatrix<TQuantity, TUnit> Transform(Matrix<double> transformationMatrix)
+		{
+			var value = transformationMatrix.Transpose() * Value * transformationMatrix;
+			
+			return
+				new StiffnessMatrix<TQuantity, TUnit>(value, _unit);
+		}
+
+		/// <inheritdoc />
+		public void ChangeUnit(TUnit unit)
+		{
+			if (_unit.Equals(unit))
+				return;
+			
+			// Multiply matrix
+			Value *= Quantity.From(1, Unit).As(unit);
+			
+			// Set
+			_unit = unit;
+		}
+
+		/// <inheritdoc />
+		public StiffnessMatrix<TQuantity, TUnit> Clone() => new(Value.Clone(), _unit);
+
+		/// <inheritdoc />
+		public bool Equals(StiffnessMatrix<TQuantity, TUnit>? other) =>
+			other is not null && _unit.Equals(other._unit) && Value.Equals(other.Value);
+
+		/// <inheritdoc />
+		IUnitConvertible<TUnit> IUnitConvertible<TUnit>.Convert(TUnit unit) => Convert(unit);
+
+		#endregion
+
+		#region Object override
+
+		/// <inheritdoc />
+		public override bool Equals(object? obj) =>
+			obj is StiffnessMatrix<TQuantity, TUnit> other && Equals(other);
+
+		/// <inheritdoc />
+		public override int GetHashCode() => _unit.GetHashCode() * Value.GetHashCode();
+
+		/// <inheritdoc />
+		public override string ToString() =>
+			$"Unit: {Unit} \n" +
+			$"Value: {Value}";
+
+		#endregion
+
+		#endregion
+
+		#region Operators
+
+		/// <summary>
+		///     Get the corresponding <see cref="Matrix{T}" /> value of a <see cref="StiffnessMatrix" />.
+		/// </summary>
+		public static implicit operator Matrix<double>(StiffnessMatrix<TQuantity, TUnit> stiffnessMatrix) => stiffnessMatrix.Value;
+
+		/// <returns>
+		///     True if objects are equal.
+		/// </returns>
+		public static bool operator ==(StiffnessMatrix<TQuantity, TUnit>? left, StiffnessMatrix<TQuantity, TUnit>? right) => left.IsEqualTo(right);
+
+		/// <returns>
+		///     True if objects are not equal.
+		/// </returns>
+		public static bool operator !=(StiffnessMatrix<TQuantity, TUnit>? left, StiffnessMatrix<TQuantity, TUnit>? right) => left.IsNotEqualTo(right);
+
+		/// <returns>
+		///     A new stiffness matrix with summed components in <paramref name="left" />'s unit.
+		/// </returns>
+		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
+		public static StiffnessMatrix<TQuantity, TUnit> operator +(StiffnessMatrix<TQuantity, TUnit> left, StiffnessMatrix<TQuantity, TUnit> right) => new(left.Value + right.Convert(left.Unit).Value, left.Unit);
+
+		/// <returns>
+		///     A new stiffness matrix with subtracted components in <paramref name="left" />'s unit.
+		/// </returns>
+		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
+		public static StiffnessMatrix<TQuantity, TUnit> operator -(StiffnessMatrix<TQuantity, TUnit> left, StiffnessMatrix<TQuantity, TUnit> right) => new(left.Value - right.Convert(left.Unit).Value, left.Unit);
+
+		/// <returns>
+		///     A new stiffness matrix with components multiplied by a value
+		/// </returns>
+		public static StiffnessMatrix<TQuantity, TUnit> operator *(double value, StiffnessMatrix<TQuantity, TUnit> right) => new(value * right.Value, right.Unit);
+
+		/// <inheritdoc cref="op_Multiply(double, StiffnessMatrix{TQuantity,TUnit}) " />
+		public static StiffnessMatrix<TQuantity, TUnit> operator *(StiffnessMatrix<TQuantity, TUnit> left, double value) => value * left;
+
+		#endregion
+	}
+	
+	/// <summary>
+	///     Default stiffness matrix class.
+	/// </summary>
+	/// <remarks>
+	///		Unit is <see cref="ForcePerLengthUnit.NewtonPerMillimeter"/>.
+	///		<para>
+	///		Quantity is <see cref="ForcePerLength"/>.
+	///		</para>
+	/// </remarks>
+	public class StiffnessMatrix : StiffnessMatrix<ForcePerLength, ForcePerLengthUnit>
+	{
 		#region Constructors
 
 		/// <inheritdoc cref="StiffnessMatrix(Matrix{double}, ForcePerLengthUnit)" />
@@ -77,9 +247,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="value">The <see cref="Matrix{T}" /> or <see cref="double" /> array value.</param>
 		/// <param name="unit">The unit of <paramref name="value" />'s components</param>
 		public StiffnessMatrix(Matrix<double> value, ForcePerLengthUnit unit = ForcePerLengthUnit.NewtonPerMillimeter)
+			: base(value, unit)
 		{
-			_value = value;
-			_unit  = unit;
 		}
 
 		#endregion
@@ -87,137 +256,30 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <inheritdoc cref="IUnitConvertible{T}.Convert" />
-		public StiffnessMatrix Convert(ForcePerLengthUnit unit) => new(ForcePerLength.From(1, Unit).As(unit) * _value, unit);
+		public new StiffnessMatrix Convert(ForcePerLengthUnit unit) => (StiffnessMatrix) base.Convert(unit);
 
-		#region Interface Implementations
-
-		/// <inheritdoc cref="Matrix{T}.Row(int)"/>
-		public Vector<double> Row(int index) => _value.Row(index);
-		
-		/// <inheritdoc cref="Matrix{T}.Column(int)"/>
-		public Vector<double> Column(int index) => _value.Column(index);
-
-		/// <inheritdoc cref="Matrix{T}.ClearRows(int[])"/>
-		public void ClearRows(params int[] indexes) => _value.ClearRows(indexes);
-		
-		/// <inheritdoc cref="Matrix{T}.ClearColumns(int[])"/>
-		public void ClearColumns(params int[] indexes) => _value.ClearColumns(indexes);
-
-		/// <inheritdoc cref="Matrix{T}.Clear"/>
-		public void Clear() => _value.Clear();
-		
-		/// <inheritdoc cref="Matrix{T}.Determinant"/>
-		public double Determinant() => _value.Determinant();
-		
 		/// <inheritdoc cref="Matrix{T}.Transpose()"/>
-		public StiffnessMatrix Transpose() => new (_value.Transpose(), _unit);
+		public new StiffnessMatrix Transpose() => (StiffnessMatrix) base.Transpose();
 
-		/// <summary>
-		///		Get the simplified stiffness matrix by the constrained DoFs.
-		/// </summary>
-		public Matrix<double> Simplified() => ConstraintIndex is not null
-			? SimplifiedStiffness(_value, ConstraintIndex)
-			: _value;
-		
-		/// <summary>
-		///		Transform this stiffness to another coordinate system.
-		/// </summary>
-		/// <param name="transformationMatrix">The transformation matrix.</param>
-		/// <returns>
-		///		A new <see cref="StiffnessMatrix"/> with transformed components.
-		/// </returns>
-		/// <exception cref="ArgumentException">If the dimensions of <paramref name="transformationMatrix"/> don't conform with this.</exception>
-		public StiffnessMatrix Transform(Matrix<double> transformationMatrix)
-		{
-			var value = transformationMatrix.Transpose() * _value * transformationMatrix;
-			
-			return
-				new StiffnessMatrix(value, _unit);
-		}
+		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.Transform"/>
+		public new StiffnessMatrix Transform(Matrix<double> transformationMatrix) => (StiffnessMatrix) base.Transform(transformationMatrix);
 
-		/// <inheritdoc />
-		public void ChangeUnit(ForcePerLengthUnit unit)
-		{
-			if (_unit == unit)
-				return;
-			
-			// Multiply matrix
-			_value *= ForcePerLength.From(1, Unit).As(unit);
-			
-			// Set
-			_unit = unit;
-		}
-
-		/// <inheritdoc />
-		public StiffnessMatrix Clone() => new(_value.Clone(), _unit);
-
-		/// <inheritdoc />
-		public bool Equals(StiffnessMatrix? other) =>
-			other is not null && _unit == other._unit && _value.Equals(other._value);
-
-		/// <inheritdoc />
-		IUnitConvertible<ForcePerLengthUnit> IUnitConvertible<ForcePerLengthUnit>.Convert(ForcePerLengthUnit unit) => Convert(unit);
+		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.Clone"/>
+		public new StiffnessMatrix Clone() => (StiffnessMatrix) base.Clone();
 
 		#endregion
 
 		#region Object override
-
-		/// <inheritdoc />
-		public override bool Equals(object? obj) =>
-			obj is StiffnessMatrix other && Equals(other);
-
-		/// <inheritdoc />
-		public override int GetHashCode() => (int) _unit * _value.GetHashCode();
-
-		/// <inheritdoc />
-		public override string ToString() =>
-			$"Unit: {Unit} \n" +
-			$"Value: {_value}";
-
-		#endregion
 
 		#endregion
 
 		#region Operators
 
 		/// <summary>
-		///     Get the corresponding <see cref="Matrix{T}" /> value of a <see cref="StiffnessMatrix" />.
-		/// </summary>
-		public static implicit operator Matrix<double>(StiffnessMatrix stiffnessMatrix) => stiffnessMatrix._value;
-
-		/// <summary>
 		///     Create a <see cref="StiffnessMatrix" /> from a <see cref="Matrix{T}" />, with components in
 		///     <see cref="ForcePerLengthUnit.NewtonPerMillimeter" />.
 		/// </summary>
 		public static implicit operator StiffnessMatrix(Matrix<double> value) => new(value);
-
-		/// <returns>
-		///     True if objects are equal.
-		/// </returns>
-		public static bool operator ==(StiffnessMatrix left, StiffnessMatrix right) => left.IsEqualTo(right);
-
-		/// <returns>
-		///     True if objects are not equal.
-		/// </returns>
-		public static bool operator !=(StiffnessMatrix left, StiffnessMatrix right) => left.IsNotEqualTo(right);
-
-		/// <returns>
-		///     A new stiffness matrix with summed components in <paramref name="left" />'s unit.
-		/// </returns>
-		public static StiffnessMatrix operator +(StiffnessMatrix left, StiffnessMatrix right) => new(left._value + right.Convert(left.Unit)._value, left.Unit);
-
-		/// <returns>
-		///     A new stiffness matrix with subtracted components in <paramref name="left" />'s unit.
-		/// </returns>
-		public static StiffnessMatrix operator -(StiffnessMatrix left, StiffnessMatrix right) => new(left._value - right.Convert(left.Unit)._value, left.Unit);
-
-		/// <returns>
-		///     A new stiffness matrix with components multiplied by a value
-		/// </returns>
-		public static StiffnessMatrix operator *(double value, StiffnessMatrix right) => new(value * right._value, right.Unit);
-
-		/// <inheritdoc cref="op_Multiply(double, StiffnessMatrix) " />
-		public static StiffnessMatrix operator *(StiffnessMatrix left, double value) => value * left;
 
 		#endregion
 
