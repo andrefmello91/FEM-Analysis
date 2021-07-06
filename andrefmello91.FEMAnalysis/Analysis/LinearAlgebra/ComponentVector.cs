@@ -5,6 +5,7 @@ using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
+using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -21,7 +22,6 @@ namespace andrefmello91.FEMAnalysis
 		#region Fields
 
 		private TUnit _unit;
-		protected Vector<double> Value;
 
 		#endregion
 
@@ -53,6 +53,11 @@ namespace andrefmello91.FEMAnalysis
 			get => _unit;
 			set => ChangeUnit(value);
 		}
+		
+		/// <summary>
+		///		Get/set the matrix value of this object, with components in <see cref="Unit"/>.
+		/// </summary>
+		public Vector<double> Value { get; protected set; }
 
 		#endregion
 
@@ -60,10 +65,7 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Constructors
 
-		/// <summary>
-		///     Create a component vector.
-		/// </summary>
-		/// <param name="value">The double enumerable.</param>
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}(IEnumerable{TQuantity})"/>
 		/// <param name="unit">The unit of <paramref name="value" />'s components.</param>
 		public ComponentVector(IEnumerable<double> value, TUnit unit)
 		{
@@ -74,6 +76,19 @@ namespace andrefmello91.FEMAnalysis
 			_unit = unit;
 		}
 
+		/// <summary>
+		///     Create a component vector.
+		/// </summary>
+		/// <param name="value">The enumerable of vector's components.</param>
+		public ComponentVector(IEnumerable<TQuantity> value)
+		{
+			_unit = value.First().Unit;
+
+			Value = value
+				.Select(v => v.As(_unit))
+				.ToVector();
+		}
+		
 		#endregion
 
 		#region Methods
@@ -88,7 +103,7 @@ namespace andrefmello91.FEMAnalysis
 		{
 			if (_unit.Equals(unit))
 				return;
-
+			
 			Value *= Quantity.From(1, _unit).As(unit);
 			_unit =  unit;
 		}
@@ -110,6 +125,30 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+		/// <inheritdoc cref="Vector{T}.Maximum"/>
+		public TQuantity Maximum() => (TQuantity) Value.Maximum().As(Unit);
+		
+		/// <inheritdoc cref="Vector{T}.Minimum"/>
+		public TQuantity Minimum() => (TQuantity) Value.Minimum().As(Unit);
+		
+		/// <inheritdoc cref="Vector{T}.AbsoluteMaximum"/>
+		public TQuantity AbsoluteMaximum() => (TQuantity) Value.AbsoluteMaximum().As(Unit);
+		
+		/// <inheritdoc cref="Vector{T}.AbsoluteMinimum"/>
+		public TQuantity AbsoluteMinimum() => (TQuantity) Value.AbsoluteMinimum().As(Unit);
+
+		/// <inheritdoc cref="Vector{T}.Clear"/>
+		public void Clear() => Value.Clear();
+		
+		/// <inheritdoc cref="Vector{T}.Norm"/>
+		public double Norm(double p) => Value.Norm(p);
+
+		/// <inheritdoc cref="Vector{T}.ToRowMatrix"/>
+		public Matrix<double> ToRowMatrix() => Value.ToRowMatrix();
+		
+		/// <inheritdoc cref="Vector{T}.ToColumnMatrix"/>
+		public Matrix<double> ToColumnMatrix() => Value.ToColumnMatrix();
+		
 		#endregion
 
 		#region Object override
@@ -163,7 +202,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="op_Multiply(double, ComponentVector{TQuantity,TUnit}) " />
 		public static ComponentVector<TQuantity, TUnit> operator *(ComponentVector<TQuantity, TUnit> left, double value) => value * left;
 
-		#endregion
+		/// <returns>
+		///		The dot product between the vectors.
+		/// </returns>
+		/// <inheritdoc cref="op_Subtraction"/>
+		public static double operator *(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => left.Value * right.Value;
 
+		#endregion
 	}
 }

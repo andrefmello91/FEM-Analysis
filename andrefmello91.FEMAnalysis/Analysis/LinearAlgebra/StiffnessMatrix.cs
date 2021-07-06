@@ -22,12 +22,7 @@ namespace andrefmello91.FEMAnalysis
 		#region Fields
 
 		private TUnit _unit;
-
-		/// <summary>
-		///     The corresponding matrix, with components in <see cref="Unit" />.
-		/// </summary>
-		protected Matrix<double> Value;
-
+		
 		#endregion
 
 		#region Properties
@@ -62,6 +57,11 @@ namespace andrefmello91.FEMAnalysis
 			get => (TQuantity) Value[rowIndex, columnIndex].As(_unit);
 			set => Value[rowIndex, columnIndex] = value.As(_unit);
 		}
+
+		/// <summary>
+		///     The corresponding matrix, with components in <see cref="Unit" />.
+		/// </summary>
+		public Matrix<double> Value { get; protected set; }
 
 		#endregion
 
@@ -226,7 +226,7 @@ namespace andrefmello91.FEMAnalysis
 	///     Default stiffness matrix class.
 	/// </summary>
 	/// <remarks>
-	///		Unit is <see cref="ForcePerLengthUnit.NewtonPerMillimeter"/>.
+	///		Unit is <see cref="ForcePerLengthUnit"/>.
 	///		<para>
 	///		Quantity is <see cref="ForcePerLength"/>.
 	///		</para>
@@ -267,6 +267,31 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.Clone"/>
 		public new StiffnessMatrix Clone() => (StiffnessMatrix) base.Clone();
 
+		/// <summary>
+		///		Solve a system d = K f.
+		/// </summary>
+		/// <param name="forceVector"></param>
+		/// <returns>
+		///		The resulting displacement vector, with components in <see cref="LengthUnit.Millimeter"/>.
+		/// </returns>
+		public DisplacementVector Solve(ForceVector forceVector)
+		{
+			// Convert
+			var k = Unit is ForcePerLengthUnit.NewtonPerMillimeter
+				? Value
+				: Convert(ForcePerLengthUnit.NewtonPerMillimeter).Value;
+
+			var f = forceVector.Unit is ForceUnit.Newton
+				? forceVector.Value
+				: forceVector.Convert(ForceUnit.Newton);
+			
+			// Solve
+			var d = k.Solve(f);
+
+			return
+				new DisplacementVector(d);
+		}
+		
 		#endregion
 
 		#region Object override
@@ -321,5 +346,25 @@ namespace andrefmello91.FEMAnalysis
 
 			return simplifiedStiffness;
 		}
+		
+		/// <summary>
+		///		Create a force vector by multiplying the stiffness and the displacement vector.
+		/// </summary>
+		/// <returns>
+		///		The <see cref="ForceVector"/> with components in <see cref="ForceUnit.Newton"/>.
+		/// </returns>
+		public static ForceVector operator *(StiffnessMatrix stiffnessMatrix, DisplacementVector displacementVector)
+		{
+			// Convert
+			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter);
+			var d = displacementVector.Convert(LengthUnit.Millimeter);
+			
+			// Multiply
+			var f = k.Value * d.Value;
+
+			return
+				new ForceVector(f);
+		}
+
 	}
 }
