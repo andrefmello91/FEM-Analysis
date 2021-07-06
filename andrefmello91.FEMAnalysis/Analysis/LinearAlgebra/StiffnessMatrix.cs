@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -39,7 +40,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		The index of constrained DoFs.
 		/// </summary>
-		public int[]? ConstraintIndex { get; set; }
+		public List<int>? ConstraintIndex { get; set; }
 
 		/// <inheritdoc cref="Matrix{T}.RowCount"/>
 		public int Rows => Value.RowCount;
@@ -119,9 +120,24 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Get the simplified stiffness matrix by the constrained DoFs.
 		/// </summary>
-		public Matrix<double> Simplified() => ConstraintIndex is not null
-			? StiffnessMatrix.SimplifiedStiffness(Value, ConstraintIndex)
-			: Value;
+		/// <param name="threshold">A value for setting all values whose absolute value is smaller than to zero. If null, this is not applied.</param>
+		/// <returns>
+		///		The simplified <see cref="Matrix{T}"/>.
+		/// </returns>
+		public Matrix<double> Simplified(double? threshold = null)
+		{
+			var value = Value.Clone();
+			
+			if (threshold.HasValue)
+				value.CoerceZero(threshold.Value);
+			
+			return ConstraintIndex is not null
+				? StiffnessMatrix.SimplifiedStiffness(value, ConstraintIndex)
+				: value;
+		}
+
+		/// <inheritdoc cref="Simplified(double?)"/>
+		public Matrix<double> Simplified(TQuantity? threshold) => Simplified(threshold?.As(Unit));
 		
 		/// <summary>
 		///		Transform this stiffness to another coordinate system.
@@ -307,6 +323,43 @@ namespace andrefmello91.FEMAnalysis
 		public static implicit operator StiffnessMatrix(Matrix<double> value) => new(value);
 
 		#endregion
+
+		/// <summary>
+		///		Create a stiffness matrix with zero elements.
+		/// </summary>
+		/// <param name="size">The size of the matrix.</param>
+		public static StiffnessMatrix Zero(int size) => new (Matrix<double>.Build.Dense(size, size));
+		
+		/// <summary>
+		///     Assemble the global stiffness matrix.
+		/// </summary>
+		/// <param name="femInput">The <see cref="FEMInput{TFiniteElement}" /></param>
+		public static StiffnessMatrix Assemble(IFEMInput femInput)
+		{
+			var stiffness = Zero(femInput.NumberOfDoFs);
+			stiffness.ConstraintIndex = femInput.ConstraintIndex;
+			
+			foreach (var element in femInput)
+			{
+				var dofIndex = element.DoFIndex;
+
+				for (var i = 0; i < dofIndex.Length; i++)
+				{
+					// Global index
+					var k = dofIndex[i];
+
+					for (var j = 0; j < dofIndex.Length; j++)
+					{
+						// Global index
+						var l = dofIndex[j];
+
+						stiffness[k, l] += element.Stiffness[i, j];
+					}
+				}
+			}
+
+			return stiffness;
+		}
 
 		/// <summary>
 		///     Get the global stiffness simplified.

@@ -10,9 +10,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Finite element input class.
 	/// </summary>
-	/// <typeparam name="TFiniteElement">Any type that implements <see cref="IFiniteElement" />.</typeparam>
-	public interface IFEMInput<out TFiniteElement> : IEnumerable<TFiniteElement>
-		where TFiniteElement : IFiniteElement
+	public interface IFEMInput : IEnumerable<IFiniteElement>
 	{
 
 		#region Properties
@@ -25,10 +23,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the external force <see cref="Vector" />.
 		/// </summary>
-		/// <remarks>
-		///     Components in <see cref="ForceUnit.Newton" />.
-		/// </remarks>
-		public Vector<double> ForceVector { get; }
+		public ForceVector ForceVector { get; }
 
 		/// <summary>
 		///     Get the grips of the finite element model.
@@ -48,8 +43,7 @@ namespace andrefmello91.FEMAnalysis
 	///     Default finite element input class.
 	/// </summary>
 	/// <inheritdoc cref="IFEMInput{TFiniteElement}" />
-	public class FEMInput<TFiniteElement> : List<TFiniteElement>, IFEMInput<TFiniteElement>
-		where TFiniteElement : IFiniteElement
+	public class FEMInput: List<IFiniteElement>, IFEMInput
 	{
 
 		#region Properties
@@ -60,7 +54,7 @@ namespace andrefmello91.FEMAnalysis
 		public List<int> ConstraintIndex { get; }
 
 		/// <inheritdoc />
-		public Vector<double> ForceVector { get; }
+		public ForceVector ForceVector { get; }
 
 		/// <inheritdoc />
 		public List<IGrip> Grips { get; }
@@ -78,7 +72,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Grips are taken from <paramref name="elements" />.
 		/// </remarks>
-		public FEMInput(IEnumerable<TFiniteElement> elements)
+		public FEMInput(IEnumerable<IFiniteElement> elements)
 			: this(elements, elements.SelectMany(e => e.Grips).Distinct().OrderBy(g => g.Number).ToList())
 		{
 		}
@@ -88,13 +82,13 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="elements">The collection containing all distinct <see cref="IFiniteElement" />'s in the model.</param>
 		/// <param name="grips">The collection containing all distinct <see cref="IGrip" />'s in the model.</param>
-		public FEMInput(IEnumerable<TFiniteElement> elements, IEnumerable<IGrip> grips)
+		public FEMInput(IEnumerable<IFiniteElement> elements, IEnumerable<IGrip> grips)
 			: base(elements)
 		{
 			Grips           = grips.ToList();
 			NumberOfDoFs    = 2 * Grips.Count;
-			ForceVector     = Grips.AssembleForceVector();
 			ConstraintIndex = Grips.GetConstraintIndex().ToList();
+			ForceVector     = ForceVector.AssembleExternal(this);
 		}
 
 		#endregion

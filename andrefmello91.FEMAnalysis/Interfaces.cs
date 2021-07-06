@@ -75,20 +75,14 @@ namespace andrefmello91.FEMAnalysis
 		#region Properties
 
 		/// <summary>
-		///     Get the displacement <see cref="Vector" />, in global coordinate system.
+		///     Get the displacement vector, in global coordinate system.
 		/// </summary>
-		/// <remarks>
-		///     Components in <see cref="LengthUnit.Millimeter" />.
-		/// </remarks>
-		Vector<double> Displacements { get; set; }
+		DisplacementVector Displacements { get; set; }
 
 		/// <summary>
-		///     Get the force <see cref="Vector" /> in this element, in global coordinate system.
+		///     Get the force vector in this element, in global coordinate system.
 		/// </summary>
-		/// <remarks>
-		///     Components in <see cref="ForceUnit.Newton" />.
-		/// </remarks>
-		Vector<double> Forces { get; set; }
+		ForceVector Forces { get; set; }
 
 		/// <summary>
 		///     Get the grips of this element.
@@ -96,12 +90,9 @@ namespace andrefmello91.FEMAnalysis
 		IGrip[] Grips { get; }
 
 		/// <summary>
-		///     Get stiffness <see cref="Matrix" /> in the global coordinate system.
+		///     Get stiffness matrix in the global coordinate system.
 		/// </summary>
-		/// <remarks>
-		///     Components in units compatible to <see cref="ForceUnit.Newton" /> and <see cref="LengthUnit.Millimeter" />.
-		/// </remarks>
-		Matrix<double> Stiffness { get; set; }
+		StiffnessMatrix Stiffness { get; set; }
 
 		#endregion
 
@@ -139,12 +130,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The displacement increment vector from external forces of this iteration.
 		/// </summary>
-		Vector<double> DisplacementIncrement { get; }
+		DisplacementVector DisplacementIncrement { get; }
 
 		/// <summary>
 		///     The displacement vector of this iteration.
 		/// </summary>
-		Vector<double> Displacements { get; }
+		DisplacementVector Displacements { get; }
 
 		/// <summary>
 		///     The force convergence of this iteration.
@@ -154,7 +145,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The internal force vector of this iteration.
 		/// </summary>
-		Vector<double> InternalForces { get; }
+		ForceVector InternalForces { get; }
 
 		/// <summary>
 		///     The number of this iteration.
@@ -164,12 +155,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The residual force vector of this iteration.
 		/// </summary>
-		Vector<double> ResidualForces { get; }
+		ForceVector ResidualForces { get; }
 
 		/// <summary>
 		///     The stiffness matrix of this iteration.
 		/// </summary>
-		Matrix<double> Stiffness { get; set; }
+		StiffnessMatrix Stiffness { get; set; }
 
 		/// <summary>
 		///     Calculate the convergence of this iteration.

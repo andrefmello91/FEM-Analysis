@@ -30,7 +30,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The index of constrained DoFs.
 		/// </summary>
-		public int[]? ConstraintIndex { get; set; }
+		public List<int>? ConstraintIndex { get; set; }
 
 		/// <inheritdoc cref="Vector{T}.Count" />
 		public int Count => Value.Count;
@@ -95,6 +95,30 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="IUnitConvertible{TUnit}.Convert" />
 		public ComponentVector<TQuantity, TUnit> Convert(TUnit unit) => new(Value * Quantity.From(1, _unit).As(unit), unit);
+
+		/// <summary>
+		///		Get the vector simplified by constraint indexes.
+		/// </summary>
+		/// <param name="threshold">A value for setting all values whose absolute value is smaller than to zero. If null, this is not applied.</param>
+		/// <returns>
+		///		The simplified <see cref="Vector{T}"/>.
+		/// </returns>
+		public Vector<double> Simplified(double? threshold = null)
+		{
+			var simplified = Value.Clone();
+			
+			if (ConstraintIndex is not null)
+				foreach (var index in ConstraintIndex)
+					simplified[index] = 0;
+			
+			if (threshold.HasValue)
+				simplified.CoerceZero(threshold.Value);
+
+			return simplified;
+		}
+
+		/// <inheritdoc cref="Simplified(double?)"/>
+		public Vector<double> Simplified(TQuantity? threshold) => Simplified(threshold?.As(Unit));
 
 		#region Interface Implementations
 
