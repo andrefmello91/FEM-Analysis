@@ -72,6 +72,8 @@ namespace andrefmello91.FEMAnalysis
             return d;
         }
 
+		/// <inheritdoc cref="ICloneable.Clone"/>
+		public new DisplacementVector Clone() => (DisplacementVector) base.Clone();
 	}
 
 }

@@ -90,5 +90,8 @@ namespace andrefmello91.FEMAnalysis
 
 			return fi;
 		}
+
+		/// <inheritdoc cref="ICloneable.Clone"/>
+		public new ForceVector Clone() => (ForceVector) base.Clone();
 	}
 }
