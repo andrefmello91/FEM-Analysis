@@ -171,7 +171,10 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc />
-		public StiffnessMatrix<TQuantity, TUnit> Clone() => new(Value.Clone(), _unit);
+		public StiffnessMatrix<TQuantity, TUnit> Clone() => new(Value.Clone(), _unit)
+		{
+			ConstraintIndex = ConstraintIndex
+		};
 
 		/// <inheritdoc />
 		public bool Equals(StiffnessMatrix<TQuantity, TUnit>? other) =>

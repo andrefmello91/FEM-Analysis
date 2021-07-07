@@ -133,7 +133,10 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc cref="ICloneable{T}.Clone" />
-		public ComponentVector<TQuantity, TUnit> Clone() => new(Value.Clone(), _unit);
+		public ComponentVector<TQuantity, TUnit> Clone() => new(Value.Clone(), _unit)
+		{
+			ConstraintIndex = ConstraintIndex
+		};
 
 		/// <inheritdoc />
 		public bool Equals(ComponentVector<TQuantity, TUnit>? other) =>
