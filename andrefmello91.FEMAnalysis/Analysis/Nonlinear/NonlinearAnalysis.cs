@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MathNet.Numerics.LinearAlgebra;
+using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -103,63 +104,6 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Methods
-
-		/// <summary>
-		///     Calculate the secant stiffness increment.
-		/// </summary>
-		/// <param name="currentStiffness">The stiffness matrix from the last iteration.</param>
-		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
-		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
-		/// <param name="currentResidual">The residual force vector from current iteration.</param>
-		/// <param name="lastResidual">The residual force vector from last iteration.</param>
-		/// <returns>
-		///     <see cref="Matrix{T}" />
-		/// </returns>
-		public static Matrix<double> SecantIncrement(Matrix<double> currentStiffness, Vector<double> currentDisplacements, Vector<double> lastDisplacements, Vector<double> currentResidual, Vector<double> lastResidual)
-		{
-			// Calculate the variation of displacements and residual as vectors
-			Vector<double>
-				dU = currentDisplacements - lastDisplacements,
-				dR = currentResidual - lastResidual;
-
-			return
-				((dR - currentStiffness * dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
-		}
-
-		/// <summary>
-		///		<inheritdoc cref="SecantIncrement(Matrix{double}, Vector{double}, Vector{double}, Vector{double}, Vector{double})"/>
-		/// </summary>
-		/// <inheritdoc cref="TangentIncrement(IIteration, IIteration)"/>
-		public static Matrix<double> SecantIncrement(IIteration currentIteration, IIteration lastIteration) =>
-			SecantIncrement(lastIteration.Stiffness, currentIteration.Displacements, lastIteration.Displacements, currentIteration.ResidualForces, lastIteration.ResidualForces);
-
-		/// <summary>
-		///     Calculate the tangent stiffness increment.
-		/// </summary>
-		/// <param name="currentInternalForces">The internal force vector from current iteration.</param>
-		/// <param name="lastInternalForces">The internal force vector from last iteration.</param>
-		/// <param name="currentDisplacements">The displacement vector from current iteration.</param>
-		/// <param name="lastDisplacements">The displacement vector from the last iteration.</param>
-		/// <returns>
-		///     <see cref="Matrix{T}" />
-		/// </returns>
-		public static Matrix<double> TangentIncrement(Vector<double> currentInternalForces, Vector<double> lastInternalForces, Vector<double> currentDisplacements, Vector<double> lastDisplacements)
-		{
-			// Get variations
-			var dF = currentInternalForces - lastInternalForces;
-			var dU = currentDisplacements - lastDisplacements;
-
-			return
-				dF.ToColumnMatrix() * dU.ToRowMatrix();
-		}
-
-		/// <summary>
-		///		<inheritdoc cref="TangentIncrement(Vector{double}, Vector{double}, Vector{double}, Vector{double})"/>
-		/// </summary>
-		/// <param name="currentIteration">The current iteration.</param>
-		/// <param name="lastIteration">The last solved iteration.</param>
-		public static Matrix<double> TangentIncrement(IIteration currentIteration, IIteration lastIteration) =>
-			TangentIncrement(currentIteration.InternalForces, lastIteration.InternalForces, currentIteration.Displacements, lastIteration.Displacements);
 
 		/// <summary>
 		///     Calculate the convergence.

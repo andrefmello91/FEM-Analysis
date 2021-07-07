@@ -2,6 +2,8 @@
 using andrefmello91.Extensions;
 using andrefmello91.FEMAnalysis;
 using MathNet.Numerics.LinearAlgebra;
+using UnitsNet;
+using UnitsNet.Units;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
@@ -18,25 +20,25 @@ namespace andrefmello91.FEMAnalysis
 		public double DisplacementConvergence { get; protected set; }
 
 		/// <inheritdoc/>
-		public virtual Vector<double> DisplacementIncrement { get; private set; }
+		public virtual DisplacementVector DisplacementIncrement { get; private set; }
 
 		/// <inheritdoc/>
-		public Vector<double> Displacements { get; protected set; }
+		public DisplacementVector Displacements { get; protected set; }
 
 		/// <inheritdoc/>
 		public double ForceConvergence { get; protected set; }
 
 		/// <inheritdoc/>
-		public Vector<double> InternalForces { get; set; }
+		public ForceVector InternalForces { get; set; }
 
 		/// <inheritdoc/>
 		public int Number { get; set; }
 
 		/// <inheritdoc/>
-		public Vector<double> ResidualForces { get; private set; }
+		public ForceVector ResidualForces { get; private set; }
 
 		/// <inheritdoc/>
-		public Matrix<double> Stiffness { get; set; }
+		public StiffnessMatrix Stiffness { get; set; }
 
 		#endregion
 
@@ -44,18 +46,18 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="From(int,bool)"/>
 		protected Iteration(int numberOfDoFs)
-			: this(Vector<double>.Build.Dense(numberOfDoFs), Vector<double>.Build.Dense(numberOfDoFs), Matrix<double>.Build.Dense(numberOfDoFs, numberOfDoFs))
+			: this(DisplacementVector.Zero(numberOfDoFs), ForceVector.Zero(numberOfDoFs), StiffnessMatrix.Zero(numberOfDoFs))
 		{
 		}
 
-		/// <inheritdoc cref="From(Vector{double}, Vector{double}, Matrix{double}, bool)"/>
-		protected Iteration(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness)
+		/// <inheritdoc cref="From(DisplacementVector, ForceVector, StiffnessMatrix, bool)"/>
+		protected Iteration(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness)
 		{
 			Displacements         = displacements;
 			ResidualForces        = residualForces;
 			Stiffness             = stiffness;
-			InternalForces        = Vector<double>.Build.Dense(displacements.Count);
-			DisplacementIncrement = Vector<double>.Build.Dense(displacements.Count);
+			InternalForces        = ForceVector.Zero(displacements.Count);
+			DisplacementIncrement = DisplacementVector.Zero(displacements.Count);
 		}
 
 		#endregion
@@ -80,7 +82,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="residualForces">The residual force vector of this iteration.</param>
 		/// <param name="stiffness">The stiffness matrix of this iteration.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		public static IIteration From(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness, bool simulate = false) => simulate switch
+		public static IIteration From(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, bool simulate = false) => simulate switch
 		{
 			false => new Iteration(displacements, residualForces, stiffness),
 			_     => new SimulationIteration(displacements, residualForces, stiffness)
@@ -93,12 +95,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
 		public static IIteration FromStepResult(LoadStep loadStep, bool simulate = false) => simulate switch
 		{
-			false => new Iteration(loadStep.FinalDisplacements, Vector<double>.Build.Dense(loadStep.FinalDisplacements.Count), loadStep.Stiffness),
+			false => new Iteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness),
 			_     => new SimulationIteration(loadStep.FinalDisplacements, Vector<double>.Build.Dense(loadStep.FinalDisplacements.Count), loadStep.Stiffness)
 		};
 
 		/// <inheritdoc/>
-		public void CalculateConvergence(IEnumerable<double> appliedForces, IEnumerable<double> initialIncrement)
+		public void CalculateConvergence(ForceVector appliedForces, DisplacementVector initialIncrement)
 		{
 			ForceConvergence        = NonlinearAnalysis.CalculateConvergence(ResidualForces, appliedForces);
 			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
@@ -113,17 +115,17 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc/>
 		public bool CheckStopCondition(AnalysisParameters parameters) =>
 			Number >= parameters.MaxIterations || ResidualForces.ContainsNaNOrInfinity() ||
-			Displacements.ContainsNaNOrInfinity() || Stiffness.ContainsNaN();
+			Displacements.ContainsNaNOrInfinity() || ((Matrix<double>) Stiffness).ContainsNaN();
 
 		/// <inheritdoc/>
-		public void IncrementDisplacements(Vector<double> displacementIncrement)
+		public void IncrementDisplacements(DisplacementVector displacementIncrement)
 		{
 			DisplacementIncrement =  displacementIncrement;
 			Displacements         += displacementIncrement;
 		}
 
 		/// <inheritdoc/>
-		public void UpdateForces(Vector<double> appliedForces, Vector<double> internalForces)
+		public void UpdateForces(ForceVector appliedForces, ForceVector internalForces)
 		{
 			InternalForces = internalForces;
 			ResidualForces = internalForces - appliedForces;

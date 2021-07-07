@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+using UnitsNet;
 using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
@@ -167,7 +169,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="appliedForces">The applied forces of the current step.</param>
 		/// <param name="initialIncrement">The displacement increment of the first iteration.</param>
-		void CalculateConvergence(IEnumerable<double> appliedForces, IEnumerable<double> initialIncrement);
+		void CalculateConvergence(ForceVector appliedForces, DisplacementVector initialIncrement);
 
 		/// <summary>
 		///     Check convergence for this iteration.
@@ -193,14 +195,14 @@ namespace andrefmello91.FEMAnalysis
 		///     Increment displacements of this iteration.
 		/// </summary>
 		/// <param name="displacementIncrement">The vector of displacement increments.</param>
-		void IncrementDisplacements(Vector<double> displacementIncrement);
+		void IncrementDisplacements(DisplacementVector displacementIncrement);
 
 		/// <summary>
 		///     Update forces in this iteration.
 		/// </summary>
 		/// <param name="appliedForces">The vector of applied forces of the current step.</param>
 		/// <param name="internalForces">The vector of internal forces.</param>
-		void UpdateForces(Vector<double> appliedForces, Vector<double> internalForces);
+		void UpdateForces(ForceVector appliedForces, ForceVector internalForces);
 
 	}
 }

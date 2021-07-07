@@ -21,7 +21,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		The vector of full applied forces.
 		/// </summary>
-		protected readonly Vector<double> FullForceVector;
+		protected readonly ForceVector FullForceVector;
 
 		/// <summary>
 		///		Auxiliary iteration list.
@@ -50,12 +50,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		The total displacement increment at this step.
 		/// </summary>
-		public Vector<double> DisplacementIncrement => FinalDisplacements - InitialDisplacements;
+		public DisplacementVector DisplacementIncrement => FinalDisplacements - InitialDisplacements;
 		
 		/// <summary>
 		///     The displacement vector at the end of this step.
 		/// </summary>
-		public Vector<double> FinalDisplacements => Iterations.Last().Displacements;
+		public DisplacementVector FinalDisplacements => Iterations.Last().Displacements;
 
 		/// <summary>
 		///     Get the first iteration of the current step.
@@ -70,12 +70,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
-		public Vector<double> Forces => LoadFactor * FullForceVector;
+		public ForceVector Forces => LoadFactor * FullForceVector;
 
 		/// <summary>
 		///     The displacement vector at the beginning of this step.
 		/// </summary>
-		public Vector<double> InitialDisplacements { get; }
+		public DisplacementVector InitialDisplacements { get; }
 
 		/// <summary>
 		///     The results of the last solution (penultimate solved iteration [i - 2]).
@@ -117,7 +117,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The current stiffness matrix of this step (stiffness of the current iteration.
 		/// </summary>
-		public Matrix<double> Stiffness => Iterations.Last().Stiffness;
+		public StiffnessMatrix Stiffness => Iterations.Last().Stiffness;
 		
 		/// <summary>
 		///     Get/set when to stop analysis.
@@ -148,17 +148,19 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="number">The number of this step.</param>
 		/// <param name="fullForceVector">The full applied force vector of the model.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		protected LoadStep(Vector<double> fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0, bool simulate = false)
-			: this(number, fullForceVector, loadFactor, Vector<double>.Build.Dense(fullForceVector.Count), Matrix<double>.Build.Dense(fullForceVector.Count, fullForceVector.Count), parameters, simulate)
+		protected LoadStep(ForceVector fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0, bool simulate = false)
+			: this(number, fullForceVector, loadFactor, DisplacementVector.Zero(fullForceVector.Count), Zero(fullForceVector.Count), parameters, simulate)
 		{
 		}
 
-		/// <inheritdoc cref="LoadStep" />
+		/// <summary>
+		///     Create a step object.
+		/// </summary>
 		/// <param name="initialDisplacements">The initial displacement vector of this step.</param>
 		/// <param name="stiffness">The stiffness matrix of this step.</param>
 		/// <param name="parameters">The analysis parameters.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		protected LoadStep(int number, Vector<double> fullForceVector, double loadFactor, Vector<double> initialDisplacements, Matrix<double> stiffness, AnalysisParameters parameters, bool simulate = false)
+		protected LoadStep(int number, ForceVector fullForceVector, double loadFactor, DisplacementVector initialDisplacements, StiffnessMatrix stiffness, AnalysisParameters parameters, bool simulate = false)
 		{
 			Number               = number;
 			FullForceVector      = fullForceVector;
@@ -166,7 +168,7 @@ namespace andrefmello91.FEMAnalysis
 			InitialDisplacements = initialDisplacements;
 			Parameters           = parameters;
 			
-			Iterations.Add(Iteration.From(initialDisplacements, Vector<double>.Build.Dense(initialDisplacements.Count), stiffness, simulate));
+			Iterations.Add(Iteration.From(initialDisplacements, ForceVector.Zero(fullForceVector.Count), stiffness, simulate));
 		}
 
 		#endregion
@@ -183,7 +185,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="parameters">The analysis parameters.</param>
 		/// <param name="stepNumber">The number of the load step.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		public static LoadStep From(Vector<double> fullForceVector, double loadFactor, Vector<double> initialDisplacements, Matrix<double> stiffness, AnalysisParameters parameters, int stepNumber, bool simulate = false) =>
+		public static LoadStep From(ForceVector fullForceVector, double loadFactor, DisplacementVector initialDisplacements, StiffnessMatrix stiffness, AnalysisParameters parameters, int stepNumber, bool simulate = false) =>
 			simulate switch
 			{
 				false => new LoadStep(stepNumber, fullForceVector, loadFactor, initialDisplacements, stiffness, parameters, simulate),
@@ -200,7 +202,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="parameters">The analysis parameters.</param>
 		/// <param name="stepNumber">The number of the load step.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		public static LoadStep From(IFEMInput<IFiniteElement> femInput, double loadFactor, AnalysisParameters parameters, int stepNumber, bool simulate = false) =>
+		public static LoadStep From(IFEMInput femInput, double loadFactor, AnalysisParameters parameters, int stepNumber, bool simulate = false) =>
 			simulate switch
 			{
 				false => new LoadStep(femInput.ForceVector, loadFactor, parameters, stepNumber, simulate),
@@ -210,11 +212,11 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Do the initial load step of a nonlinear analysis procedure.
 		/// </summary>
-		/// <inheritdoc cref="From(Vector{double},double,Vector{double},Matrix{double},AnalysisParameters,int,bool)"/>
+		/// <inheritdoc cref="From(ForceVector,double,DisplacementVector,StiffnessMatrix,AnalysisParameters,int,bool)"/>
 		/// <returns>
 		///     The initial <see cref="LoadStep" />.
 		/// </returns>
-		public static LoadStep InitialStep(IFEMInput<IFiniteElement> femInput, AnalysisParameters parameters, bool simulate = false)
+		public static LoadStep InitialStep(IFEMInput femInput, AnalysisParameters parameters, bool simulate = false)
 		{
 			if (simulate)
 				return SimulationStep.InitialStep(femInput, parameters);
@@ -226,12 +228,10 @@ namespace andrefmello91.FEMAnalysis
 			var iteration = step.CurrentIteration;
 
 			// Get the initial stiffness and force vector simplified
-			iteration.Stiffness = femInput.AssembleStiffness();
-			var stiffness = SimplifiedStiffness(iteration.Stiffness, femInput.ConstraintIndex);
+			iteration.Stiffness = Assemble(femInput);
 
 			// Calculate initial displacements
-			var fi = SimplifiedForces(step.Forces, femInput.ConstraintIndex);
-			iteration.IncrementDisplacements(stiffness.Solve(fi));
+			iteration.IncrementDisplacements(iteration.Stiffness.Solve(step.Forces));
 
 			// Update displacements in grips and elements
 			femInput.Grips.SetDisplacements(iteration.Displacements);
@@ -241,7 +241,7 @@ namespace andrefmello91.FEMAnalysis
 			femInput.CalculateForces();
 
 			// Update internal forces
-			iteration.UpdateForces(fi, femInput.AssembleInternalForces());
+			iteration.UpdateForces(step.Forces, ForceVector.AssembleInternal(femInput));
 
 			return step;
 		}
@@ -250,7 +250,6 @@ namespace andrefmello91.FEMAnalysis
 		/// 		Create a load step from the last load step.
 		///  </summary>
 		///  <param name="lastStep">The last load step.</param>
-		///  <param name="femInput">The finite element input.</param>
 		///  <param name="incrementLoad">Increment load of the new step? If it's a <see cref="SimulationStep"/>, load is not increased.</param>
 		public static LoadStep FromLastStep(LoadStep lastStep, bool incrementLoad = true)
 		{
@@ -269,12 +268,12 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the accumulated displacement increment from the beginning of this load step until a final index.
 		/// </summary>
 		/// <param name="finalIndex">The final index to consider increments.</param>
-		public Vector<double> AccumulatedDisplacementIncrement(Index finalIndex)
+		public DisplacementVector AccumulatedDisplacementIncrement(Index finalIndex)
 		{
 			var iterations = Iterations.Where(i => i.Number > 0).ToList();
 			
 			return iterations.Count < finalIndex.Value
-				? Vector<double>.Build.Dense(InitialDisplacements.Count)
+				?  DisplacementVector.Zero(InitialDisplacements.Count)
 				: iterations[finalIndex].Displacements - InitialDisplacements;
 		}
 
@@ -293,7 +292,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Iterate to find solution.
 		/// </summary>
 		/// <param name="femInput">The finite element input.</param>
-		public virtual void Iterate(IFEMInput<IFiniteElement> femInput)
+		public virtual void Iterate(IFEMInput femInput)
 		{
 			// Initiate first iteration
 			foreach (var iteration in Iterations)
@@ -343,7 +342,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Update forces and calculate convergence.
 		/// </summary>
-		protected virtual void UpdateForces(IFEMInput<IFiniteElement> femInput)
+		protected virtual void UpdateForces(IFEMInput femInput)
 		{
 			// Calculate element forces
 			femInput.CalculateForces();
@@ -360,16 +359,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update displacements.
 		/// </summary>
-		protected virtual void UpdateDisplacements(IFEMInput<IFiniteElement> femInput)
+		protected virtual void UpdateDisplacements(IFEMInput femInput)
 		{
 			var curIt  = CurrentIteration;
 			var lastIt = LastIteration;
 
-			// Increment displacements
-			var stiffness = SimplifiedStiffness(curIt.Stiffness, femInput.ConstraintIndex);
-			
 			// Calculate increment from residual
-			var dUr = -stiffness.Solve(lastIt.ResidualForces);
+			var dUr = -curIt.Stiffness.Solve(lastIt.ResidualForces);
 			curIt.IncrementDisplacements(dUr);
 			
 			// Update displacements in grips and elements
@@ -382,25 +378,11 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		protected void UpdateStiffness()
 		{
-			if (Stop)
+			// If analysis stopped or solver is modified newton raphson and step didn't converge yet
+			if (Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				return;
-			
-			switch (Parameters.Solver)
-			{
-				case NonLinearSolver.Secant:
-					// Increment current stiffness
-					CurrentIteration.Stiffness += SecantIncrement(CurrentIteration, LastIteration);
-					break;
 
-				// For Newton-Raphson
-				case NonLinearSolver.NewtonRaphson:
-				case NonLinearSolver.ModifiedNewtonRaphson when Converged:
-					CurrentIteration.Stiffness += TangentIncrement(CurrentIteration, LastIteration);
-					break;
-
-				default:
-					return;
-			}
+			CurrentIteration.Stiffness += StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver);
 		}
 
 
@@ -413,7 +395,7 @@ namespace andrefmello91.FEMAnalysis
 				return;
 
 			// Get displacement
-			var disp = Length.FromMillimeters(FinalDisplacements[monitoredIndex.Value]);
+			var disp = FinalDisplacements[monitoredIndex.Value];
 
 			// Set to step
 			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
