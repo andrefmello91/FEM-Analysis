@@ -73,6 +73,7 @@ namespace andrefmello91.FEMAnalysis
 		public static ForceVector AssembleInternal(IFEMInput femInput)
 		{
 			var fi = Zero(femInput.NumberOfDoFs);
+			fi.ConstraintIndex = femInput.ConstraintIndex;
 
 			foreach (var element in femInput)
 			{
@@ -107,7 +108,16 @@ namespace andrefmello91.FEMAnalysis
 		public static ForceVector operator *(ForceVector left, double value) => value * left;
 		
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
-		public static ForceVector operator -(ForceVector right) => new (-right.Value, right.Unit);
+		public static ForceVector operator -(ForceVector right) => new (-right.Value, right.Unit)
+		{
+			ConstraintIndex = right.ConstraintIndex
+		};
 
+
+		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)"/>
+		public static ForceVector operator / (ForceVector left, double value) => new(left.Value / value, left.Unit)
+		{
+			ConstraintIndex = left.ConstraintIndex
+		};
 	}
 }

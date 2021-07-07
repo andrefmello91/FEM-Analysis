@@ -88,8 +88,16 @@ namespace andrefmello91.FEMAnalysis
 		public static DisplacementVector operator *(DisplacementVector left, double value) => value * left;
 
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
-		public static DisplacementVector operator -(DisplacementVector right) => new (-right.Value, right.Unit);
-
+		public static DisplacementVector operator -(DisplacementVector right) => new (-right.Value, right.Unit)
+		{
+			ConstraintIndex = right.ConstraintIndex
+		};
+		
+		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)"/>
+		public static DisplacementVector operator / (DisplacementVector left, double value) => new(left.Value / value, left.Unit)
+		{
+			ConstraintIndex = left.ConstraintIndex
+		};
 	}
 
 }

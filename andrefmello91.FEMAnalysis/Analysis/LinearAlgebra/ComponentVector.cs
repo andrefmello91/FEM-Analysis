@@ -94,7 +94,11 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <inheritdoc cref="IUnitConvertible{TUnit}.Convert" />
-		public ComponentVector<TQuantity, TUnit> Convert(TUnit unit) => new(Value * Quantity.From(1, _unit).As(unit), unit);
+		public ComponentVector<TQuantity, TUnit> Convert(TUnit unit) => new(Value * Quantity.From(1, _unit).As(unit), unit)
+		{
+			ConstraintIndex = ConstraintIndex
+		};
+
 
 		/// <summary>
 		///		Get the vector simplified by constraint indexes.
@@ -213,18 +217,30 @@ namespace andrefmello91.FEMAnalysis
 		///     A new vector with summed components in <paramref name="left" />'s unit.
 		/// </returns>
 		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
-		public static ComponentVector<TQuantity, TUnit> operator +(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => new(left.Value + right.Convert(left.Unit).Value, left.Unit);
+		public static ComponentVector<TQuantity, TUnit> operator +(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => new(left.Value + right.Convert(left.Unit).Value, left.Unit)
+		{
+			ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+		};
+
 
 		/// <returns>
 		///     A new vector with subtracted components in <paramref name="left" />'s unit.
 		/// </returns>
 		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
-		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => new(left.Value - right.Convert(left.Unit).Value, left.Unit);
+		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => new(left.Value - right.Convert(left.Unit).Value, left.Unit)
+		{
+			ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+		};
+
 
 		/// <returns>
 		///     A vector with components multiplied by a value
 		/// </returns>
-		public static ComponentVector<TQuantity, TUnit> operator *(double value, ComponentVector<TQuantity, TUnit> right) => new(value * right.Value, right.Unit);
+		public static ComponentVector<TQuantity, TUnit> operator *(double value, ComponentVector<TQuantity, TUnit> right) => new(value * right.Value, right.Unit)
+		{
+			ConstraintIndex = right.ConstraintIndex
+		};
+
 
 		/// <inheritdoc cref="op_Multiply(double, ComponentVector{TQuantity,TUnit}) " />
 		public static ComponentVector<TQuantity, TUnit> operator *(ComponentVector<TQuantity, TUnit> left, double value) => value * left;
@@ -236,7 +252,18 @@ namespace andrefmello91.FEMAnalysis
 		public static double operator *(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => left.Value * right.Value;
 
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
-		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> right) => new (-right.Value, right.Unit);
+		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> right) => new (-right.Value, right.Unit)
+		{
+			ConstraintIndex = right.ConstraintIndex
+		};
+
+
+		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)"/>
+		public static ComponentVector<TQuantity, TUnit> operator / (ComponentVector<TQuantity, TUnit> left, double value) => new(left.Value / value, left.Unit)
+		{
+			ConstraintIndex = left.ConstraintIndex
+		};
+
 
 		#endregion
 	}

@@ -94,7 +94,10 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="IUnitConvertible{T}.Convert" />
 		public StiffnessMatrix<TQuantity, TUnit> Convert(TUnit unit) => Unit.Equals(unit)
 			? Clone()
-			: new StiffnessMatrix<TQuantity, TUnit>(Quantity.From(1, Unit).As(unit) * Value, unit);
+			: new StiffnessMatrix<TQuantity, TUnit>(Quantity.From(1, Unit).As(unit) * Value, unit)
+			{
+				ConstraintIndex = ConstraintIndex
+			};
 
 		#region Interface Implementations
 
@@ -154,7 +157,10 @@ namespace andrefmello91.FEMAnalysis
 			var value = transformationMatrix.Transpose() * Value * transformationMatrix;
 			
 			return
-				new StiffnessMatrix<TQuantity, TUnit>(value, _unit);
+				new StiffnessMatrix<TQuantity, TUnit>(value, _unit)
+				{
+					ConstraintIndex = ConstraintIndex
+				};
 		}
 
 		/// <inheritdoc />
@@ -224,24 +230,48 @@ namespace andrefmello91.FEMAnalysis
 		///     A new stiffness matrix with summed components in <paramref name="left" />'s unit.
 		/// </returns>
 		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
-		public static StiffnessMatrix<TQuantity, TUnit> operator +(StiffnessMatrix<TQuantity, TUnit> left, StiffnessMatrix<TQuantity, TUnit> right) => new(left.Value + right.Convert(left.Unit).Value, left.Unit);
+		public static StiffnessMatrix<TQuantity, TUnit> operator +(StiffnessMatrix<TQuantity, TUnit> left, StiffnessMatrix<TQuantity, TUnit> right) =>
+			new(left.Value + right.Convert(left.Unit).Value, left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
 
 		/// <returns>
 		///     A new stiffness matrix with subtracted components in <paramref name="left" />'s unit.
 		/// </returns>
 		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
-		public static StiffnessMatrix<TQuantity, TUnit> operator -(StiffnessMatrix<TQuantity, TUnit> left, StiffnessMatrix<TQuantity, TUnit> right) => new(left.Value - right.Convert(left.Unit).Value, left.Unit);
+		public static StiffnessMatrix<TQuantity, TUnit> operator -(StiffnessMatrix<TQuantity, TUnit> left, StiffnessMatrix<TQuantity, TUnit> right) =>
+			new(left.Value - right.Convert(left.Unit).Value, left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
+
 
 		/// <returns>
 		///     A new stiffness matrix with components multiplied by a value
 		/// </returns>
-		public static StiffnessMatrix<TQuantity, TUnit> operator *(double value, StiffnessMatrix<TQuantity, TUnit> right) => new(value * right.Value, right.Unit);
+		public static StiffnessMatrix<TQuantity, TUnit> operator *(double value, StiffnessMatrix<TQuantity, TUnit> right) => new(value * right.Value, right.Unit)
+		{
+			ConstraintIndex = right.ConstraintIndex
+		};
+
 
 		/// <inheritdoc cref="op_Multiply(double, StiffnessMatrix{TQuantity,TUnit}) " />
 		public static StiffnessMatrix<TQuantity, TUnit> operator *(StiffnessMatrix<TQuantity, TUnit> left, double value) => value * left;
+		
+		/// <inheritdoc cref="Matrix{T}.op_Division(Matrix{T}, T)"/>
+		public static StiffnessMatrix<TQuantity, TUnit> operator / (StiffnessMatrix<TQuantity, TUnit> left, double value) => new(left.Value / value, left.Unit)
+		{
+			ConstraintIndex = left.ConstraintIndex
+		};
+
 
 		/// <inheritdoc cref="Matrix{T}.op_UnaryNegation"/>
-		public static StiffnessMatrix<TQuantity, TUnit> operator -(StiffnessMatrix<TQuantity, TUnit> right) => new (-right.Value, right.Unit);
+		public static StiffnessMatrix<TQuantity, TUnit> operator -(StiffnessMatrix<TQuantity, TUnit> right) => new (-right.Value, right.Unit)
+		{
+			ConstraintIndex = right.ConstraintIndex
+		};
+
 
 		#endregion
 
@@ -453,7 +483,78 @@ namespace andrefmello91.FEMAnalysis
 		public static StiffnessMatrix operator *(StiffnessMatrix left, double value) => value * left;
 		
 		/// <inheritdoc cref="Matrix{T}.op_UnaryNegation"/>
-		public static StiffnessMatrix operator -(StiffnessMatrix right) => new (-right.Value, right.Unit);
+		public static StiffnessMatrix operator -(StiffnessMatrix right) => new (-right.Value, right.Unit)
+		{
+			ConstraintIndex = right.ConstraintIndex
+		};
 
+
+		/// <inheritdoc cref="Matrix{T}.op_Division(Matrix{T}, T)"/>
+		public static StiffnessMatrix operator / (StiffnessMatrix left, double value) => new(left.Value / value, left.Unit)
+		{
+			ConstraintIndex = left.ConstraintIndex
+		};
+
+		///  <summary>
+		///      Calculate the stiffness increment for nonlinear analysis.
+		///  </summary>
+		///  <param name="solver">The nonlinear solver.</param>
+		///  <returns>
+		/// 		The <see cref="StiffnessMatrix"/> increment with current unit.
+		///  </returns>
+		/// <inheritdoc cref="TangentIncrement"/>
+		public static StiffnessMatrix StiffnessIncrement(IIteration currentIteration, IIteration lastIteration, NonLinearSolver solver = NonLinearSolver.NewtonRaphson) =>
+			solver switch
+			{
+				NonLinearSolver.Secant => SecantIncrement(currentIteration, lastIteration),
+				_                      => TangentIncrement(currentIteration, lastIteration)
+			};
+		
+		/// <summary>
+		///     Calculate the secant stiffness increment.
+		/// </summary>
+		/// <inheritdoc cref="TangentIncrement(andrefmello91.FEMAnalysis.IIteration, andrefmello91.FEMAnalysis.IIteration)"/>
+		private static StiffnessMatrix SecantIncrement(IIteration currentIteration, IIteration lastIteration)
+		{
+			// Calculate the variation of displacements and residual as vectors
+			Vector<double>
+				dU = (currentIteration.Displacements - lastIteration.Displacements).Convert(LengthUnit.Millimeter),
+				dR = (currentIteration.ResidualForces - lastIteration.ResidualForces).Convert(ForceUnit.Newton);
+
+			Matrix<double> stiffness = lastIteration.Stiffness.Convert(ForcePerLengthUnit.NewtonPerMillimeter);
+			
+			var inc = ((dR - stiffness * dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
+
+			return
+				new StiffnessMatrix(inc)
+				{
+					ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
+				}
+					.Convert(currentIteration.Stiffness.Unit);
+		}
+
+		/// <summary>
+		///     Calculate the tangent stiffness increment.
+		/// </summary>
+		/// <param name="currentIteration">The current iteration.</param>
+		/// <param name="lastIteration">The last solved iteration.</param>
+		/// <returns>
+		///		The <see cref="andrefmello91.FEMAnalysis.StiffnessMatrix"/> increment with current unit.
+		/// </returns>
+		private static StiffnessMatrix TangentIncrement(IIteration currentIteration, IIteration lastIteration)
+		{
+			// Get variations
+			var dF = (currentIteration.InternalForces - lastIteration.InternalForces).Convert(ForceUnit.Newton);
+			var dU = (currentIteration.Displacements - lastIteration.Displacements).Convert(LengthUnit.Millimeter);
+
+			var inc = dF.ToColumnMatrix() * dU.ToRowMatrix();
+			
+			return
+				new StiffnessMatrix(inc)
+				{
+					ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
+				}
+					.Convert(currentIteration.Stiffness.Unit);
+		}
 	}
 }
