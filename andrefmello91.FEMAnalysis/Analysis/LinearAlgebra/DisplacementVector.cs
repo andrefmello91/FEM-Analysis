@@ -22,14 +22,14 @@ namespace andrefmello91.FEMAnalysis
 	{
 
 		/// <inheritdoc />
-		public DisplacementVector(IEnumerable<double> value, LengthUnit unit = LengthUnit.Millimeter)
-			: base(value, unit)
+		public DisplacementVector(IEnumerable<double> values, LengthUnit unit = LengthUnit.Millimeter)
+			: base(values, unit)
 		{
 		}
 
 		/// <inheritdoc />
-		public DisplacementVector(IEnumerable<Length> value)
-			: base(value)
+		public DisplacementVector(IEnumerable<Length> values)
+			: base(values)
 		{
 		}
 		
@@ -43,7 +43,9 @@ namespace andrefmello91.FEMAnalysis
 		/// 		Assemble the element displacement vector from it's grips.
 		///  </summary>
 		///  <param name="element">The finite element.</param>
-		public static DisplacementVector Assemble(IFiniteElement element) => new (element.Grips.SelectMany(g => new[] { g.Displacement.X, g.Displacement.Y }));
+		public static DisplacementVector Assemble(IFiniteElement element) =>
+			new (element.Grips
+				.SelectMany(g => new[] { g.Displacement.X, g.Displacement.Y }));
 		
 		///  <summary>
         /// 		Assemble the global displacement vector.
@@ -82,22 +84,15 @@ namespace andrefmello91.FEMAnalysis
 		public static DisplacementVector operator -(DisplacementVector left, DisplacementVector right) => (DisplacementVector) ((ComponentVector<Length, LengthUnit>) left - right);
 
 		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
-		public static DisplacementVector operator *(double value, DisplacementVector right) => (DisplacementVector) (value * (ComponentVector<Length, LengthUnit>) right);
+		public static DisplacementVector operator *(double multiplier, DisplacementVector vector) => (DisplacementVector) (multiplier * (ComponentVector<Length, LengthUnit>) vector);
 
 		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
-		public static DisplacementVector operator *(DisplacementVector left, double value) => value * left;
+		public static DisplacementVector operator *(DisplacementVector vector, double multiplier) => multiplier * vector;
 
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
-		public static DisplacementVector operator -(DisplacementVector right) => new (-right.Value, right.Unit)
-		{
-			ConstraintIndex = right.ConstraintIndex
-		};
+		public static DisplacementVector operator -(DisplacementVector vector) => (DisplacementVector) (-(ComponentVector<Length, LengthUnit>) vector);
 		
 		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)"/>
-		public static DisplacementVector operator / (DisplacementVector left, double value) => new(left.Value / value, left.Unit)
-		{
-			ConstraintIndex = left.ConstraintIndex
-		};
+		public static DisplacementVector operator / (DisplacementVector vector, double divisor) => (DisplacementVector) ((ComponentVector<Length, LengthUnit>) vector/ divisor);
 	}
-
 }

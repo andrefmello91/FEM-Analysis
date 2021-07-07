@@ -22,14 +22,17 @@ namespace andrefmello91.FEMAnalysis
 	{
 
 		/// <inheritdoc />
-		public ForceVector(IEnumerable<double> value, ForceUnit unit = ForceUnit.Newton)
-			: base(value, unit)
+		/// <remarks>
+		///		Default unit is Newton.
+		/// </remarks>
+		public ForceVector(IEnumerable<double> values, ForceUnit unit = ForceUnit.Newton)
+			: base(values, unit)
 		{
 		}
 
 		/// <inheritdoc />
-		public ForceVector(IEnumerable<Force> value)
-			: base(value)
+		public ForceVector(IEnumerable<Force> values)
+			: base(values)
 		{
 		}
 
@@ -102,22 +105,16 @@ namespace andrefmello91.FEMAnalysis
 		public static ForceVector operator -(ForceVector left, ForceVector right) => (ForceVector) ((ComponentVector<Force, ForceUnit>) left - right);
 
 		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
-		public static ForceVector operator *(double value, ForceVector right) => (ForceVector) (value * (ComponentVector<Force, ForceUnit>) right);
+		public static ForceVector operator *(double multiplier, ForceVector vector) => (ForceVector) (multiplier * (ComponentVector<Force, ForceUnit>) vector);
 
 		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
-		public static ForceVector operator *(ForceVector left, double value) => value * left;
-		
+		public static ForceVector operator *(ForceVector vector, double multiplier) => multiplier * vector;
+
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
-		public static ForceVector operator -(ForceVector right) => new (-right.Value, right.Unit)
-		{
-			ConstraintIndex = right.ConstraintIndex
-		};
+		public static ForceVector operator -(ForceVector vector) => (ForceVector) (-(ComponentVector<Force, ForceUnit>) vector);
 
 
 		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)"/>
-		public static ForceVector operator / (ForceVector left, double value) => new(left.Value / value, left.Unit)
-		{
-			ConstraintIndex = left.ConstraintIndex
-		};
+		public static ForceVector operator / (ForceVector vector, double divisor) => (ForceVector) ((ComponentVector<Force, ForceUnit>) vector / divisor);
 	}
 }
