@@ -87,6 +87,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
 		public static DisplacementVector operator *(DisplacementVector left, double value) => value * left;
 
+		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
+		public static DisplacementVector operator -(DisplacementVector right) => new (-right.Value, right.Unit);
+
 	}
 
 }

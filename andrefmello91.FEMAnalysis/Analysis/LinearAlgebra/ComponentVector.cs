@@ -235,6 +235,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="op_Subtraction"/>
 		public static double operator *(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => left.Value * right.Value;
 
+		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
+		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> right) => new (-right.Value, right.Unit);
+
 		#endregion
 	}
 }

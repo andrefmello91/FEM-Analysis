@@ -240,7 +240,11 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="op_Multiply(double, StiffnessMatrix{TQuantity,TUnit}) " />
 		public static StiffnessMatrix<TQuantity, TUnit> operator *(StiffnessMatrix<TQuantity, TUnit> left, double value) => value * left;
 
+		/// <inheritdoc cref="Matrix{T}.op_UnaryNegation"/>
+		public static StiffnessMatrix<TQuantity, TUnit> operator -(StiffnessMatrix<TQuantity, TUnit> right) => new (-right.Value, right.Unit);
+
 		#endregion
+
 	}
 	
 	/// <summary>
@@ -288,24 +292,33 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.Clone"/>
 		public new StiffnessMatrix Clone() => (StiffnessMatrix) base.Clone();
 
-		/// <summary>
-		///		Solve a system d = K f.
-		/// </summary>
-		/// <param name="forceVector"></param>
-		/// <returns>
-		///		The resulting displacement vector, with components in <see cref="LengthUnit.Millimeter"/>.
-		/// </returns>
-		public DisplacementVector Solve(ForceVector forceVector)
+		///  <summary>
+		/// 		Solve a system d = K f.
+		///  </summary>
+		///  <param name="forceVector"></param>
+		///  <param name="useSimplified">Use simplified matrix and vector?</param>
+		///  <returns>
+		/// 		The resulting displacement vector, with components in <see cref="LengthUnit.Millimeter"/>.
+		///  </returns>
+		public DisplacementVector Solve(ForceVector forceVector, bool useSimplified = true)
 		{
 			// Convert
-			var k = Unit is ForcePerLengthUnit.NewtonPerMillimeter
-				? Value
-				: Convert(ForcePerLengthUnit.NewtonPerMillimeter).Value;
+			var stiffnessMatrix = Unit is ForcePerLengthUnit.NewtonPerMillimeter
+				? this
+				: Convert(ForcePerLengthUnit.NewtonPerMillimeter);
 
-			var f = forceVector.Unit is ForceUnit.Newton
+			var forces = forceVector.Unit is ForceUnit.Newton
 				? forceVector
 				: forceVector.Convert(ForceUnit.Newton);
-			
+
+			var k = useSimplified
+				? stiffnessMatrix.Simplified()
+				: stiffnessMatrix.Value;
+
+			var f = useSimplified
+				? forces
+				: forces.Simplified();
+
 			// Solve
 			var d = k.Solve(f);
 
@@ -408,13 +421,16 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Create a force vector by multiplying the stiffness and the displacement vector.
 		/// </summary>
+		/// <remarks>
+		///		This uses the simplified stiffness matrix.
+		/// </remarks>
 		/// <returns>
 		///		The <see cref="ForceVector"/> with components in <see cref="ForceUnit.Newton"/>.
 		/// </returns>
 		public static ForceVector operator *(StiffnessMatrix stiffnessMatrix, DisplacementVector displacementVector)
 		{
 			// Convert
-			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter).Value;
+			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter).Simplified();
 			var d = displacementVector.Convert(LengthUnit.Millimeter);
 			
 			// Multiply
@@ -435,5 +451,9 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="StiffnessMatrix{TQuantity,TUnit}.op_Multiply(double, StiffnessMatrix{TQuantity,TUnit}) " />
 		public static StiffnessMatrix operator *(StiffnessMatrix left, double value) => value * left;
+		
+		/// <inheritdoc cref="Matrix{T}.op_UnaryNegation"/>
+		public static StiffnessMatrix operator -(StiffnessMatrix right) => new (-right.Value, right.Unit);
+
 	}
 }

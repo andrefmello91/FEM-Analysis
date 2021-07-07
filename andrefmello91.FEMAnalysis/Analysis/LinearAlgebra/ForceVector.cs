@@ -105,5 +105,9 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
 		public static ForceVector operator *(ForceVector left, double value) => value * left;
+		
+		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
+		public static ForceVector operator -(ForceVector right) => new (-right.Value, right.Unit);
+
 	}
 }
