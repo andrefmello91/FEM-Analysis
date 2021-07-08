@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
 using UnitsNet.Units;
@@ -78,30 +79,65 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="size">The size of the vector.</param>
 		public static DisplacementVector Zero(int size) => new(new double[size]);
 
-		/// <inheritdoc cref="ICloneable.Clone" />
-		public new DisplacementVector Clone() => (DisplacementVector) base.Clone();
+		#if NET5_0
+		
+		/// <inheritdoc />
+		public override DisplacementVector Convert(LengthUnit unit) => new (Values.GetQuantities<Length, LengthUnit>(Unit).GetValues(unit), unit);
 
+		/// <inheritdoc cref="ICloneable.Clone" />
+		public override DisplacementVector Clone() => new (Values, Unit);
+		
+		#else
+		
+		/// <inheritdoc />
+		public override ComponentVector<Length, LengthUnit> Convert(LengthUnit unit) => new DisplacementVector(Values.GetQuantities<Length, LengthUnit>(Unit).GetValues(unit), unit);
+
+		/// <inheritdoc cref="ICloneable.Clone" />
+		public override ComponentVector<Length, LengthUnit> Clone() => new DisplacementVector(Values, Unit);
+		
+		#endif
+		
 		#endregion
 
 		#region Operators
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Addition" />
-		public static DisplacementVector operator +(DisplacementVector left, DisplacementVector right) => (DisplacementVector) ((ComponentVector<Length, LengthUnit>) left + right);
+		/// <inheritdoc cref="ForceVector.op_Addition" />
+		public static DisplacementVector operator +(DisplacementVector left, DisplacementVector right) =>
+			new(left.ToVector(left.Unit) + right.ToVector(left.Unit), left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
+		
+		/// <inheritdoc cref="ForceVector.op_Subtraction" />
+		public static DisplacementVector operator -(DisplacementVector left, DisplacementVector right) => 
+			new(left.ToVector(left.Unit) - right.ToVector(left.Unit), left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
+		
+		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
+		public static DisplacementVector operator *(double multiplier, DisplacementVector vector) =>
+			new(vector.Values.Select(v => v * multiplier), vector.Unit)
+			{
+				ConstraintIndex = vector.ConstraintIndex
+			};
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Subtraction" />
-		public static DisplacementVector operator -(DisplacementVector left, DisplacementVector right) => (DisplacementVector) ((ComponentVector<Length, LengthUnit>) left - right);
-
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) " />
-		public static DisplacementVector operator *(double multiplier, DisplacementVector vector) => (DisplacementVector) (multiplier * (ComponentVector<Length, LengthUnit>) vector);
-
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) " />
+		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
 		public static DisplacementVector operator *(DisplacementVector vector, double multiplier) => multiplier * vector;
 
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation" />
-		public static DisplacementVector operator -(DisplacementVector vector) => (DisplacementVector) (-(ComponentVector<Length, LengthUnit>) vector);
+		public static DisplacementVector operator -(DisplacementVector vector) =>
+			new(vector.Select(v => -v.Value), vector.Unit)
+			{
+				ConstraintIndex = vector.ConstraintIndex
+			};
 
 		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)" />
-		public static DisplacementVector operator /(DisplacementVector vector, double divisor) => (DisplacementVector) ((ComponentVector<Length, LengthUnit>) vector / divisor);
+		public static DisplacementVector operator /(DisplacementVector vector, double divisor) =>
+			new(vector.Select(v => v.Value / divisor), vector.Unit)
+			{
+				ConstraintIndex = vector.ConstraintIndex
+			};
 
 		#endregion
 

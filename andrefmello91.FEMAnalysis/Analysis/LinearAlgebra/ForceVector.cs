@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
 using UnitsNet.Units;
@@ -17,7 +19,6 @@ namespace andrefmello91.FEMAnalysis
 	/// </remarks>
 	public class ForceVector : ComponentVector<Force, ForceUnit>
 	{
-
 		#region Constructors
 
 		/// <inheritdoc />
@@ -98,31 +99,84 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="size">The size of the vector.</param>
 		public static ForceVector Zero(int size) => new(new double[size]);
 
+		#if NET5_0
+		
+		/// <inheritdoc />
+		public override ForceVector Convert(ForceUnit unit) => new ForceVector(Values.GetQuantities<Force, ForceUnit>(Unit).GetValues(unit), unit)
+		{
+			ConstraintIndex = ConstraintIndex
+		};
+
 		/// <inheritdoc cref="ICloneable.Clone" />
-		public new ForceVector Clone() => (ForceVector) base.Clone();
+		public override ForceVector Clone() => new ForceVector(Values, Unit)
+		{
+			ConstraintIndex = ConstraintIndex
+		};
+
+		#else
+		
+		/// <inheritdoc />
+		public override ComponentVector<Force, ForceUnit> Convert(ForceUnit unit) => new ForceVector(Values.GetQuantities<Force, ForceUnit>(Unit).GetValues(unit), unit)
+		{
+			ConstraintIndex = ConstraintIndex
+		};
+
+		/// <inheritdoc cref="ICloneable.Clone" />
+		public override ComponentVector<Force, ForceUnit> Clone() => new ForceVector(Values, Unit)
+		{
+			ConstraintIndex = ConstraintIndex
+		};
+		
+		#endif
 
 		#endregion
 
 		#region Operators
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Addition" />
-		public static ForceVector operator +(ForceVector left, ForceVector right) => (ForceVector) ((ComponentVector<Force, ForceUnit>) left + right);
+		/// <returns>
+		///     A new vector with summed components in <paramref name="left" />'s unit.
+		/// </returns>
+		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
+		public static ForceVector operator +(ForceVector left, ForceVector right) =>
+			new(left.ToVector(left.Unit) + right.ToVector(left.Unit), left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Subtraction" />
-		public static ForceVector operator -(ForceVector left, ForceVector right) => (ForceVector) ((ComponentVector<Force, ForceUnit>) left - right);
+		/// <returns>
+		///     A new vector with subtracted components in <paramref name="left" />'s unit.
+		/// </returns>
+		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
+		public static ForceVector operator -(ForceVector left, ForceVector right) =>
+			new(left.ToVector(left.Unit) - right.ToVector(left.Unit), left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
+		
+		/// <returns>
+		///     A vector with components multiplied by a value
+		/// </returns>
+		public static ForceVector operator *(double multiplier, ForceVector vector) =>
+			new(vector.Values.Select(v => v * multiplier), vector.Unit)
+			{
+				ConstraintIndex = vector.ConstraintIndex
+			};
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) " />
-		public static ForceVector operator *(double multiplier, ForceVector vector) => (ForceVector) (multiplier * (ComponentVector<Force, ForceUnit>) vector);
-
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) " />
+		/// <inheritdoc cref="op_Multiply(double, ForceVector) " />
 		public static ForceVector operator *(ForceVector vector, double multiplier) => multiplier * vector;
 
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation" />
-		public static ForceVector operator -(ForceVector vector) => (ForceVector) (-(ComponentVector<Force, ForceUnit>) vector);
+		public static ForceVector operator -(ForceVector vector) => new(vector.Select(v => -v.Value), vector.Unit)
+		{
+			ConstraintIndex = vector.ConstraintIndex
+		};
 
 
 		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)" />
-		public static ForceVector operator /(ForceVector vector, double divisor) => (ForceVector) ((ComponentVector<Force, ForceUnit>) vector / divisor);
+		public static ForceVector operator /(ForceVector vector, double divisor) => new(vector.Select(v => v.Value / divisor), vector.Unit)
+		{
+			ConstraintIndex = vector.ConstraintIndex
+		};
 
 		#endregion
 

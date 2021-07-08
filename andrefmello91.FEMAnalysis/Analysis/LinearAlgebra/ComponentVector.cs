@@ -14,7 +14,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	/// <typeparam name="TQuantity">The quantity that represents the value of components of the vector.</typeparam>
 	/// <typeparam name="TUnit">The unit enumeration that represents the quantity of the components of this vector.</typeparam>
-	public class ComponentVector<TQuantity, TUnit> : IUnitConvertible<TUnit>, ICloneable<ComponentVector<TQuantity, TUnit>>, IEquatable<ComponentVector<TQuantity, TUnit>>, IEnumerable<TQuantity>
+	public abstract class ComponentVector<TQuantity, TUnit> : IUnitConvertible<TUnit>, ICloneable<ComponentVector<TQuantity, TUnit>>, IEquatable<ComponentVector<TQuantity, TUnit>>, IEnumerable<TQuantity>
 		where TQuantity : IQuantity<TUnit>
 		where TUnit : Enum
 	{
@@ -67,9 +67,9 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}(IEnumerable{TQuantity})" />
 		/// <param name="unit">The unit of <paramref name="values" />'s components.</param>
-		public ComponentVector(IEnumerable<double> values, TUnit unit)
+		protected ComponentVector(IEnumerable<double> values, TUnit unit)
 		{
-			Values = values.ToList();
+			Values = new List<double>(values);
 			_unit  = unit;
 		}
 
@@ -77,7 +77,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Create a component vector.
 		/// </summary>
 		/// <param name="values">The enumerable of vector's components.</param>
-		public ComponentVector(IEnumerable<TQuantity> values)
+		protected ComponentVector(IEnumerable<TQuantity> values)
 		{
 			_unit = values.First().Unit;
 
@@ -104,10 +104,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc cref="IUnitConvertible{TUnit}.Convert" />
-		public ComponentVector<TQuantity, TUnit> Convert(TUnit unit) => new(this.Select(v => v.As(unit)), unit)
-		{
-			ConstraintIndex = ConstraintIndex
-		};
+		public abstract ComponentVector<TQuantity, TUnit> Convert(TUnit unit);
 
 		/// <inheritdoc cref="Vector{T}.Maximum" />
 		public TQuantity Maximum() => (TQuantity) Values.Maximum().As(Unit);
@@ -117,7 +114,6 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="Vector{T}.Norm" />
 		public double Norm(double p) => Values.ToVector().Norm(p);
-
 
 		/// <summary>
 		///     Get the vector simplified by constraint indexes.
@@ -167,19 +163,15 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc cref="ICloneable{T}.Clone" />
-		public ComponentVector<TQuantity, TUnit> Clone() => new(Values, Unit)
-		{
-			ConstraintIndex = ConstraintIndex
-		};
-
+		public abstract ComponentVector<TQuantity, TUnit> Clone();
+		
 		/// <inheritdoc />
 		public bool Equals(ComponentVector<TQuantity, TUnit>? other) =>
 			other is not null && Values.ToVector() == other.Convert(Unit).Values.ToVector();
 
 		/// <inheritdoc />
 		public IEnumerator<TQuantity> GetEnumerator() => Values
-			.Select(v => v.As(Unit))
-			.Cast<TQuantity>()
+			.GetQuantities<TQuantity, TUnit>(Unit)
 			.GetEnumerator();
 
 		IUnitConvertible<TUnit> IUnitConvertible<TUnit>.Convert(TUnit unit) => Convert(unit);
@@ -201,7 +193,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public override string ToString() =>
 			$"Unit: {Unit} \n" +
-			$"Value: {Values}";
+			$"Value: {Values.ToVector()}";
 
 		#endregion
 
@@ -219,61 +211,13 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="StiffnessMatrix.op_Inequality" />
 		public static bool operator !=(ComponentVector<TQuantity, TUnit>? left, ComponentVector<TQuantity, TUnit>? right) => left.IsNotEqualTo(right);
-
-		/// <returns>
-		///     A new vector with summed components in <paramref name="left" />'s unit.
-		/// </returns>
-		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
-		public static ComponentVector<TQuantity, TUnit> operator +(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) =>
-			new(left.ToVector(left.Unit) + right.ToVector(left.Unit), left.Unit)
-			{
-				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
-			};
-
-
-		/// <returns>
-		///     A new vector with subtracted components in <paramref name="left" />'s unit.
-		/// </returns>
-		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
-		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) =>
-			new(left.ToVector(left.Unit) - right.ToVector(left.Unit), left.Unit)
-			{
-				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
-			};
-
-
-		/// <returns>
-		///     A vector with components multiplied by a value
-		/// </returns>
-		public static ComponentVector<TQuantity, TUnit> operator *(double multiplier, ComponentVector<TQuantity, TUnit> vector) =>
-			new(vector.Values.Select(v => v * multiplier), vector.Unit)
-			{
-				ConstraintIndex = vector.ConstraintIndex
-			};
-
-
-		/// <inheritdoc cref="op_Multiply(double, ComponentVector{TQuantity,TUnit}) " />
-		public static ComponentVector<TQuantity, TUnit> operator *(ComponentVector<TQuantity, TUnit> vector, double multiplier) => multiplier * vector;
-
+		
 		/// <returns>
 		///     The dot product between the vectors.
 		/// </returns>
-		/// <inheritdoc cref="op_Subtraction" />
+		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
 		public static double operator *(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => left.ToVector(left.Unit) * right.ToVector(left.Unit);
-
-		/// <inheritdoc cref="Vector{T}.op_UnaryNegation" />
-		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> vector) => new(vector.Select(v => -v.Value), vector.Unit)
-		{
-			ConstraintIndex = vector.ConstraintIndex
-		};
-
-
-		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)" />
-		public static ComponentVector<TQuantity, TUnit> operator /(ComponentVector<TQuantity, TUnit> vector, double divisor) => new(vector.Select(v => v.Value / divisor), vector.Unit)
-		{
-			ConstraintIndex = vector.ConstraintIndex
-		};
-
+		
 		#endregion
 
 	}
