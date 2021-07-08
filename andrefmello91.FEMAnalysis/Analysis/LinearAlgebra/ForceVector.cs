@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
 using UnitsNet.Units;
@@ -10,20 +7,22 @@ using UnitsNet.Units;
 namespace andrefmello91.FEMAnalysis
 {
 	/// <summary>
-	///		Force vector class.
+	///     Force vector class.
 	/// </summary>
 	/// <remarks>
-	///		Unit is <see cref="ForceUnit"/>.
-	///		<para>
-	///		Quantity is <see cref="Force"/>.
-	///		</para>
+	///     Unit is <see cref="ForceUnit" />.
+	///     <para>
+	///         Quantity is <see cref="Force" />.
+	///     </para>
 	/// </remarks>
 	public class ForceVector : ComponentVector<Force, ForceUnit>
 	{
 
+		#region Constructors
+
 		/// <inheritdoc />
 		/// <remarks>
-		///		Default unit is Newton.
+		///     Default unit is Newton.
 		/// </remarks>
 		public ForceVector(IEnumerable<double> values, ForceUnit unit = ForceUnit.Newton)
 			: base(values, unit)
@@ -36,43 +35,41 @@ namespace andrefmello91.FEMAnalysis
 		{
 		}
 
-		/// <summary>
-		///		Create a force vector with zero elements.
-		/// </summary>
-		/// <param name="size">The size of the vector.</param>
-		public static ForceVector Zero(int size) => new (new double[size]);
+		#endregion
 
-		///  <summary>
-		/// 		Assemble the global external force vector.
-		///  </summary>
-		///  <param name="femInput">Finite element input.</param>
+		#region Methods
+
+		/// <summary>
+		///     Assemble the global external force vector.
+		/// </summary>
+		/// <param name="femInput">Finite element input.</param>
 		public static ForceVector AssembleExternal(IFEMInput femInput)
 		{
 			// Initialize the force vector
-            var f = Zero(femInput.NumberOfDoFs);
-            f.ConstraintIndex = femInput.ConstraintIndex;
-            
-            // Read the nodes data
-            foreach (var grip in femInput.Grips)
-            {
-            	// Get DoF indexes
-            	var index = grip.DoFIndex;
-            	int
-            		i = index[0],
-            		j = index[1];
+			var f = Zero(femInput.NumberOfDoFs);
+			f.ConstraintIndex = femInput.ConstraintIndex;
 
-            	// Set to force vector
-            	f[i] = grip.Force.X;
-            	f[j] = grip.Force.Y;
-            }
+			// Read the nodes data
+			foreach (var grip in femInput.Grips)
+			{
+				// Get DoF indexes
+				var index = grip.DoFIndex;
+				int
+					i = index[0],
+					j = index[1];
 
-            return f;
+				// Set to force vector
+				f[i] = grip.Force.X;
+				f[j] = grip.Force.Y;
+			}
+
+			return f;
 		}
 
 		/// <summary>
-		///		Assemble the global internal force vector.
+		///     Assemble the global internal force vector.
 		/// </summary>
-		/// <inheritdoc cref="AssembleExternal"/>
+		/// <inheritdoc cref="AssembleExternal" />
 		public static ForceVector AssembleInternal(IFEMInput femInput)
 		{
 			var fi = Zero(femInput.NumberOfDoFs);
@@ -95,26 +92,39 @@ namespace andrefmello91.FEMAnalysis
 			return fi;
 		}
 
-		/// <inheritdoc cref="ICloneable.Clone"/>
+		/// <summary>
+		///     Create a force vector with zero elements.
+		/// </summary>
+		/// <param name="size">The size of the vector.</param>
+		public static ForceVector Zero(int size) => new(new double[size]);
+
+		/// <inheritdoc cref="ICloneable.Clone" />
 		public new ForceVector Clone() => (ForceVector) base.Clone();
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Addition"/>
+		#endregion
+
+		#region Operators
+
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Addition" />
 		public static ForceVector operator +(ForceVector left, ForceVector right) => (ForceVector) ((ComponentVector<Force, ForceUnit>) left + right);
-		
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Subtraction"/>
+
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Subtraction" />
 		public static ForceVector operator -(ForceVector left, ForceVector right) => (ForceVector) ((ComponentVector<Force, ForceUnit>) left - right);
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) " />
 		public static ForceVector operator *(double multiplier, ForceVector vector) => (ForceVector) (multiplier * (ComponentVector<Force, ForceUnit>) vector);
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) "/>
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}.op_Multiply(double,ComponentVector{TQuantity,TUnit}) " />
 		public static ForceVector operator *(ForceVector vector, double multiplier) => multiplier * vector;
 
-		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
+		/// <inheritdoc cref="Vector{T}.op_UnaryNegation" />
 		public static ForceVector operator -(ForceVector vector) => (ForceVector) (-(ComponentVector<Force, ForceUnit>) vector);
 
 
-		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)"/>
-		public static ForceVector operator / (ForceVector vector, double divisor) => (ForceVector) ((ComponentVector<Force, ForceUnit>) vector / divisor);
+		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)" />
+		public static ForceVector operator /(ForceVector vector, double divisor) => (ForceVector) ((ComponentVector<Force, ForceUnit>) vector / divisor);
+
+		#endregion
+
 	}
 }

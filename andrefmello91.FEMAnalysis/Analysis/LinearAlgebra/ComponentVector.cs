@@ -5,7 +5,6 @@ using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
-using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -20,6 +19,11 @@ namespace andrefmello91.FEMAnalysis
 	{
 
 		#region Fields
+
+		/// <summary>
+		///     Get/set the matrix value of this object, with components in <see cref="Unit" />.
+		/// </summary>
+		protected readonly List<TQuantity> Values;
 
 		private TUnit _unit;
 
@@ -54,18 +58,13 @@ namespace andrefmello91.FEMAnalysis
 			set => ChangeUnit(value);
 		}
 
-		/// <summary>
-		///		Get/set the matrix value of this object, with components in <see cref="Unit"/>.
-		/// </summary>
-		protected List<TQuantity> Values;
-
 		#endregion
 
 		#endregion
 
 		#region Constructors
 
-		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}(IEnumerable{TQuantity})"/>
+		/// <inheritdoc cref="ComponentVector{TQuantity,TUnit}(IEnumerable{TQuantity})" />
 		/// <param name="unit">The unit of <paramref name="values" />'s components.</param>
 		public ComponentVector(IEnumerable<double> values, TUnit unit)
 		{
@@ -89,10 +88,23 @@ namespace andrefmello91.FEMAnalysis
 				.Cast<TQuantity>()
 				.ToList();
 		}
-		
+
 		#endregion
 
 		#region Methods
+
+		/// <inheritdoc cref="Vector{T}.AbsoluteMaximum" />
+		public TQuantity AbsoluteMaximum() => Values
+			.Select(v => v.Abs())
+			.Max(Unit);
+
+		/// <inheritdoc cref="Vector{T}.AbsoluteMinimum" />
+		public TQuantity AbsoluteMinimum() => Values
+			.Select(v => v.Abs())
+			.Min(Unit);
+
+		/// <inheritdoc cref="Vector{T}.Clear" />
+		public void Clear() => Values.Clear();
 
 		/// <inheritdoc cref="IUnitConvertible{TUnit}.Convert" />
 		public ComponentVector<TQuantity, TUnit> Convert(TUnit unit) => new(Values.Select(v => v.As(unit)), unit)
@@ -100,30 +112,48 @@ namespace andrefmello91.FEMAnalysis
 			ConstraintIndex = ConstraintIndex
 		};
 
+		/// <inheritdoc cref="Vector{T}.Maximum" />
+		public TQuantity Maximum() => Values.Max(Unit);
+
+		/// <inheritdoc cref="Vector{T}.Minimum" />
+		public TQuantity Minimum() => Values.Min(Unit);
+
+		/// <inheritdoc cref="Vector{T}.Norm" />
+		public double Norm(double p) => Values.ToVector(Unit).Norm(p);
+
 
 		/// <summary>
-		///		Get the vector simplified by constraint indexes.
+		///     Get the vector simplified by constraint indexes.
 		/// </summary>
-		/// <param name="threshold">A value for setting all values whose absolute value is smaller than to zero. If null, this is not applied.</param>
+		/// <param name="threshold">
+		///     A value for setting all values whose absolute value is smaller than to zero. If null, this is
+		///     not applied.
+		/// </param>
 		/// <returns>
-		///		The simplified <see cref="Vector{T}"/>.
+		///     The simplified <see cref="Vector{T}" />.
 		/// </returns>
 		public Vector<double> Simplified(double? threshold = null)
 		{
 			var simplified = Values.ToVector(Unit);
-			
+
 			if (ConstraintIndex is not null)
 				foreach (var index in ConstraintIndex)
 					simplified[index] = 0;
-			
+
 			if (threshold.HasValue)
 				simplified.CoerceZero(threshold.Value);
 
 			return simplified;
 		}
 
-		/// <inheritdoc cref="Simplified(double?)"/>
+		/// <inheritdoc cref="Simplified(double?)" />
 		public Vector<double> Simplified(TQuantity? threshold) => Simplified(threshold?.As(Unit));
+
+		/// <inheritdoc cref="Vector{T}.ToColumnMatrix" />
+		public Matrix<double> ToColumnMatrix() => Values.ToVector(Unit).ToColumnMatrix();
+
+		/// <inheritdoc cref="Vector{T}.ToRowMatrix" />
+		public Matrix<double> ToRowMatrix() => Values.ToVector(Unit).ToRowMatrix();
 
 		#region Interface Implementations
 
@@ -133,12 +163,10 @@ namespace andrefmello91.FEMAnalysis
 			if (_unit.Equals(unit))
 				return;
 
-			Values = Values
-				.Select(v => v.ToUnit(unit))
-				.Cast<TQuantity>()
-				.ToList();
-			
-			_unit =  unit;
+			for (var i = 0; i < Count; i++)
+				Values[i] = (TQuantity) Values[i].ToUnit(unit);
+
+			_unit = unit;
 		}
 
 		/// <inheritdoc cref="ICloneable{T}.Clone" />
@@ -159,34 +187,6 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-		/// <inheritdoc cref="Vector{T}.Maximum"/>
-		public TQuantity Maximum() => Values.Max(Unit);
-		
-		/// <inheritdoc cref="Vector{T}.Minimum"/>
-		public TQuantity Minimum() => Values.Min(Unit);
-		
-		/// <inheritdoc cref="Vector{T}.AbsoluteMaximum"/>
-		public TQuantity AbsoluteMaximum() => Values
-			.Select(v => v.Abs())
-			.Max(Unit);
-		
-		/// <inheritdoc cref="Vector{T}.AbsoluteMinimum"/>
-		public TQuantity AbsoluteMinimum() =>  Values
-			.Select(v => v.Abs())
-			.Min(Unit);
-
-		/// <inheritdoc cref="Vector{T}.Clear"/>
-		public void Clear() => Values.Clear();
-		
-		/// <inheritdoc cref="Vector{T}.Norm"/>
-		public double Norm(double p) => Values.ToVector(Unit).Norm(p);
-
-		/// <inheritdoc cref="Vector{T}.ToRowMatrix"/>
-		public Matrix<double> ToRowMatrix() => Values.ToVector(Unit).ToRowMatrix();
-		
-		/// <inheritdoc cref="Vector{T}.ToColumnMatrix"/>
-		public Matrix<double> ToColumnMatrix() => Values.ToVector(Unit).ToColumnMatrix();
-		
 		#endregion
 
 		#region Object override
@@ -256,25 +256,25 @@ namespace andrefmello91.FEMAnalysis
 		public static ComponentVector<TQuantity, TUnit> operator *(ComponentVector<TQuantity, TUnit> vector, double multiplier) => multiplier * vector;
 
 		/// <returns>
-		///		The dot product between the vectors.
+		///     The dot product between the vectors.
 		/// </returns>
-		/// <inheritdoc cref="op_Subtraction"/>
+		/// <inheritdoc cref="op_Subtraction" />
 		public static double operator *(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => left.ToVector(left.Unit) * right.ToVector(left.Unit);
 
-		/// <inheritdoc cref="Vector{T}.op_UnaryNegation"/>
-		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> vector) => new (vector.Select(v => -v.Value), vector.Unit)
+		/// <inheritdoc cref="Vector{T}.op_UnaryNegation" />
+		public static ComponentVector<TQuantity, TUnit> operator -(ComponentVector<TQuantity, TUnit> vector) => new(vector.Select(v => -v.Value), vector.Unit)
 		{
 			ConstraintIndex = vector.ConstraintIndex
 		};
 
 
-		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)"/>
-		public static ComponentVector<TQuantity, TUnit> operator / (ComponentVector<TQuantity, TUnit> vector, double divisor) => new(vector.Select(v => v.Value / divisor), vector.Unit)
+		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)" />
+		public static ComponentVector<TQuantity, TUnit> operator /(ComponentVector<TQuantity, TUnit> vector, double divisor) => new(vector.Select(v => v.Value / divisor), vector.Unit)
 		{
 			ConstraintIndex = vector.ConstraintIndex
 		};
-
 
 		#endregion
+
 	}
 }
