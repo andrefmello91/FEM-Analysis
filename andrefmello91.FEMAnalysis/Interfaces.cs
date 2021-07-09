@@ -73,12 +73,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the displacement vector, in global coordinate system.
 		/// </summary>
-		DisplacementVector Displacements { get; set; }
+		DisplacementVector Displacements { get; }
 
 		/// <summary>
 		///     Get the force vector in this element, in global coordinate system.
 		/// </summary>
-		ForceVector Forces { get; set; }
+		ForceVector Forces { get; }
 
 		/// <summary>
 		///     Get the grips of this element.
@@ -88,7 +88,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get stiffness matrix in the global coordinate system.
 		/// </summary>
-		StiffnessMatrix Stiffness { get; set; }
+		StiffnessMatrix Stiffness { get; }
 
 		#endregion
 
