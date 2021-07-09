@@ -222,71 +222,6 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Create a force vector by multiplying the stiffness and the displacement vector.
-		/// </summary>
-		/// <remarks>
-		///     This uses the simplified stiffness matrix.
-		/// </remarks>
-		/// <returns>
-		///     The <see cref="ForceVector" /> with components in <see cref="ForceUnit.Newton" />.
-		/// </returns>
-		public static ForceVector operator *(StiffnessMatrix stiffnessMatrix, DisplacementVector displacementVector)
-		{
-			// Convert
-			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter).Simplified();
-			var d = displacementVector.Convert(LengthUnit.Millimeter);
-
-			// Multiply
-			var f = k * d;
-
-			return
-				new ForceVector(f);
-		}
-
-		/// <returns>
-		///     A new stiffness matrix with summed components in <paramref name="left" />'s unit.
-		/// </returns>
-		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
-		public static StiffnessMatrix operator +(StiffnessMatrix left, StiffnessMatrix right) =>
-			new(left.Values.ToMatrix() + right.Convert(left.Unit), left.Unit)
-			{
-				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
-			};
-
-		/// <returns>
-		///     A new stiffness matrix with subtracted components in <paramref name="left" />'s unit.
-		/// </returns>
-		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
-		public static StiffnessMatrix operator -(StiffnessMatrix left, StiffnessMatrix right) =>
-			new(left.Values.ToMatrix() - right.Convert(left.Unit), left.Unit)
-			{
-				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
-			};
-
-		/// <returns>
-		///     A new stiffness matrix with components multiplied by a value
-		/// </returns>
-		public static StiffnessMatrix operator *(double multiplier, StiffnessMatrix matrix) => new(multiplier * matrix.Values.ToMatrix(), matrix.Unit)
-		{
-			ConstraintIndex = matrix.ConstraintIndex
-		};
-
-		/// <inheritdoc cref="op_Multiply(double, StiffnessMatrix) " />
-		public static StiffnessMatrix operator *(StiffnessMatrix matrix, double multiplier) => multiplier * matrix;
-
-		/// <inheritdoc cref="Matrix{T}.op_Division(Matrix{T}, T)" />
-		public static StiffnessMatrix operator /(StiffnessMatrix matrix, double divisor) => new(matrix.Values.ToMatrix() / divisor, matrix.Unit)
-		{
-			ConstraintIndex = matrix.ConstraintIndex
-		};
-
-		/// <inheritdoc cref="Matrix{T}.op_UnaryNegation" />
-		public static StiffnessMatrix operator -(StiffnessMatrix matrix) => new(-matrix.Values.ToMatrix(), matrix.Unit)
-		{
-			ConstraintIndex = matrix.ConstraintIndex
-		};
-
-		/// <summary>
 		///     Calculate the stiffness increment for nonlinear analysis.
 		/// </summary>
 		/// <param name="solver">The nonlinear solver.</param>
@@ -359,5 +294,70 @@ namespace andrefmello91.FEMAnalysis
 					? increment
 					: (StiffnessMatrix) increment.Convert(unit);
 		}
+		
+				/// <summary>
+		///     Create a force vector by multiplying the stiffness and the displacement vector.
+		/// </summary>
+		/// <remarks>
+		///     This uses the simplified stiffness matrix.
+		/// </remarks>
+		/// <returns>
+		///     The <see cref="ForceVector" /> with components in <see cref="ForceUnit.Newton" />.
+		/// </returns>
+		public static ForceVector operator *(StiffnessMatrix stiffnessMatrix, DisplacementVector displacementVector)
+		{
+			// Convert
+			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter).Simplified();
+			var d = displacementVector.Convert(LengthUnit.Millimeter);
+
+			// Multiply
+			var f = k * d;
+
+			return
+				new ForceVector(f);
+		}
+
+		/// <returns>
+		///     A new stiffness matrix with summed components in <paramref name="left" />'s unit.
+		/// </returns>
+		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
+		public static StiffnessMatrix operator +(StiffnessMatrix left, StiffnessMatrix right) =>
+			new(left.Values.ToMatrix() + right.Convert(left.Unit), left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
+
+		/// <returns>
+		///     A new stiffness matrix with subtracted components in <paramref name="left" />'s unit.
+		/// </returns>
+		/// <exception cref="ArgumentOutOfRangeException">If left and right don't have the same dimensions.</exception>
+		public static StiffnessMatrix operator -(StiffnessMatrix left, StiffnessMatrix right) =>
+			new(left.Values.ToMatrix() - right.Convert(left.Unit), left.Unit)
+			{
+				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
+			};
+
+		/// <returns>
+		///     A new stiffness matrix with components multiplied by a value
+		/// </returns>
+		public static StiffnessMatrix operator *(double multiplier, StiffnessMatrix matrix) => new(multiplier * matrix.Values.ToMatrix(), matrix.Unit)
+		{
+			ConstraintIndex = matrix.ConstraintIndex
+		};
+
+		/// <inheritdoc cref="op_Multiply(double, StiffnessMatrix) " />
+		public static StiffnessMatrix operator *(StiffnessMatrix matrix, double multiplier) => multiplier * matrix;
+
+		/// <inheritdoc cref="Matrix{T}.op_Division(Matrix{T}, T)" />
+		public static StiffnessMatrix operator /(StiffnessMatrix matrix, double divisor) => new(matrix.Values.ToMatrix() / divisor, matrix.Unit)
+		{
+			ConstraintIndex = matrix.ConstraintIndex
+		};
+
+		/// <inheritdoc cref="Matrix{T}.op_UnaryNegation" />
+		public static StiffnessMatrix operator -(StiffnessMatrix matrix) => new(-matrix.Values.ToMatrix(), matrix.Unit)
+		{
+			ConstraintIndex = matrix.ConstraintIndex
+		};
 	}
 }
