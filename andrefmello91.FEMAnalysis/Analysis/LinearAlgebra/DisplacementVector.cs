@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using andrefmello91.Extensions;
+using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
 using UnitsNet.Units;
@@ -19,6 +20,11 @@ namespace andrefmello91.FEMAnalysis
 	/// </remarks>
 	public class DisplacementVector : ComponentVector<Length, LengthUnit>
 	{
+
+		/// <summary>
+		///		Default tolerance for component vector.
+		/// </summary>
+		private static Length Tolerance { get; } = PlaneDisplacement.Tolerance;
 
 		#region Constructors
 
@@ -95,6 +101,9 @@ namespace andrefmello91.FEMAnalysis
 		public override ComponentVector<Length, LengthUnit> Clone() => new DisplacementVector(Values, Unit);
 
 #endif
+
+		/// <inheritdoc />
+		public override Vector<double> Simplified() => Simplified(Tolerance);
 
 		#endregion
 

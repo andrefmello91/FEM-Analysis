@@ -20,6 +20,10 @@ namespace andrefmello91.FEMAnalysis
 	/// </remarks>
 	public class StiffnessMatrix : StiffnessMatrix<ForcePerLength, ForcePerLengthUnit>
 	{
+		/// <summary>
+		///		Default tolerance for stiffness matrix.
+		/// </summary>
+		private static ForcePerLength Tolerance { get; } = ForcePerLength.FromNewtonsPerMillimeter(1E-6);
 
 		#region Constructors
 
@@ -105,6 +109,8 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 #endif
+		/// <inheritdoc />
+		public override Matrix<double> Simplified() => Simplified(Tolerance);
 
 		/// <summary>
 		///     Solve a system d = K f.
@@ -294,12 +300,13 @@ namespace andrefmello91.FEMAnalysis
 					? increment
 					: (StiffnessMatrix) increment.Convert(unit);
 		}
-		
-				/// <summary>
+
+
+		/// <summary>
 		///     Create a force vector by multiplying the stiffness and the displacement vector.
 		/// </summary>
 		/// <remarks>
-		///     This uses the simplified stiffness matrix.
+		///     This uses the simplified stiffness matrix and displacements.
 		/// </remarks>
 		/// <returns>
 		///     The <see cref="ForceVector" /> with components in <see cref="ForceUnit.Newton" />.
@@ -308,7 +315,7 @@ namespace andrefmello91.FEMAnalysis
 		{
 			// Convert
 			var k = stiffnessMatrix.Convert(ForcePerLengthUnit.NewtonPerMillimeter).Simplified();
-			var d = displacementVector.Convert(LengthUnit.Millimeter);
+			var d = displacementVector.Convert(LengthUnit.Millimeter).Simplified();
 
 			// Multiply
 			var f = k * d;

@@ -31,7 +31,7 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Properties
-
+		
 		/// <summary>
 		///     The index of constrained DoFs.
 		/// </summary>
@@ -116,7 +116,18 @@ namespace andrefmello91.FEMAnalysis
 		public double Norm(double p) => Values.ToVector().Norm(p);
 
 		/// <summary>
-		///     Get the vector simplified by constraint indexes.
+		///     Get the vector simplified by constrained DoFs.
+		/// </summary>
+		/// <remarks>
+		///		This uses the default tolerance.
+		/// </remarks>
+		/// <returns>
+		///     The simplified <see cref="Vector{T}" />.
+		/// </returns>
+		public abstract Vector<double> Simplified();
+
+		/// <summary>
+		///     Get the vector simplified by constrained DoFs.
 		/// </summary>
 		/// <param name="threshold">
 		///     A value for setting all values whose absolute value is smaller than to zero. If null, this is
@@ -125,7 +136,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     The simplified <see cref="Vector{T}" />.
 		/// </returns>
-		public Vector<double> Simplified(double? threshold = null)
+		public Vector<double> Simplified(double? threshold)
 		{
 			var simplified = Values.ToVector();
 

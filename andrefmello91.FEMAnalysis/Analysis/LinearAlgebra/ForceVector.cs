@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using andrefmello91.Extensions;
+using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
 using UnitsNet.Units;
@@ -19,6 +20,11 @@ namespace andrefmello91.FEMAnalysis
 	/// </remarks>
 	public class ForceVector : ComponentVector<Force, ForceUnit>
 	{
+
+		/// <summary>
+		///		Default tolerance for force vector.
+		/// </summary>
+		private static Force Tolerance { get; } = PlaneForce.Tolerance;
 
 		#region Constructors
 
@@ -102,13 +108,13 @@ namespace andrefmello91.FEMAnalysis
 
 #if NET5_0
 		/// <inheritdoc />
-		public override ForceVector Convert(ForceUnit unit) => new ForceVector(Values.GetQuantities<Force, ForceUnit>(Unit).GetValues(unit), unit)
+		public override ForceVector Convert(ForceUnit unit) => new (Values.GetQuantities<Force, ForceUnit>(Unit).GetValues(unit), unit)
 		{
 			ConstraintIndex = ConstraintIndex
 		};
-
+		
 		/// <inheritdoc cref="ICloneable.Clone" />
-		public override ForceVector Clone() => new ForceVector(Values, Unit)
+		public override ForceVector Clone() => new (Values, Unit)
 		{
 			ConstraintIndex = ConstraintIndex
 		};
@@ -128,6 +134,9 @@ namespace andrefmello91.FEMAnalysis
 		};
 
 #endif
+
+		/// <inheritdoc />
+		public override Vector<double> Simplified() => Simplified(Tolerance);
 
 		#endregion
 

@@ -15,7 +15,6 @@ namespace andrefmello91.FEMAnalysis
 		where TQuantity : IQuantity<TUnit>
 		where TUnit : Enum
 	{
-
 		#region Fields
 
 		/// <summary>
@@ -136,6 +135,17 @@ namespace andrefmello91.FEMAnalysis
 		public Vector<double> Row(int index) => Values
 			.GetRow(index)
 			.ToVector();
+		
+		/// <summary>
+		///     Get the simplified stiffness matrix by the constrained DoFs.
+		/// </summary>
+		/// <remarks>
+		///		This uses the default tolerance.
+		/// </remarks>
+		/// <returns>
+		///     The simplified <see cref="Matrix{T}" />.
+		/// </returns>
+		public abstract Matrix<double> Simplified();
 
 		/// <summary>
 		///     Get the simplified stiffness matrix by the constrained DoFs.
@@ -147,7 +157,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     The simplified <see cref="Matrix{T}" />.
 		/// </returns>
-		public Matrix<double> Simplified(double? threshold = null)
+		public Matrix<double> Simplified(double? threshold)
 		{
 			var value = Values.ToMatrix();
 
