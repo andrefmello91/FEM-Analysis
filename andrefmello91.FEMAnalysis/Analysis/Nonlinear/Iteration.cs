@@ -102,8 +102,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc/>
 		public void CalculateConvergence(ForceVector appliedForces, DisplacementVector initialIncrement)
 		{
-			ForceConvergence        = NonlinearAnalysis.CalculateConvergence(ResidualForces, appliedForces);
-			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
+			ForceConvergence        = NonlinearAnalysis.CalculateConvergence<Force, ForceUnit>(ResidualForces, appliedForces);
+			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence<Length, LengthUnit>(DisplacementIncrement, initialIncrement);
 		}
 
 		/// <inheritdoc/>
@@ -134,7 +134,7 @@ namespace andrefmello91.FEMAnalysis
 		#region Interface Implementations
 
 		/// <inheritdoc />
-		public Iteration Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone()) { Number = Number };
+		public Iteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone()) { Number = Number };
 
 		#endregion
 

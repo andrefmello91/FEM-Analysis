@@ -315,7 +315,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///		Update displacements in elements and calculate internal forces.
 		/// </summary>
-		protected void UpdateElements(IFEMInput<IFiniteElement> femInput)
+		protected void UpdateElements(IFEMInput femInput)
 		{
 			// Update elements
 			femInput.Grips.SetDisplacements(CurrentIteration.Displacements);
@@ -348,8 +348,8 @@ namespace andrefmello91.FEMAnalysis
 			femInput.CalculateForces();
 
 			// Update internal forces
-			var extForces = SimplifiedForces(Forces, femInput.ConstraintIndex);
-			var intForces = femInput.AssembleInternalForces();
+			var extForces = Forces;
+			var intForces = ForceVector.AssembleInternal(femInput);
 			CurrentIteration.UpdateForces(extForces, intForces);
 			
 			// Calculate convergence

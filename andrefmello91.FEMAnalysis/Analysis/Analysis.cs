@@ -29,7 +29,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the input for finite element analysis.
 		/// </summary>
-		public IFEMInput<TFiniteElement> FemInput { get; }
+		public IFEMInput FemInput { get; }
 
 		/// <inheritdoc cref="FEMInput{TFiniteElement}.ForceVector" />
 		public Vector<double>? ForceVector { get; protected set; }
@@ -52,7 +52,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Base analysis constructor.
 		/// </summary>
 		/// <param name="femInput">The <see cref="IFEMInput{TFiniteElement}" /> for finite element analysis.</param>
-		public Analysis(IFEMInput<TFiniteElement> femInput) => FemInput = femInput;
+		public Analysis(IFEMInput femInput) => FemInput = femInput;
 
 		#endregion
 

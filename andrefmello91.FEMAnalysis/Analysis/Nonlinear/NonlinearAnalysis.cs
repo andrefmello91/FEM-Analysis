@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
+using UnitsNet;
 using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
@@ -87,7 +89,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Nonlinear analysis constructor with default parameters.
 		/// </summary>
 		/// <param name="nonlinearInput">The <see cref="IFEMInput{INonlinearElement}" />.</param>
-		public NonlinearAnalysis(IFEMInput<IFiniteElement> nonlinearInput)
+		public NonlinearAnalysis(IFEMInput nonlinearInput)
 			: this(nonlinearInput, AnalysisParameters.Default)
 		{
 		}
@@ -97,7 +99,7 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <param name="nonlinearInput">The <see cref="IFEMInput{INonlinearElement}" />.</param>
 		/// <param name="parameters">The analysis parameters.</param>
-		public NonlinearAnalysis(IFEMInput<IFiniteElement> nonlinearInput, AnalysisParameters parameters)
+		public NonlinearAnalysis(IFEMInput nonlinearInput, AnalysisParameters parameters)
 			: base(nonlinearInput) =>
 			Parameters = parameters;
 
@@ -124,6 +126,17 @@ namespace andrefmello91.FEMAnalysis
 
 			return
 				num / den;
+		}
+
+		/// <inheritdoc cref="CalculateConvergence"/>
+		internal static double CalculateConvergence<TQuantity, TUnit>(IEnumerable<TQuantity> numerator, IEnumerable<TQuantity> denominator)
+			where TQuantity : IQuantity<TUnit>
+			where TUnit : Enum
+		{
+			var unit = numerator.First().Unit;
+
+			return
+				CalculateConvergence(numerator.GetValues(unit), denominator.GetValues(unit));
 		}
 
 		/// <summary>
