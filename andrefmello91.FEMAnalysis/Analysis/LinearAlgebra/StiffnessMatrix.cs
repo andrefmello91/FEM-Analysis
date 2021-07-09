@@ -21,7 +21,7 @@ namespace andrefmello91.FEMAnalysis
 	public class StiffnessMatrix : StiffnessMatrix<ForcePerLength, ForcePerLengthUnit>
 	{
 		/// <summary>
-		///		Default tolerance for stiffness matrix.
+		///     Default tolerance for stiffness matrix.
 		/// </summary>
 		private static ForcePerLength Tolerance { get; } = ForcePerLength.FromNewtonsPerMillimeter(1E-6);
 

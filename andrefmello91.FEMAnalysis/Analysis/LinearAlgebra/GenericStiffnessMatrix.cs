@@ -15,6 +15,7 @@ namespace andrefmello91.FEMAnalysis
 		where TQuantity : IQuantity<TUnit>
 		where TUnit : Enum
 	{
+
 		#region Fields
 
 		/// <summary>
@@ -135,12 +136,12 @@ namespace andrefmello91.FEMAnalysis
 		public Vector<double> Row(int index) => Values
 			.GetRow(index)
 			.ToVector();
-		
+
 		/// <summary>
 		///     Get the simplified stiffness matrix by the constrained DoFs.
 		/// </summary>
 		/// <remarks>
-		///		This uses the default tolerance.
+		///     This uses the default tolerance.
 		/// </remarks>
 		/// <returns>
 		///     The simplified <see cref="Matrix{T}" />.
@@ -191,6 +192,14 @@ namespace andrefmello91.FEMAnalysis
 		#region Interface Implementations
 
 		/// <inheritdoc />
+		public abstract StiffnessMatrix<TQuantity, TUnit> Clone();
+
+		/// <inheritdoc />
+		public bool Equals(StiffnessMatrix<TQuantity, TUnit>? other) =>
+			other is not null &&
+			Values.ToMatrix().Equals(other.Convert(Unit).Values.ToMatrix());
+
+		/// <inheritdoc />
 		public void ChangeUnit(TUnit unit)
 		{
 			if (_unit.Equals(unit))
@@ -206,14 +215,6 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc />
-		public abstract StiffnessMatrix<TQuantity, TUnit> Clone();
-
-		/// <inheritdoc />
-		public bool Equals(StiffnessMatrix<TQuantity, TUnit>? other) =>
-			other is not null &&
-			Values.ToMatrix().Equals(other.Convert(Unit).Values.ToMatrix());
-
-		/// <inheritdoc />
 		IUnitConvertible<TUnit> IUnitConvertible<TUnit>.Convert(TUnit unit) => Convert(unit);
 
 		#endregion
@@ -227,16 +228,10 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public override int GetHashCode() => _unit.GetHashCode() * Values.GetHashCode();
 
-		/// <inheritdoc />
-		public override string ToString() =>
-			$"Unit: {Unit} \n" +
-			$"Value: {Values}";
-
-		#endregion
-
-		#endregion
-
-		#region Operators
+		/// <returns>
+		///     True if objects are equal.
+		/// </returns>
+		public static bool operator ==(StiffnessMatrix<TQuantity, TUnit>? left, StiffnessMatrix<TQuantity, TUnit>? right) => left.IsEqualTo(right);
 
 		/// <summary>
 		///     Get the corresponding <see cref="Matrix{T}" /> value of a <see cref="StiffnessMatrix" />.
@@ -244,14 +239,16 @@ namespace andrefmello91.FEMAnalysis
 		public static implicit operator Matrix<double>(StiffnessMatrix<TQuantity, TUnit> stiffnessMatrix) => stiffnessMatrix.Values.ToMatrix();
 
 		/// <returns>
-		///     True if objects are equal.
-		/// </returns>
-		public static bool operator ==(StiffnessMatrix<TQuantity, TUnit>? left, StiffnessMatrix<TQuantity, TUnit>? right) => left.IsEqualTo(right);
-
-		/// <returns>
 		///     True if objects are not equal.
 		/// </returns>
 		public static bool operator !=(StiffnessMatrix<TQuantity, TUnit>? left, StiffnessMatrix<TQuantity, TUnit>? right) => left.IsNotEqualTo(right);
+
+		/// <inheritdoc />
+		public override string ToString() =>
+			$"Unit: {Unit} \n" +
+			$"Value: {Values}";
+
+		#endregion
 
 		#endregion
 

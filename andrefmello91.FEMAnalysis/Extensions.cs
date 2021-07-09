@@ -147,7 +147,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update the displacement vector for this element.
 		/// </summary>
-		/// <inheritdoc cref="UpdateStiffness"/>
+		/// <inheritdoc cref="UpdateStiffness" />
 		public static void UpdateDisplacements([NotNull] this IEnumerable<IFiniteElement> elements)
 		{
 			foreach (var element in elements)

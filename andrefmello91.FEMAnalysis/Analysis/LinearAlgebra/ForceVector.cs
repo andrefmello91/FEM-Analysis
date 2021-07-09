@@ -22,7 +22,7 @@ namespace andrefmello91.FEMAnalysis
 	{
 
 		/// <summary>
-		///		Default tolerance for force vector.
+		///     Default tolerance for force vector.
 		/// </summary>
 		private static Force Tolerance { get; } = PlaneForce.Tolerance;
 

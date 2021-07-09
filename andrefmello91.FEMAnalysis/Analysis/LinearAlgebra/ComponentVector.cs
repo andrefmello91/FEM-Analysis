@@ -31,7 +31,7 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Properties
-		
+
 		/// <summary>
 		///     The index of constrained DoFs.
 		/// </summary>
@@ -119,7 +119,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the vector simplified by constrained DoFs.
 		/// </summary>
 		/// <remarks>
-		///		This uses the default tolerance.
+		///     This uses the default tolerance.
 		/// </remarks>
 		/// <returns>
 		///     The simplified <see cref="Vector{T}" />.
@@ -161,6 +161,21 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Interface Implementations
 
+		/// <inheritdoc cref="ICloneable{T}.Clone" />
+		public abstract ComponentVector<TQuantity, TUnit> Clone();
+
+		/// <inheritdoc />
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+		/// <inheritdoc />
+		public IEnumerator<TQuantity> GetEnumerator() => Values
+			.GetQuantities<TQuantity, TUnit>(Unit)
+			.GetEnumerator();
+
+		/// <inheritdoc />
+		public bool Equals(ComponentVector<TQuantity, TUnit>? other) =>
+			other is not null && Values.ToVector() == other.Convert(Unit).Values.ToVector();
+
 		/// <inheritdoc />
 		public void ChangeUnit(TUnit unit)
 		{
@@ -173,22 +188,7 @@ namespace andrefmello91.FEMAnalysis
 			_unit = unit;
 		}
 
-		/// <inheritdoc cref="ICloneable{T}.Clone" />
-		public abstract ComponentVector<TQuantity, TUnit> Clone();
-
-		/// <inheritdoc />
-		public bool Equals(ComponentVector<TQuantity, TUnit>? other) =>
-			other is not null && Values.ToVector() == other.Convert(Unit).Values.ToVector();
-
-		/// <inheritdoc />
-		public IEnumerator<TQuantity> GetEnumerator() => Values
-			.GetQuantities<TQuantity, TUnit>(Unit)
-			.GetEnumerator();
-
 		IUnitConvertible<TUnit> IUnitConvertible<TUnit>.Convert(TUnit unit) => Convert(unit);
-
-		/// <inheritdoc />
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		#endregion
 
@@ -201,24 +201,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public override int GetHashCode() => _unit.GetHashCode() * Values.GetHashCode();
 
-		/// <inheritdoc />
-		public override string ToString() =>
-			$"Unit: {Unit} \n" +
-			$"Value: {Values.ToVector()}";
-
-		#endregion
-
-		#endregion
-
-		#region Operators
+		/// <inheritdoc cref="StiffnessMatrix.op_Equality" />
+		public static bool operator ==(ComponentVector<TQuantity, TUnit>? left, ComponentVector<TQuantity, TUnit>? right) => left.IsEqualTo(right);
 
 		/// <summary>
 		///     Get the corresponding <see cref="Vector{T}" />.
 		/// </summary>
 		public static implicit operator Vector<double>(ComponentVector<TQuantity, TUnit> vector) => vector.ToVector(vector.Unit);
-
-		/// <inheritdoc cref="StiffnessMatrix.op_Equality" />
-		public static bool operator ==(ComponentVector<TQuantity, TUnit>? left, ComponentVector<TQuantity, TUnit>? right) => left.IsEqualTo(right);
 
 		/// <inheritdoc cref="StiffnessMatrix.op_Inequality" />
 		public static bool operator !=(ComponentVector<TQuantity, TUnit>? left, ComponentVector<TQuantity, TUnit>? right) => left.IsNotEqualTo(right);
@@ -228,6 +217,13 @@ namespace andrefmello91.FEMAnalysis
 		/// </returns>
 		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
 		public static double operator *(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => left.ToVector(left.Unit) * right.ToVector(left.Unit);
+
+		/// <inheritdoc />
+		public override string ToString() =>
+			$"Unit: {Unit} \n" +
+			$"Value: {Values.ToVector()}";
+
+		#endregion
 
 		#endregion
 

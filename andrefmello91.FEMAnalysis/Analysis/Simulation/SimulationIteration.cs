@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using andrefmello91.Extensions;
-using MathNet.Numerics.LinearAlgebra;
-using UnitsNet.Units;
+﻿using andrefmello91.Extensions;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -12,14 +9,6 @@ namespace andrefmello91.FEMAnalysis
 	{
 
 		#region Properties
-
-		/// <summary>
-		///     The displacement increment vector of this iteration.
-		/// </summary>
-		/// <returns>
-		///     <see cref="IncrementFromResidual" /> + <see cref="LoadFactorIncrement" /> * <see cref="IncrementFromExternal" />
-		/// </returns>
-		public override DisplacementVector DisplacementIncrement => IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal;
 
 		/// <summary>
 		///     The displacement increment vector from external forces of this iteration.
@@ -35,6 +24,18 @@ namespace andrefmello91.FEMAnalysis
 		///     The load factor increment of this iteration.
 		/// </summary>
 		public double LoadFactorIncrement { get; set; }
+
+		#region Interface Implementations
+
+		/// <summary>
+		///     The displacement increment vector of this iteration.
+		/// </summary>
+		/// <returns>
+		///     <see cref="IncrementFromResidual" /> + <see cref="LoadFactorIncrement" /> * <see cref="IncrementFromExternal" />
+		/// </returns>
+		public override DisplacementVector DisplacementIncrement => IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal;
+
+		#endregion
 
 		#endregion
 
@@ -62,34 +63,25 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="incrementFromResidual">The displacement increment vector from residual forces of this iteration.</param>
 		/// <param name="incrementFromExternal">The displacement increment vector from external forces of this iteration.</param>
 		/// <param name="updateDisplacements">Update displacement vector?</param>
-		public void IncrementDisplacements(DisplacementVector? incrementFromResidual,DisplacementVector? incrementFromExternal, bool updateDisplacements = false)
+		public void IncrementDisplacements(DisplacementVector? incrementFromResidual, DisplacementVector? incrementFromExternal, bool updateDisplacements = false)
 		{
 			if (incrementFromResidual is not null)
 				IncrementFromResidual = incrementFromResidual;
 
 			if (incrementFromExternal is not null)
 				IncrementFromExternal = incrementFromExternal;
-			
+
 			if (updateDisplacements)
 				UpdateDisplacements();
 		}
 
 		/// <summary>
-		///		Add the displacement increment to displacement vector.
+		///     Add the displacement increment to displacement vector.
 		/// </summary>
 		public void UpdateDisplacements() => Displacements += DisplacementIncrement;
 
 		#region Interface Implementations
 
-		/// <inheritdoc />
-		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone())
-		{
-			Number                = Number,
-			LoadFactorIncrement   = LoadFactorIncrement,
-			IncrementFromResidual = IncrementFromResidual,
-			IncrementFromExternal = IncrementFromExternal
-		};
-		
 		// /// <summary>
 		// ///     Calculate the convergence of this iteration.
 		// /// </summary>
@@ -102,6 +94,15 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();
+
+		/// <inheritdoc />
+		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone())
+		{
+			Number                = Number,
+			LoadFactorIncrement   = LoadFactorIncrement,
+			IncrementFromResidual = IncrementFromResidual,
+			IncrementFromExternal = IncrementFromExternal
+		};
 
 		#endregion
 

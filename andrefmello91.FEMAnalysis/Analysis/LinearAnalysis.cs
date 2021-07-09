@@ -1,6 +1,4 @@
 ﻿using andrefmello91.Extensions;
-using static andrefmello91.FEMAnalysis.StiffnessMatrix;
-
 #nullable enable
 
 namespace andrefmello91.FEMAnalysis
@@ -36,7 +34,7 @@ namespace andrefmello91.FEMAnalysis
 			var forces = loadFactor.Approx(1)
 				? Forces
 				: Forces * loadFactor;
-			
+
 			// Solve
 			Displacements = GlobalStiffness.Solve(forces);
 

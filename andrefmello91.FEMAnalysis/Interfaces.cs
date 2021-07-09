@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
-using UnitsNet;
-using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -118,12 +112,15 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 	}
-	
+
 	/// <summary>
-	///		Interface for iterations.
+	///     Interface for iterations.
 	/// </summary>
 	public interface IIteration : ICloneable<IIteration>
 	{
+
+		#region Properties
+
 		/// <summary>
 		///     The displacement convergence of this iteration.
 		/// </summary>
@@ -164,6 +161,10 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		StiffnessMatrix Stiffness { get; set; }
 
+		#endregion
+
+		#region Methods
+
 		/// <summary>
 		///     Calculate the convergence of this iteration.
 		/// </summary>
@@ -203,6 +204,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="appliedForces">The vector of applied forces of the current step.</param>
 		/// <param name="internalForces">The vector of internal forces.</param>
 		void UpdateForces(ForceVector appliedForces, ForceVector internalForces);
+
+		#endregion
 
 	}
 }

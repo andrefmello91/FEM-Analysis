@@ -1,10 +1,5 @@
-﻿using System.Collections.Generic;
-using andrefmello91.Extensions;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
-using UnitsNet;
+﻿using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
-
 #nullable enable
 
 namespace andrefmello91.FEMAnalysis

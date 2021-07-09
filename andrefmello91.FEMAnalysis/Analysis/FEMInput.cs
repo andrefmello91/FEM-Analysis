@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
-using UnitsNet.Units;
 #nullable disable
 
 namespace andrefmello91.FEMAnalysis
@@ -43,7 +41,7 @@ namespace andrefmello91.FEMAnalysis
 	///     Default finite element input class.
 	/// </summary>
 	/// <inheritdoc cref="IFEMInput{TFiniteElement}" />
-	public class FEMInput: List<IFiniteElement>, IFEMInput
+	public class FEMInput : List<IFiniteElement>, IFEMInput
 	{
 
 		#region Properties

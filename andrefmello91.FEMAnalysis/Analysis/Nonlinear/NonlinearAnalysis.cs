@@ -2,10 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using andrefmello91.Extensions;
-using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
-using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -85,7 +82,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Nonlinear analysis constructor.
 		/// </summary>
-		/// <inheritdoc cref="NonlinearAnalysis(IFEMInput)"/>
+		/// <inheritdoc cref="NonlinearAnalysis(IFEMInput)" />
 		/// <param name="parameters">The analysis parameters.</param>
 		public NonlinearAnalysis(IFEMInput nonlinearInput, AnalysisParameters parameters)
 			: base(nonlinearInput) =>
@@ -94,6 +91,12 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Methods
+
+		/// <summary>
+		///     Get the step increment.
+		/// </summary>
+		/// <param name="numberOfSteps">The number of load steps.</param>
+		public static double StepIncrement(int numberOfSteps) => 1D / numberOfSteps;
 
 		/// <summary>
 		///     Calculate the convergence.
@@ -116,7 +119,7 @@ namespace andrefmello91.FEMAnalysis
 				num / den;
 		}
 
-		/// <inheritdoc cref="CalculateConvergence"/>
+		/// <inheritdoc cref="CalculateConvergence" />
 		internal static double CalculateConvergence<TQuantity, TUnit>(ComponentVector<TQuantity, TUnit> numerator, ComponentVector<TQuantity, TUnit> denominator)
 			where TQuantity : IQuantity<TUnit>
 			where TUnit : Enum
@@ -185,6 +188,12 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
+		///     Create a new load step.
+		/// </summary>
+		/// <param name="incrementLoad">Increment load of the new step?</param>
+		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
+
+		/// <summary>
 		///     Execute step by step analysis.
 		/// </summary>
 		protected virtual void StepAnalysis()
@@ -206,38 +215,25 @@ namespace andrefmello91.FEMAnalysis
 				CurrentStep.SetResults(MonitoredIndex);
 
 				// break;
-				
+
 				if (!_simulate && CurrentStep >= Parameters.NumberOfSteps)
 					return;
-				
+
 				// Create step
 				NewStep();
-				
 			} while (_simulate || CurrentStep <= Parameters.NumberOfSteps);
 
 			CorrectResults:
 			CorrectResults();
 		}
 
-		/// <summary>
-		///     Get the step increment.
-		/// </summary>
-		/// <param name="numberOfSteps">The number of load steps.</param>
-		public static double StepIncrement(int numberOfSteps) => 1D / numberOfSteps;
-
-		/// <summary>
-		///     Create a new load step.
-		/// </summary>
-		///  <param name="incrementLoad">Increment load of the new step?</param>
-		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
-
 		#region Interface Implementations
 
 		/// <inheritdoc />
-		public IEnumerator<LoadStep> GetEnumerator() => Steps.GetEnumerator();
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		/// <inheritdoc />
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		public IEnumerator<LoadStep> GetEnumerator() => Steps.GetEnumerator();
 
 		#endregion
 

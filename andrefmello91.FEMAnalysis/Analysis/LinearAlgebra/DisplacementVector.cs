@@ -22,7 +22,7 @@ namespace andrefmello91.FEMAnalysis
 	{
 
 		/// <summary>
-		///		Default tolerance for component vector.
+		///     Default tolerance for component vector.
 		/// </summary>
 		private static Length Tolerance { get; } = PlaneDisplacement.Tolerance;
 

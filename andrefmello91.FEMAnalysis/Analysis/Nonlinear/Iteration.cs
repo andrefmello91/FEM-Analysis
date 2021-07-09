@@ -1,10 +1,5 @@
-﻿using System.Collections.Generic;
-using andrefmello91.Extensions;
-using andrefmello91.FEMAnalysis;
+﻿using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
-using UnitsNet;
-using UnitsNet.Units;
-using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -14,43 +9,48 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class Iteration : IIteration, ICloneable<Iteration>
 	{
+
 		#region Properties
 
-		/// <inheritdoc/>
+		#region Interface Implementations
+
+		/// <inheritdoc />
 		public double DisplacementConvergence { get; protected set; }
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public virtual DisplacementVector DisplacementIncrement { get; private set; }
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public DisplacementVector Displacements { get; protected set; }
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public double ForceConvergence { get; protected set; }
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public ForceVector InternalForces { get; set; }
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public int Number { get; set; }
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public ForceVector ResidualForces { get; private set; }
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public StiffnessMatrix Stiffness { get; set; }
+
+		#endregion
 
 		#endregion
 
 		#region Constructors
 
-		/// <inheritdoc cref="From(int,bool)"/>
+		/// <inheritdoc cref="From(int,bool)" />
 		protected Iteration(int numberOfDoFs)
 			: this(DisplacementVector.Zero(numberOfDoFs), ForceVector.Zero(numberOfDoFs), StiffnessMatrix.Zero(numberOfDoFs))
 		{
 		}
 
-		/// <inheritdoc cref="From(DisplacementVector, ForceVector, StiffnessMatrix, bool)"/>
+		/// <inheritdoc cref="From(DisplacementVector, ForceVector, StiffnessMatrix, bool)" />
 		protected Iteration(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness)
 		{
 			Displacements         = displacements;
@@ -74,7 +74,7 @@ namespace andrefmello91.FEMAnalysis
 			false => new Iteration(numberOfDoFs),
 			_     => new SimulationIteration(numberOfDoFs)
 		};
-		
+
 		/// <summary>
 		///     Create an iteration object.
 		/// </summary>
@@ -87,7 +87,7 @@ namespace andrefmello91.FEMAnalysis
 			false => new Iteration(displacements, residualForces, stiffness),
 			_     => new SimulationIteration(displacements, residualForces, stiffness)
 		};
-		
+
 		/// <summary>
 		///     Create an iteration from a load step result.
 		/// </summary>
@@ -99,66 +99,49 @@ namespace andrefmello91.FEMAnalysis
 			_     => new SimulationIteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness)
 		};
 
-		/// <inheritdoc/>
+		#region Interface Implementations
+
+		/// <inheritdoc />
+		IIteration ICloneable<IIteration>.Clone() => Clone();
+
+		/// <inheritdoc />
+		public Iteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone()) { Number = Number };
+
+		/// <inheritdoc />
 		public void CalculateConvergence(ForceVector appliedForces, DisplacementVector initialIncrement)
 		{
 			ForceConvergence        = NonlinearAnalysis.CalculateConvergence(ResidualForces, appliedForces);
 			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
 		}
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public virtual bool CheckConvergence(AnalysisParameters parameters) =>
 			Number >= parameters.MinIterations &&
 			ForceConvergence <= parameters.ForceTolerance &&
 			DisplacementConvergence <= parameters.DisplacementTolerance;
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public bool CheckStopCondition(AnalysisParameters parameters) =>
 			Number >= parameters.MaxIterations || ResidualForces.ContainsNaNOrInfinity() ||
 			Displacements.ContainsNaNOrInfinity() || ((Matrix<double>) Stiffness).ContainsNaN();
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public void IncrementDisplacements(DisplacementVector displacementIncrement)
 		{
 			DisplacementIncrement =  displacementIncrement;
 			Displacements         += displacementIncrement;
 		}
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		public void UpdateForces(ForceVector appliedForces, ForceVector internalForces)
 		{
 			InternalForces = internalForces;
 			ResidualForces = internalForces - appliedForces;
 		}
 
-		#region Interface Implementations
-
-		/// <inheritdoc />
-		public Iteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone()) { Number = Number };
-
 		#endregion
 
 		#region Object override
-
-		/// <inheritdoc />
-		IIteration ICloneable<IIteration>.Clone() => Clone();
-
-		/// <inheritdoc />
-		public override string ToString() => $"Iteration {Number}";
-
-		#endregion
-
-		#endregion
-
-		#region Operators
-
-		/// <summary>
-		///     Get the number of a iteration.
-		/// </summary>
-		/// <returns>
-		///     <see cref="Iteration.Number" />
-		/// </returns>
-		public static explicit operator int(Iteration iteration) => iteration.Number;
 
 		/// <summary>
 		///     Check the iteration number.
@@ -168,17 +151,19 @@ namespace andrefmello91.FEMAnalysis
 		/// </returns>
 		public static bool operator ==(Iteration left, int right) => left.Number == right;
 
+		/// <summary>
+		///     Get the number of a iteration.
+		/// </summary>
+		/// <returns>
+		///     <see cref="Iteration.Number" />
+		/// </returns>
+		public static explicit operator int(Iteration iteration) => iteration.Number;
+
 		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
 		///     True if the iteration number is bigger than the right number.
 		/// </returns>
 		public static bool operator >(Iteration left, int right) => left.Number > right;
-
-		/// <inheritdoc cref="op_Equality" />
-		/// <returns>
-		///     True if the iteration number is smaller than the right number.
-		/// </returns>
-		public static bool operator <(Iteration left, int right) => left.Number < right;
 
 		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
@@ -188,15 +173,26 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="op_Equality" />
 		/// <returns>
+		///     True if the iteration number is not equal to the right number.
+		/// </returns>
+		public static bool operator !=(Iteration left, int right) => left.Number != right;
+
+		/// <inheritdoc cref="op_Equality" />
+		/// <returns>
+		///     True if the iteration number is smaller than the right number.
+		/// </returns>
+		public static bool operator <(Iteration left, int right) => left.Number < right;
+
+		/// <inheritdoc cref="op_Equality" />
+		/// <returns>
 		///     True if the iteration number is smaller or equal to the right number.
 		/// </returns>
 		public static bool operator <=(Iteration left, int right) => left.Number <= right;
 
-		/// <inheritdoc cref="op_Equality" />
-		/// <returns>
-		///     True if the iteration number is not equal to the right number.
-		/// </returns>
-		public static bool operator !=(Iteration left, int right) => left.Number != right;
+		/// <inheritdoc />
+		public override string ToString() => $"Iteration {Number}";
+
+		#endregion
 
 		#endregion
 
