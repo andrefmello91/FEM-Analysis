@@ -72,10 +72,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
 		/// </returns>
-		public static Vector<double> GetDisplacementsFromGrips([NotNull] this IFiniteElement element) =>
-			element.Grips
-				.SelectMany(g => new[] { g.Displacement.X.Millimeters, g.Displacement.Y.Millimeters })
-				.ToVector();
+		public static DisplacementVector GetDisplacementsFromGrips([NotNull] this IFiniteElement element) =>
+			new (element.Grips
+				.SelectMany(g => new[] { g.Displacement.X, g.Displacement.Y }));
 
 		/// <summary>
 		///     Get global indexes of the degrees of freedom of a collection of grips.

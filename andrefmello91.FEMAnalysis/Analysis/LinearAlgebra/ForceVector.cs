@@ -4,6 +4,7 @@ using System.Linq;
 using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -171,6 +172,13 @@ namespace andrefmello91.FEMAnalysis
 				ConstraintIndex = vector.ConstraintIndex
 			};
 
+		/// <inheritdoc cref="Matrix{T}.op_Multiply(Matrix{T}, Vector{T})"/>
+		public static ForceVector operator *(Matrix<double> left, ForceVector right) =>
+			new (left * right.ToVector(right.Unit), right.Unit)
+			{
+				ConstraintIndex = right.ConstraintIndex
+			};
+		
 		/// <inheritdoc cref="op_Multiply(double, ForceVector) " />
 		public static ForceVector operator *(ForceVector vector, double multiplier) => multiplier * vector;
 

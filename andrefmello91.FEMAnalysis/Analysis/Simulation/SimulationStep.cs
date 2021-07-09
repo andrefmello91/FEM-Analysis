@@ -2,6 +2,7 @@
 using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
@@ -111,7 +112,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the initial arc lenght.
 		/// </summary>
 		private static double InitialArcLenght(SimulationIteration initialIteration) =>
-			initialIteration.LoadFactorIncrement * (initialIteration.IncrementFromExternal.ToRowMatrix() * initialIteration.IncrementFromExternal)[0].Sqrt();
+			initialIteration.LoadFactorIncrement * (initialIteration.IncrementFromExternal.ToRowMatrix() * (Vector<double>) initialIteration.IncrementFromExternal)[0].Sqrt();
 
 		/// <summary>
 		///     Get the accumulated load factor increment from the beginning of this step until the <paramref name="finalIndex" />
@@ -202,7 +203,7 @@ namespace andrefmello91.FEMAnalysis
 				// First iteration of any load step except the first
 				default:
 					var dU  = lastStep.DisplacementIncrement;
-					var ds1 = (dU.ToRowMatrix() * dU)[0].Sqrt();
+					var ds1 = (dU.ToRowMatrix() * (Vector<double>) dU)[0].Sqrt();
 					ArcLength = ds1 * DesiredIterations / lastStep.RequiredIterations;
 					return;
 			}
@@ -229,7 +230,7 @@ namespace andrefmello91.FEMAnalysis
 						? 1
 						: -1;
 
-					curIt.LoadFactorIncrement = sign * dS * (dUf.ToRowMatrix() * dUf)[0].Pow(-0.5);
+					curIt.LoadFactorIncrement = sign * dS * (dUf.ToRowMatrix() * (Vector<double>) dUf)[0].Pow(-0.5);
 
 					return;
 
@@ -240,10 +241,10 @@ namespace andrefmello91.FEMAnalysis
 
 					// Calculate coefficients
 					var ds2       = dS * dS;
-					var a1        = (dUf.ToRowMatrix() * dUf)[0];
+					var a1        = (dUf.ToRowMatrix() * (Vector<double>) dUf)[0];
 					var dUrPlusDu = dUr + deltaU;
-					var a2        = (dUrPlusDu.ToRowMatrix() * dUf)[0];
-					var a3        = (dUrPlusDu.ToRowMatrix() * dUrPlusDu)[0] - ds2;
+					var a2        = (dUrPlusDu.ToRowMatrix() * (Vector<double>) dUf)[0];
+					var a3        = (dUrPlusDu.ToRowMatrix() *  (Vector<double>) dUrPlusDu)[0] - ds2;
 
 					// Calculate roots
 					var (r1, r2) = FindRoots.Quadratic(a3, 2 * a2, a1);

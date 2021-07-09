@@ -133,6 +133,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
 		public static DisplacementVector operator *(DisplacementVector vector, double multiplier) => multiplier * vector;
 
+		/// <inheritdoc cref="Matrix{T}.op_Multiply(Matrix{T}, Vector{T})"/>
+		public static DisplacementVector operator *(Matrix<double> left, DisplacementVector right) =>
+			new (left * right.ToVector(right.Unit), right.Unit)
+			{
+				ConstraintIndex = right.ConstraintIndex
+			};
+
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation" />
 		public static DisplacementVector operator -(DisplacementVector vector) =>
 			new(vector.Select(v => -v.Value), vector.Unit)

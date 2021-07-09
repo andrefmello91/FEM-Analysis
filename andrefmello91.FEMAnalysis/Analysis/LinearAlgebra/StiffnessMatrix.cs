@@ -190,44 +190,6 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Get the global stiffness simplified.
-		/// </summary>
-		/// <param name="stiffness">The global stiffness <see cref="Matrix{T}" /> to simplify.</param>
-		/// <param name="indexes">The DoF indexes to simplify matrix.</param>
-		/// <param name="simplifyZeroRows">Simplify matrix at rows containing only zero elements?</param>
-		public static Matrix<double> SimplifiedStiffness(Matrix<double> stiffness, IEnumerable<int> indexes, bool simplifyZeroRows = true)
-		{
-			var simplifiedStiffness = stiffness.Clone();
-
-			var index = indexes.ToArray();
-
-			// Clear the rows and columns in the stiffness matrix
-			simplifiedStiffness.ClearRows(index);
-			simplifiedStiffness.ClearColumns(index);
-
-			// Set the diagonal element to 1
-			foreach (var i in index)
-				simplifiedStiffness[i, i] = 1;
-
-			if (!simplifyZeroRows)
-				return simplifiedStiffness;
-
-			// Verify rows
-			for (var i = 0; i < simplifiedStiffness.RowCount; i++)
-			{
-				// Verify what line of the matrix is composed of zeroes
-				if (simplifiedStiffness.Row(i).Exists(num => !num.ApproxZero()) && simplifiedStiffness.Column(i).Exists(num => !num.ApproxZero()))
-					continue;
-
-				// The row is composed of only zeroes, so the displacement must be zero
-				// Set the diagonal element to 1
-				simplifiedStiffness[i, i] = 1;
-			}
-
-			return simplifiedStiffness;
-		}
-
-		/// <summary>
 		///     Calculate the stiffness increment for nonlinear analysis.
 		/// </summary>
 		/// <param name="solver">The nonlinear solver.</param>
@@ -321,7 +283,10 @@ namespace andrefmello91.FEMAnalysis
 			var f = k * d;
 
 			return
-				new ForceVector(f);
+				new ForceVector(f)
+				{
+					ConstraintIndex = stiffnessMatrix.ConstraintIndex ?? displacementVector.ConstraintIndex
+				};
 		}
 
 		/// <returns>
