@@ -54,7 +54,7 @@ namespace andrefmello91.FEMAnalysis
 		public List<int> ConstraintIndex { get; }
 
 		/// <inheritdoc />
-		public ForceVector ForceVector { get; }
+		public ForceVector ForceVector => ForceVector.AssembleExternal(this);
 
 		/// <inheritdoc />
 		public List<IGrip> Grips { get; }
@@ -88,7 +88,6 @@ namespace andrefmello91.FEMAnalysis
 			Grips           = grips.ToList();
 			NumberOfDoFs    = 2 * Grips.Count;
 			ConstraintIndex = Grips.GetConstraintIndex().ToList();
-			ForceVector     = ForceVector.AssembleExternal(this);
 		}
 
 		#endregion

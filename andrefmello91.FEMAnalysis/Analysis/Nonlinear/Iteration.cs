@@ -96,14 +96,14 @@ namespace andrefmello91.FEMAnalysis
 		public static IIteration FromStepResult(LoadStep loadStep, bool simulate = false) => simulate switch
 		{
 			false => new Iteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness),
-			_     => new SimulationIteration(loadStep.FinalDisplacements, Vector<double>.Build.Dense(loadStep.FinalDisplacements.Count), loadStep.Stiffness)
+			_     => new SimulationIteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness)
 		};
 
 		/// <inheritdoc/>
 		public void CalculateConvergence(ForceVector appliedForces, DisplacementVector initialIncrement)
 		{
-			ForceConvergence        = NonlinearAnalysis.CalculateConvergence<Force, ForceUnit>(ResidualForces, appliedForces);
-			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence<Length, LengthUnit>(DisplacementIncrement, initialIncrement);
+			ForceConvergence        = NonlinearAnalysis.CalculateConvergence(ResidualForces, appliedForces);
+			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
 		}
 
 		/// <inheritdoc/>

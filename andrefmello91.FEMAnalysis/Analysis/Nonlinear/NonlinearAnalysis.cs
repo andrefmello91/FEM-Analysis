@@ -12,7 +12,7 @@ namespace andrefmello91.FEMAnalysis
 	/// <summary>
 	///     Nonlinear analysis class
 	/// </summary>
-	public class NonlinearAnalysis : Analysis<IFiniteElement>, IEnumerable<LoadStep>
+	public class NonlinearAnalysis : Analysis, IEnumerable<LoadStep>
 	{
 
 		#region Fields
@@ -35,18 +35,6 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Properties
-
-		/// <inheritdoc />
-		/// <remarks>
-		///     The displacements of current step.
-		/// </remarks>
-		public override Vector<double> DisplacementVector => CurrentStep.FinalDisplacements;
-
-		/// <inheritdoc />
-		/// <remarks>
-		///     The stiffness of current step.
-		/// </remarks>
-		public override Matrix<double> GlobalStiffness => CurrentStep.Stiffness;
 
 		/// <inheritdoc cref="List{T}.this[int]" />
 		public LoadStep this[int index] => Steps[index];
@@ -88,7 +76,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Nonlinear analysis constructor with default parameters.
 		/// </summary>
-		/// <param name="nonlinearInput">The <see cref="IFEMInput{INonlinearElement}" />.</param>
+		/// <param name="nonlinearInput">The finite element input>.</param>
 		public NonlinearAnalysis(IFEMInput nonlinearInput)
 			: this(nonlinearInput, AnalysisParameters.Default)
 		{
@@ -97,7 +85,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Nonlinear analysis constructor.
 		/// </summary>
-		/// <param name="nonlinearInput">The <see cref="IFEMInput{INonlinearElement}" />.</param>
+		/// <inheritdoc cref="NonlinearAnalysis(IFEMInput)"/>
 		/// <param name="parameters">The analysis parameters.</param>
 		public NonlinearAnalysis(IFEMInput nonlinearInput, AnalysisParameters parameters)
 			: base(nonlinearInput) =>
@@ -129,14 +117,14 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc cref="CalculateConvergence"/>
-		internal static double CalculateConvergence<TQuantity, TUnit>(IEnumerable<TQuantity> numerator, IEnumerable<TQuantity> denominator)
+		internal static double CalculateConvergence<TQuantity, TUnit>(ComponentVector<TQuantity, TUnit> numerator, ComponentVector<TQuantity, TUnit> denominator)
 			where TQuantity : IQuantity<TUnit>
 			where TUnit : Enum
 		{
 			var unit = numerator.First().Unit;
 
 			return
-				CalculateConvergence(numerator.GetValues(unit), denominator.GetValues(unit));
+				CalculateConvergence(numerator.Simplified(), denominator.Convert(unit).Simplified());
 		}
 
 		/// <summary>
@@ -144,14 +132,14 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		/// <inheritdoc cref="StepAnalysis" />
 		/// <param name="monitoredIndex">The index of a degree of freedom to monitor, if wanted.</param>
-		/// <param name="loadFactor">The load factor to multiply <see cref="Analysis{TFiniteElement}.ForceVector" /> (default: 1).</param>
+		/// <param name="loadFactor">The load factor to multiply <see cref="Analysis.Forces" /> (default: 1).</param>
 		public void Execute(int? monitoredIndex = null, bool simulate = false, double loadFactor = 1)
 		{
 			_simulate      = simulate;
 			MonitoredIndex = monitoredIndex;
 
 			// Get force vector
-			ForceVector = FemInput.ForceVector * loadFactor;
+			Forces = FemInput.ForceVector * loadFactor;
 
 			// Analysis by steps
 			StepAnalysis();

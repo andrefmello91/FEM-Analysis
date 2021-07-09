@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using andrefmello91.Extensions;
 using MathNet.Numerics.LinearAlgebra;
+using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -18,17 +19,17 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     <see cref="IncrementFromResidual" /> + <see cref="LoadFactorIncrement" /> * <see cref="IncrementFromExternal" />
 		/// </returns>
-		public override Vector<double> DisplacementIncrement => IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal;
+		public override DisplacementVector DisplacementIncrement => IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal;
 
 		/// <summary>
 		///     The displacement increment vector from external forces of this iteration.
 		/// </summary>
-		public Vector<double> IncrementFromExternal { get; private set; }
+		public DisplacementVector IncrementFromExternal { get; private set; }
 
 		/// <summary>
 		///     The displacement increment vector from residual forces of this iteration.
 		/// </summary>
-		public Vector<double> IncrementFromResidual { get; private set; }
+		public DisplacementVector IncrementFromResidual { get; private set; }
 
 		/// <summary>
 		///     The load factor increment of this iteration.
@@ -46,7 +47,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc />
-		internal SimulationIteration(Vector<double> displacements, Vector<double> residualForces, Matrix<double> stiffness)
+		internal SimulationIteration(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness)
 			: base(displacements, residualForces, stiffness)
 		{
 		}
@@ -61,7 +62,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="incrementFromResidual">The displacement increment vector from residual forces of this iteration.</param>
 		/// <param name="incrementFromExternal">The displacement increment vector from external forces of this iteration.</param>
 		/// <param name="updateDisplacements">Update displacement vector?</param>
-		public void IncrementDisplacements(Vector<double>? incrementFromResidual, Vector<double>? incrementFromExternal, bool updateDisplacements = false)
+		public void IncrementDisplacements(DisplacementVector? incrementFromResidual,DisplacementVector? incrementFromExternal, bool updateDisplacements = false)
 		{
 			if (incrementFromResidual is not null)
 				IncrementFromResidual = incrementFromResidual;
@@ -81,7 +82,7 @@ namespace andrefmello91.FEMAnalysis
 		#region Interface Implementations
 
 		/// <inheritdoc />
-		public new SimulationIteration Clone() => new(Displacements.Clone(), ResidualForces.Clone(), Stiffness.Clone())
+		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone())
 		{
 			Number                = Number,
 			LoadFactorIncrement   = LoadFactorIncrement,
@@ -89,15 +90,15 @@ namespace andrefmello91.FEMAnalysis
 			IncrementFromExternal = IncrementFromExternal
 		};
 		
-		/// <summary>
-		///     Calculate the convergence of this iteration.
-		/// </summary>
-		/// <param name="initialIncrement">The displacement increment of the first iteration.</param>
-		public void CalculateConvergence(IEnumerable<double> initialIncrement) =>
-			DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
-
-		/// <inheritdoc/>
-		public override bool CheckConvergence(AnalysisParameters parameters) => base.CheckConvergence(parameters);
+		// /// <summary>
+		// ///     Calculate the convergence of this iteration.
+		// /// </summary>
+		// /// <param name="initialIncrement">The displacement increment of the first iteration.</param>
+		// public void CalculateConvergence(DisplacementVector initialIncrement) =>
+		// 	DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
+		//
+		// /// <inheritdoc/>
+		// public override bool CheckConvergence(AnalysisParameters parameters) => base.CheckConvergence(parameters);
 
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();

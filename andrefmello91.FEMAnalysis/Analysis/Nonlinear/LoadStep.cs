@@ -7,7 +7,7 @@ using andrefmello91.FEMAnalysis;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
 
-using static andrefmello91.FEMAnalysis.Analysis<andrefmello91.FEMAnalysis.IFiniteElement>;
+using static andrefmello91.FEMAnalysis.Analysis;
 using static andrefmello91.FEMAnalysis.StiffnessMatrix;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
@@ -309,6 +309,9 @@ namespace andrefmello91.FEMAnalysis
 				UpdateStiffness();
 				UpdateForces(femInput);
 				
+				// Calculate convergence
+				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
+				
 			} while (!IterativeStop());
 		}
 
@@ -348,18 +351,14 @@ namespace andrefmello91.FEMAnalysis
 			femInput.CalculateForces();
 
 			// Update internal forces
-			var extForces = Forces;
 			var intForces = ForceVector.AssembleInternal(femInput);
-			CurrentIteration.UpdateForces(extForces, intForces);
-			
-			// Calculate convergence
-			CurrentIteration.CalculateConvergence(extForces, FirstIteration.DisplacementIncrement);
+			CurrentIteration.UpdateForces(Forces, intForces);
 		}
 		
 		/// <summary>
 		///     Update displacements.
 		/// </summary>
-		protected virtual void UpdateDisplacements(IFEMInput femInput)
+		private void UpdateDisplacements(IFEMInput femInput)
 		{
 			var curIt  = CurrentIteration;
 			var lastIt = LastIteration;
