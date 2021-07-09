@@ -79,24 +79,23 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="size">The size of the vector.</param>
 		public static DisplacementVector Zero(int size) => new(new double[size]);
 
-		#if NET5_0
-		
+#if NET5_0
 		/// <inheritdoc />
 		public override DisplacementVector Convert(LengthUnit unit) => new (Values.GetQuantities<Length, LengthUnit>(Unit).GetValues(unit), unit);
 
 		/// <inheritdoc cref="ICloneable.Clone" />
 		public override DisplacementVector Clone() => new (Values, Unit);
-		
-		#else
-		
+
+#else
+
 		/// <inheritdoc />
 		public override ComponentVector<Length, LengthUnit> Convert(LengthUnit unit) => new DisplacementVector(Values.GetQuantities<Length, LengthUnit>(Unit).GetValues(unit), unit);
 
 		/// <inheritdoc cref="ICloneable.Clone" />
 		public override ComponentVector<Length, LengthUnit> Clone() => new DisplacementVector(Values, Unit);
-		
-		#endif
-		
+
+#endif
+
 		#endregion
 
 		#region Operators
@@ -107,14 +106,14 @@ namespace andrefmello91.FEMAnalysis
 			{
 				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
 			};
-		
+
 		/// <inheritdoc cref="ForceVector.op_Subtraction" />
-		public static DisplacementVector operator -(DisplacementVector left, DisplacementVector right) => 
+		public static DisplacementVector operator -(DisplacementVector left, DisplacementVector right) =>
 			new(left.ToVector(left.Unit) - right.ToVector(left.Unit), left.Unit)
 			{
 				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
 			};
-		
+
 		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
 		public static DisplacementVector operator *(double multiplier, DisplacementVector vector) =>
 			new(vector.Values.Select(v => v * multiplier), vector.Unit)

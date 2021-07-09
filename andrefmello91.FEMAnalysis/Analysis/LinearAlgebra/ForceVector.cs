@@ -19,6 +19,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </remarks>
 	public class ForceVector : ComponentVector<Force, ForceUnit>
 	{
+
 		#region Constructors
 
 		/// <inheritdoc />
@@ -99,8 +100,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="size">The size of the vector.</param>
 		public static ForceVector Zero(int size) => new(new double[size]);
 
-		#if NET5_0
-		
+#if NET5_0
 		/// <inheritdoc />
 		public override ForceVector Convert(ForceUnit unit) => new ForceVector(Values.GetQuantities<Force, ForceUnit>(Unit).GetValues(unit), unit)
 		{
@@ -113,8 +113,8 @@ namespace andrefmello91.FEMAnalysis
 			ConstraintIndex = ConstraintIndex
 		};
 
-		#else
-		
+#else
+
 		/// <inheritdoc />
 		public override ComponentVector<Force, ForceUnit> Convert(ForceUnit unit) => new ForceVector(Values.GetQuantities<Force, ForceUnit>(Unit).GetValues(unit), unit)
 		{
@@ -126,8 +126,8 @@ namespace andrefmello91.FEMAnalysis
 		{
 			ConstraintIndex = ConstraintIndex
 		};
-		
-		#endif
+
+#endif
 
 		#endregion
 
@@ -152,7 +152,7 @@ namespace andrefmello91.FEMAnalysis
 			{
 				ConstraintIndex = left.ConstraintIndex ?? right.ConstraintIndex
 			};
-		
+
 		/// <returns>
 		///     A vector with components multiplied by a value
 		/// </returns>

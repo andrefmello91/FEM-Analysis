@@ -164,7 +164,7 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="ICloneable{T}.Clone" />
 		public abstract ComponentVector<TQuantity, TUnit> Clone();
-		
+
 		/// <inheritdoc />
 		public bool Equals(ComponentVector<TQuantity, TUnit>? other) =>
 			other is not null && Values.ToVector() == other.Convert(Unit).Values.ToVector();
@@ -211,13 +211,13 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="StiffnessMatrix.op_Inequality" />
 		public static bool operator !=(ComponentVector<TQuantity, TUnit>? left, ComponentVector<TQuantity, TUnit>? right) => left.IsNotEqualTo(right);
-		
+
 		/// <returns>
 		///     The dot product between the vectors.
 		/// </returns>
 		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
 		public static double operator *(ComponentVector<TQuantity, TUnit> left, ComponentVector<TQuantity, TUnit> right) => left.ToVector(left.Unit) * right.ToVector(left.Unit);
-		
+
 		#endregion
 
 	}
