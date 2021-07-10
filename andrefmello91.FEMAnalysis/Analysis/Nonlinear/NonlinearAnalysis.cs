@@ -120,7 +120,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc cref="CalculateConvergence" />
-		internal static double CalculateConvergence<TQuantity, TUnit>(ComponentVector<TQuantity, TUnit> numerator, ComponentVector<TQuantity, TUnit> denominator)
+		internal static double CalculateConvergence<TQuantity, TUnit>(QuantityVector<TQuantity, TUnit> numerator, QuantityVector<TQuantity, TUnit> denominator)
 			where TQuantity : IQuantity<TUnit>
 			where TUnit : Enum
 		{
