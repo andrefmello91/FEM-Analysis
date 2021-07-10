@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
-using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
 #nullable enable
