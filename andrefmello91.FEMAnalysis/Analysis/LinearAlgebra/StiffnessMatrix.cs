@@ -136,14 +136,17 @@ namespace andrefmello91.FEMAnalysis
 				: stiffnessMatrix;
 
 			var f = useSimplified
-				? forces
-				: forces.Simplified();
+				? forces.Simplified()
+				: forces;
 
 			// Solve
 			var d = k.Solve(f);
 
 			return
-				new DisplacementVector(d);
+				new DisplacementVector(d)
+				{
+					ConstraintIndex = ConstraintIndex ?? forceVector.ConstraintIndex
+				};
 		}
 
 		#endregion

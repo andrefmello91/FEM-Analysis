@@ -252,7 +252,8 @@ namespace andrefmello91.FEMAnalysis
 			iteration.Stiffness = Assemble(femInput);
 
 			// Calculate initial displacements
-			iteration.IncrementDisplacements(iteration.Stiffness.Solve(step.Forces));
+			var dU = iteration.Stiffness.Solve(step.Forces);
+			iteration.IncrementDisplacements(dU);
 
 			// Update displacements in grips and elements
 			femInput.Grips.SetDisplacements(iteration.Displacements);
