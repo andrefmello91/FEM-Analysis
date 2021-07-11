@@ -53,26 +53,24 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Constructors
 
-		/// <inheritdoc/>
+		/// <inheritdoc />
 		protected QuantityVector(IEnumerable<double> values, TUnit unit)
-			: this(DenseVectorStorage<double>.OfEnumerable(values), unit)
+			: this(DenseVectorStorage<double>.OfEnumerable(values.ToArray()), unit)
 		{
 		}
-		
-		/// <inheritdoc/>
+
+		/// <inheritdoc />
 		/// <param name="quantities">The component values of the vector.</param>
 		protected QuantityVector(IEnumerable<TQuantity> quantities)
 			: this(quantities.Select(v => v.As(quantities.First().Unit)), quantities.First().Unit)
 		{
 		}
-		
+
 		/// <inheritdoc />
 		private QuantityVector(DenseVectorStorage<double> storage, TUnit unit)
-			: base(storage)
-		{
+			: base(storage) =>
 			_unit = unit;
-		}
-		
+
 		#endregion
 
 		#region Methods
@@ -83,14 +81,107 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="Vector{T}.AbsoluteMinimum" />
 		public new TQuantity AbsoluteMinimum() => (TQuantity) base.AbsoluteMinimum().As(Unit);
 
+		/// <inheritdoc cref="Vector{T}.Add(T)" />
+		public QuantityVector<TQuantity, TUnit> Add(TQuantity scalar)
+		{
+			var result = Clone();
+
+			if (scalar.Value.Equals(0))
+				return result;
+
+			result.Clear();
+			DoAdd(scalar.As(Unit), result);
+
+			return result;
+		}
+
+		/// <inheritdoc cref="Vector{T}.Add(Vector{T})" />
+		public QuantityVector<TQuantity, TUnit> Add(QuantityVector<TQuantity, TUnit> other)
+		{
+			var result = Count == other.Count
+				? Clone()
+				: throw new ArgumentException("All vectors must have the same dimensionality.", nameof(other));
+
+			result.Clear();
+
+			DoAdd(Unit.Equals(other.Unit)
+					? other
+					: other.Convert(Unit),
+				result);
+
+			return result;
+		}
+
 		/// <inheritdoc cref="IUnitConvertible{TUnit}.Convert" />
 		public abstract QuantityVector<TQuantity, TUnit> Convert(TUnit unit);
+
+		/// <inheritdoc cref="Vector{T}.Divide(T)" />
+		public new QuantityVector<TQuantity, TUnit> Divide(double scalar)
+		{
+			var result = Clone();
+
+			if (scalar.Equals(1))
+				return result;
+
+			result.Clear();
+
+			DoDivide(scalar, result);
+
+			return result;
+		}
+
+		/// <inheritdoc cref="Vector{T}.DivideByThis(T)" />
+		public Vector<double> DivideByThis(TQuantity scalar)
+		{
+			var result = Build.Dense(Count);
+
+			DoDivideByThis(scalar.As(Unit), result);
+
+			return result;
+		}
+
+		/// <inheritdoc cref="Vector{T}.DotProduct" />
+		public double DotProduct(QuantityVector<TQuantity, TUnit> other) => Count == other.Count
+			? DoDotProduct(other.Unit.Equals(Unit)
+				? other
+				: other.Convert(Unit))
+			: throw new ArgumentException("All vectors must have the same dimensionality.", nameof(other));
 
 		/// <inheritdoc cref="Vector{T}.Maximum" />
 		public TQuantity Maximum() => (TQuantity) base.Maximum().As(Unit);
 
 		/// <inheritdoc cref="Vector{T}.Minimum" />
 		public TQuantity Minimum() => (TQuantity) base.Minimum().As(Unit);
+
+		/// <inheritdoc cref="Vector{T}.Multiply(T)" />
+		public new QuantityVector<TQuantity, TUnit> Multiply(double scalar)
+		{
+			var result = Clone();
+
+			if (scalar.Equals(1))
+				return result;
+
+			result.Clear();
+
+			if (scalar.Equals(0))
+				return result;
+
+			DoMultiply(scalar, result);
+
+			return result;
+		}
+
+		/// <inheritdoc cref="Vector{T}.Negate()" />
+		public new QuantityVector<TQuantity, TUnit> Negate()
+		{
+			var result = Clone();
+
+			result.Clear();
+
+			DoNegate(result);
+
+			return result;
+		}
 
 		/// <summary>
 		///     Get the vector simplified by constrained DoFs.
@@ -119,6 +210,54 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="Simplified(double?, IEnumerable{int}?)" />
 		public QuantityVector<TQuantity, TUnit> Simplified(TQuantity? threshold, IEnumerable<int>? indexes = null) => Simplified(threshold?.As(Unit), indexes);
 
+		/// <inheritdoc cref="Vector{T}.Subtract(T)" />
+		public QuantityVector<TQuantity, TUnit> Subtract(TQuantity scalar)
+		{
+			var result = Clone();
+
+			if (scalar.Value.Equals(0))
+				return result;
+
+			result.Clear();
+			DoSubtract(scalar.As(Unit), result);
+
+			return result;
+		}
+
+		/// <inheritdoc cref="Vector{T}.Subtract(Vector{T})" />
+		public QuantityVector<TQuantity, TUnit> Subtract(QuantityVector<TQuantity, TUnit> other)
+		{
+			var result = Count == other.Count
+				? Clone()
+				: throw new ArgumentException("All vectors must have the same dimensionality.", nameof(other));
+
+			result.Clear();
+
+			DoSubtract(Unit.Equals(other.Unit)
+					? other
+					: other.Convert(Unit),
+				result);
+
+			return result;
+		}
+
+		/// <inheritdoc cref="Vector{T}.SubtractFrom(T)" />
+		public QuantityVector<TQuantity, TUnit> SubtractFrom(TQuantity scalar)
+		{
+			var result = Clone();
+
+			if (scalar.Value.Equals(0))
+				return result;
+
+			result.Clear();
+			DoSubtractFrom(scalar.As(Unit), result);
+
+			return result;
+		}
+
+		/// <inheritdoc cref="Vector{T}.Sum" />
+		public new TQuantity Sum() => (TQuantity) base.Sum().As(Unit);
+
 		#region Interface Implementations
 
 		/// <inheritdoc cref="ICloneable{T}.Clone" />
@@ -137,13 +276,11 @@ namespace andrefmello91.FEMAnalysis
 		{
 			if (other is null)
 				return false;
-			
-			other = Unit.Equals(other.Unit)
-				? other
-				: other.Convert(Unit);
 
 			return
-				base.Equals(other);
+				base.Equals(Unit.Equals(other.Unit)
+					? other
+					: other.Convert(Unit));
 		}
 
 		/// <inheritdoc />
@@ -164,9 +301,21 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Object override
 
-		/// <inheritdoc cref="object.Equals(object)"/>
+		/// <inheritdoc cref="object.Equals(object)" />
 		public new bool Equals(object? obj) =>
 			obj is QuantityVector<TQuantity, TUnit> other && Equals(other);
+
+		/// <inheritdoc cref="Add(TQuantity)" />
+		public static QuantityVector<TQuantity, TUnit> operator +(QuantityVector<TQuantity, TUnit> left, TQuantity right) => left.Add(right);
+
+		/// <inheritdoc cref="Add(QuantityVector{TQuantity, TUnit})" />
+		public static QuantityVector<TQuantity, TUnit> operator +(QuantityVector<TQuantity, TUnit> left, QuantityVector<TQuantity, TUnit> right) => left.Add(right);
+
+		/// <inheritdoc cref="Divide(double)" />
+		public static QuantityVector<TQuantity, TUnit> operator /(QuantityVector<TQuantity, TUnit> left, double divisor) => left.Divide(divisor);
+
+		/// <inheritdoc cref="DivideByThis(TQuantity)" />
+		public static Vector<double> operator /(TQuantity left, QuantityVector<TQuantity, TUnit> divisor) => divisor.DivideByThis(left);
 
 		/// <inheritdoc cref="StiffnessMatrix.op_Equality" />
 		public static bool operator ==(QuantityVector<TQuantity, TUnit>? left, QuantityVector<TQuantity, TUnit>? right) => left.IsEqualTo(right);
@@ -174,19 +323,29 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="StiffnessMatrix.op_Inequality" />
 		public static bool operator !=(QuantityVector<TQuantity, TUnit>? left, QuantityVector<TQuantity, TUnit>? right) => left.IsNotEqualTo(right);
 
+		/// <inheritdoc cref="Multiply(double)" />
+		public static QuantityVector<TQuantity, TUnit> operator *(QuantityVector<TQuantity, TUnit> left, double multiplier) => left.Multiply(multiplier);
+
+		/// <inheritdoc cref="Multiply(double)" />
+		public static QuantityVector<TQuantity, TUnit> operator *(double multiplier, QuantityVector<TQuantity, TUnit> right) => right.Multiply(multiplier);
+
 		/// <returns>
 		///     The dot product between the vectors.
 		/// </returns>
 		/// <exception cref="ArgumentException">If left and right don't have the same dimensions.</exception>
-		public static double operator *(QuantityVector<TQuantity, TUnit> left, QuantityVector<TQuantity, TUnit> right)
-		{
-			var other = right.Unit.Equals(left.Unit)
-				? right
-				: right.Convert(left.Unit);
+		public static double operator *(QuantityVector<TQuantity, TUnit> left, QuantityVector<TQuantity, TUnit> right) => left.DotProduct(right);
 
-			return
-				(Vector<double>) left * other;
-		}
+		/// <inheritdoc cref="Subtract(TQuantity)" />
+		public static QuantityVector<TQuantity, TUnit> operator -(QuantityVector<TQuantity, TUnit> left, TQuantity right) => left.Subtract(right);
+
+		/// <inheritdoc cref="Subtract(QuantityVector{TQuantity, TUnit})" />
+		public static QuantityVector<TQuantity, TUnit> operator -(QuantityVector<TQuantity, TUnit> left, QuantityVector<TQuantity, TUnit> right) => left.Subtract(right);
+
+		/// <inheritdoc cref="SubtractFrom(TQuantity)" />
+		public static QuantityVector<TQuantity, TUnit> operator -(TQuantity left, QuantityVector<TQuantity, TUnit> right) => right.SubtractFrom(left);
+
+		/// <inheritdoc cref="Negate()" />
+		public static QuantityVector<TQuantity, TUnit> operator -(QuantityVector<TQuantity, TUnit> vector) => vector.Negate();
 
 		/// <inheritdoc cref="object.ToString" />
 		public new string ToString() =>

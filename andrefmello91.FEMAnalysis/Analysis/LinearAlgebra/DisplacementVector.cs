@@ -21,10 +21,14 @@ namespace andrefmello91.FEMAnalysis
 	public class DisplacementVector : QuantityVector<Length, LengthUnit>
 	{
 
+		#region Properties
+
 		/// <summary>
 		///     Default tolerance for component vector.
 		/// </summary>
 		private static Length Tolerance { get; } = PlaneDisplacement.Tolerance;
+
+		#endregion
 
 		#region Constructors
 
@@ -84,6 +88,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="size">The size of the vector.</param>
 		public new static DisplacementVector Zero(int size) => new(new double[size]);
 
+		/// <inheritdoc cref="ICloneable.Clone" />
+		public override QuantityVector<Length, LengthUnit> Clone() => new DisplacementVector(Values, Unit);
+
 		/// <inheritdoc />
 		public override QuantityVector<Length, LengthUnit> Convert(LengthUnit unit) => new DisplacementVector(Values.GetQuantities<Length, LengthUnit>(Unit).GetValues(unit), unit);
 
@@ -106,12 +113,7 @@ namespace andrefmello91.FEMAnalysis
 				new DisplacementVector(simplified, Unit);
 		}
 
-		/// <inheritdoc cref="ICloneable.Clone" />
-		public override QuantityVector<Length, LengthUnit> Clone() => new DisplacementVector(Values, Unit);
-
-		#endregion
-
-		#region Operators
+		#region Object override
 
 		/// <inheritdoc cref="ForceVector.op_Addition" />
 		public static DisplacementVector operator +(DisplacementVector left, DisplacementVector right)
@@ -124,8 +126,20 @@ namespace andrefmello91.FEMAnalysis
 
 			return
 				new DisplacementVector(vec, left.Unit);
-
 		}
+
+		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)" />
+		public static DisplacementVector operator /(DisplacementVector vector, double divisor) => new(vector.Values.Select(v => v / divisor), vector.Unit);
+
+		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
+		public static DisplacementVector operator *(double multiplier, DisplacementVector vector) =>
+			new(vector.Values.Select(v => v * multiplier), vector.Unit);
+
+		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
+		public static DisplacementVector operator *(DisplacementVector vector, double multiplier) => multiplier * vector;
+
+		/// <inheritdoc cref="Matrix{T}.op_Multiply(Matrix{T}, Vector{T})" />
+		public static DisplacementVector operator *(Matrix<double> left, DisplacementVector right) => new(left * (Vector<double>) right, right.Unit);
 
 		/// <inheritdoc cref="ForceVector.op_Subtraction" />
 		public static DisplacementVector operator -(DisplacementVector left, DisplacementVector right)
@@ -140,21 +154,10 @@ namespace andrefmello91.FEMAnalysis
 				new DisplacementVector(vec, left.Unit);
 		}
 
-		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
-		public static DisplacementVector operator *(double multiplier, DisplacementVector vector) =>
-			new(vector.Values.Select(v => v * multiplier), vector.Unit);
-
-		/// <inheritdoc cref="ForceVector.op_Multiply(double,ForceVector) " />
-		public static DisplacementVector operator *(DisplacementVector vector, double multiplier) => multiplier * vector;
-
-		/// <inheritdoc cref="Matrix{T}.op_Multiply(Matrix{T}, Vector{T})"/>
-		public static DisplacementVector operator *(Matrix<double> left, DisplacementVector right) => new(left * (Vector<double>) right, right.Unit);
-
 		/// <inheritdoc cref="Vector{T}.op_UnaryNegation" />
 		public static DisplacementVector operator -(DisplacementVector vector) => new(vector.Values.Select(v => -v), vector.Unit);
 
-		/// <inheritdoc cref="Vector{T}.op_Division(Vector{T}, T)" />
-		public static DisplacementVector operator /(DisplacementVector vector, double divisor) => new(vector.Values.Select(v => v / divisor), vector.Unit);
+		#endregion
 
 		#endregion
 

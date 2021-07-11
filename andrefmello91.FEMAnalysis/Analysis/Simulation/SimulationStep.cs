@@ -244,7 +244,7 @@ namespace andrefmello91.FEMAnalysis
 					var a1        = (dUf.ToRowMatrix() * (Vector<double>) dUf)[0];
 					var dUrPlusDu = dUr + deltaU;
 					var a2        = (dUrPlusDu.ToRowMatrix() * (Vector<double>) dUf)[0];
-					var a3        = (dUrPlusDu.ToRowMatrix() *  (Vector<double>) dUrPlusDu)[0] - ds2;
+					var a3        = (dUrPlusDu.ToRowMatrix() * (Vector<double>) dUrPlusDu)[0] - ds2;
 
 					// Calculate roots
 					var (r1, r2) = FindRoots.Quadratic(a3, 2 * a2, a1);

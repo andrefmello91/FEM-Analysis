@@ -1,5 +1,4 @@
 ﻿using andrefmello91.Extensions;
-using MathNet.Numerics.LinearAlgebra;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -123,7 +122,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public bool CheckStopCondition(AnalysisParameters parameters) =>
 			Number >= parameters.MaxIterations || ResidualForces.ContainsNaNOrInfinity() ||
-			Displacements.ContainsNaNOrInfinity() || ((Matrix<double>) Stiffness).ContainsNaN();
+			Displacements.ContainsNaNOrInfinity() || Stiffness.ContainsNaN();
 
 		/// <inheritdoc />
 		public void IncrementDisplacements(DisplacementVector displacementIncrement)

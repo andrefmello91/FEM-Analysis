@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -22,10 +19,14 @@ namespace andrefmello91.FEMAnalysis
 	public class ForceVector : QuantityVector<Force, ForceUnit>
 	{
 
+		#region Properties
+
 		/// <summary>
 		///     Default tolerance for force vector.
 		/// </summary>
 		private static Force Tolerance { get; } = PlaneForce.Tolerance;
+
+		#endregion
 
 		#region Constructors
 
@@ -105,10 +106,12 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="size">The size of the vector.</param>
 		public new static ForceVector Zero(int size) => new(new double[size]);
 
+		/// <inheritdoc cref="ICloneable.Clone" />
+		public override QuantityVector<Force, ForceUnit> Clone() => new ForceVector(Values, Unit);
 
 		/// <inheritdoc />
-		public override QuantityVector<Force, ForceUnit> Convert(ForceUnit unit) =>Unit == unit 
-			? Clone() 
+		public override QuantityVector<Force, ForceUnit> Convert(ForceUnit unit) => Unit == unit
+			? Clone()
 			: new ForceVector(Values.GetQuantities<Force, ForceUnit>(Unit).GetValues(unit), unit);
 
 		/// <inheritdoc />
@@ -130,12 +133,9 @@ namespace andrefmello91.FEMAnalysis
 				new ForceVector(simplified, Unit);
 		}
 
-		/// <inheritdoc cref="ICloneable.Clone" />
-		public override QuantityVector<Force, ForceUnit> Clone() => new ForceVector(Values, Unit);
-
-
 		#endregion
 
+		/*
 		#region Operators
 
 		/// <returns>
@@ -189,6 +189,6 @@ namespace andrefmello91.FEMAnalysis
 		public static ForceVector operator /(ForceVector vector, double divisor) => new(vector.Values.Select(v => v / divisor), vector.Unit);
 
 		#endregion
-
+		*/
 	}
 }

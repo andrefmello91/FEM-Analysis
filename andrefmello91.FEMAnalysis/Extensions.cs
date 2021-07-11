@@ -71,7 +71,7 @@ namespace andrefmello91.FEMAnalysis
 		///     The displacement <see cref="Vector" />, with components in <see cref="LengthUnit.Millimeter" />.
 		/// </returns>
 		public static DisplacementVector GetDisplacementsFromGrips([NotNull] this IFiniteElement element) =>
-			new (element.Grips
+			new(element.Grips
 				.SelectMany(g => new[] { g.Displacement.X, g.Displacement.Y }));
 
 		/// <summary>
