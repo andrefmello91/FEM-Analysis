@@ -27,15 +27,15 @@
         <PackageReference Include="MathNet.Numerics.Data.Text" Version="4.1.0" />
         <PackageReference Include="UnitsNet" Version="4.97.1" />
     </ItemGroup>
+    
+    <ItemGroup Condition="'$(Configuration)'=='Release'">
+        <PackageReference Include="andrefmello91.Extensions" Version="1.0.9" />
+        <PackageReference Include="andrefmello91.OnPlaneComponents" Version="1.1.4" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
         <PackageReference Include="IndexRange" Version="1.0.0" />
         <PackageReference Include="System.Memory" Version="4.5.4" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(Configuration)'=='Release'">
-        <PackageReference Include="andrefmello91.Extensions" Version="1.0.8" />
-        <PackageReference Include="andrefmello91.OnPlaneComponents" Version="1.1.3" />
     </ItemGroup>
     
     <ItemGroup Condition="'$(Configuration)'=='Debug'">
