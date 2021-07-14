@@ -283,7 +283,7 @@ namespace andrefmello91.FEMAnalysis
 			}
 
 			return simplify
-				? fi.Simplified(femInput.ConstraintIndex)
+				? (ForceVector) fi.Simplified(femInput.ConstraintIndex, (double?) null)
 				: fi;
 		}
 

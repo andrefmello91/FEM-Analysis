@@ -270,27 +270,22 @@ namespace andrefmello91.FEMAnalysis
 		private static StiffnessMatrix SecantIncrement(IIteration currentIteration, IIteration lastIteration)
 		{
 			// Calculate the variation of displacements and residual as vectors
-			Vector<double>
-				dU = (currentIteration.Displacements - lastIteration.Displacements).Convert(LengthUnit.Millimeter),
-				dR = (currentIteration.ResidualForces - lastIteration.ResidualForces).Convert(ForceUnit.Newton);
+			var dU = currentIteration.Displacements - lastIteration.Displacements;
+			var	dR = currentIteration.ResidualForces - lastIteration.ResidualForces;
 
-			var unit = currentIteration.Stiffness.Unit;
+			var unit = dR.Unit.Per(dU.Unit);
 
-			Matrix<double> stiffness = unit is ForcePerLengthUnit.NewtonPerMillimeter
+			Matrix<double> stiffness = lastIteration.Stiffness.Unit == unit
 				? lastIteration.Stiffness
-				: lastIteration.Stiffness.Convert(ForcePerLengthUnit.NewtonPerMillimeter);
+				: lastIteration.Stiffness.Convert(unit);
 
-			var inc = ((dR - stiffness * dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
-
-			var increment = new StiffnessMatrix(inc)
-			{
-				ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
-			};
+			var inc = ((dR - stiffness * (Vector<double>) dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
 
 			return
-				unit is ForcePerLengthUnit.NewtonPerMillimeter
-					? increment
-					: (StiffnessMatrix) increment.Convert(unit);
+				new StiffnessMatrix(inc, unit)
+				{
+					ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
+				};
 		}
 
 		/// <summary>
@@ -299,27 +294,21 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="currentIteration">The current iteration.</param>
 		/// <param name="lastIteration">The last solved iteration.</param>
 		/// <returns>
-		///     The <see cref="andrefmello91.FEMAnalysis.StiffnessMatrix" /> increment with current unit.
+		///     The <see cref="StiffnessMatrix" /> increment with current unit.
 		/// </returns>
 		private static StiffnessMatrix TangentIncrement(IIteration currentIteration, IIteration lastIteration)
 		{
 			// Get variations
-			var dF = (currentIteration.InternalForces - lastIteration.InternalForces).Convert(ForceUnit.Newton);
-			var dU = (currentIteration.Displacements - lastIteration.Displacements).Convert(LengthUnit.Millimeter);
+			var dF = (currentIteration.InternalForces - lastIteration.InternalForces);
+			var dU = (currentIteration.Displacements - lastIteration.Displacements);
 
 			var inc = dF.ToColumnMatrix() * dU.ToRowMatrix();
 
-			var unit = currentIteration.Stiffness.Unit;
-
-			var increment = new StiffnessMatrix(inc)
-			{
-				ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
-			};
-
 			return
-				unit is ForcePerLengthUnit.NewtonPerMillimeter
-					? increment
-					: (StiffnessMatrix) increment.Convert(unit);
+				new StiffnessMatrix(inc, dF.Unit.Per(dU.Unit))
+				{
+					ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
+				};
 		}
 	}
 }
