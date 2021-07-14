@@ -1,4 +1,5 @@
 ﻿using andrefmello91.Extensions;
+using andrefmello91.OnPlaneComponents;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -127,15 +128,15 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public void IncrementDisplacements(DisplacementVector displacementIncrement)
 		{
-			DisplacementIncrement =  displacementIncrement;
-			Displacements         += displacementIncrement;
+			DisplacementIncrement = displacementIncrement;
+			Displacements         = (DisplacementVector) (Displacements + displacementIncrement);
 		}
 
 		/// <inheritdoc />
 		public void UpdateForces(ForceVector appliedForces, ForceVector internalForces)
 		{
 			InternalForces = internalForces;
-			ResidualForces = internalForces - appliedForces;
+			ResidualForces = (ForceVector) (internalForces - appliedForces);
 		}
 
 		#endregion

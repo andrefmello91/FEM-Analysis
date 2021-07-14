@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using andrefmello91.Extensions;
+using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
@@ -91,7 +92,7 @@ namespace andrefmello91.FEMAnalysis
 			iteration.LoadFactorIncrement = 0.1;
 
 			// Get the initial stiffness and force vector simplified
-			iteration.Stiffness = StiffnessMatrix.Assemble(femInput);
+			iteration.Stiffness = femInput.AssembleStiffness();
 
 			// Set initial residual
 			var intForces = ForceVector.Zero(femInput.NumberOfDoFs);
@@ -180,12 +181,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc />
-		protected override void UpdateForces(IFEMInput femInput)
-		{
-			// Update internal forces
-			var intForces = ForceVector.AssembleInternal(femInput);
-			CurrentIteration.UpdateForces(Forces, intForces);
-		}
+		protected override void UpdateForces(IFEMInput femInput) => CurrentIteration.UpdateForces(Forces, femInput.AssembleInternalForces());
 
 		/// <summary>
 		///     Calculate the arc length.
@@ -293,7 +289,7 @@ namespace andrefmello91.FEMAnalysis
 				: curIt;
 
 			// Calculate increment from residual
-			var dUr = -curIt.Stiffness.Solve(lastIt.ResidualForces);
+			var dUr = (DisplacementVector) (-curIt.Stiffness.Solve(lastIt.ResidualForces));
 
 			// Calculate increment from external forces
 			var dUf = curIt.Stiffness.Solve(FullForceVector);

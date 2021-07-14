@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
-using static andrefmello91.FEMAnalysis.StiffnessMatrix;
 using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
@@ -19,6 +19,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The vector of full applied forces.
 		/// </summary>
+		/// <remarks>
+		///		Simplified at constrained DoFs.
+		/// </remarks>
 		protected readonly ForceVector FullForceVector;
 
 		/// <summary>
@@ -48,7 +51,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The total displacement increment at this step.
 		/// </summary>
-		public DisplacementVector DisplacementIncrement => FinalDisplacements - InitialDisplacements;
+		public DisplacementVector DisplacementIncrement => (DisplacementVector) (FinalDisplacements - InitialDisplacements);
 
 		/// <summary>
 		///     The displacement vector at the end of this step.
@@ -68,7 +71,8 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
-		public ForceVector Forces => LoadFactor * FullForceVector;
+		/// <inheritdoc cref="FullForceVector"/>
+		public ForceVector Forces => (ForceVector) (LoadFactor * FullForceVector);
 
 		/// <summary>
 		///     The displacement vector at the beginning of this step.
@@ -149,7 +153,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="fullForceVector">The full applied force vector of the model.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
 		protected LoadStep(ForceVector fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0, bool simulate = false)
-			: this(number, fullForceVector, loadFactor, DisplacementVector.Zero(fullForceVector.Count), Zero(fullForceVector.Count), parameters, simulate)
+			: this(number, fullForceVector, loadFactor, DisplacementVector.Zero(fullForceVector.Count), StiffnessMatrix.Zero(fullForceVector.Count), parameters, simulate)
 		{
 		}
 
@@ -205,8 +209,8 @@ namespace andrefmello91.FEMAnalysis
 		public static LoadStep From(IFEMInput femInput, double loadFactor, AnalysisParameters parameters, int stepNumber, bool simulate = false) =>
 			simulate switch
 			{
-				false => new LoadStep(femInput.ForceVector, loadFactor, parameters, stepNumber, simulate),
-				_     => new SimulationStep(femInput.ForceVector, loadFactor, parameters, stepNumber)
+				false => new LoadStep(femInput.AssembleExternalForces(), loadFactor, parameters, stepNumber, simulate),
+				_     => new SimulationStep(femInput.AssembleExternalForces(), loadFactor, parameters, stepNumber)
 			};
 
 		/// <summary>
@@ -249,7 +253,7 @@ namespace andrefmello91.FEMAnalysis
 			var iteration = step.CurrentIteration;
 
 			// Get the initial stiffness and force vector simplified
-			iteration.Stiffness = Assemble(femInput);
+			iteration.Stiffness = femInput.AssembleStiffness();
 
 			// Calculate initial displacements
 			var dU = iteration.Stiffness.Solve(step.Forces);
@@ -263,7 +267,7 @@ namespace andrefmello91.FEMAnalysis
 			femInput.CalculateForces();
 
 			// Update internal forces
-			iteration.UpdateForces(step.Forces, ForceVector.AssembleInternal(femInput));
+			iteration.UpdateForces(step.Forces, femInput.AssembleInternalForces());
 
 			return step;
 		}
@@ -278,7 +282,7 @@ namespace andrefmello91.FEMAnalysis
 
 			return iterations.Count < finalIndex.Value
 				? DisplacementVector.Zero(InitialDisplacements.Count)
-				: iterations[finalIndex].Displacements - InitialDisplacements;
+				: (DisplacementVector) (iterations[finalIndex].Displacements - InitialDisplacements);
 		}
 
 		/// <summary>
@@ -310,6 +314,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Calculate convergence
 				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
+				
 			} while (!IterativeStop());
 		}
 
@@ -383,8 +388,7 @@ namespace andrefmello91.FEMAnalysis
 			femInput.CalculateForces();
 
 			// Update internal forces
-			var intForces = ForceVector.AssembleInternal(femInput);
-			CurrentIteration.UpdateForces(Forces, intForces);
+			CurrentIteration.UpdateForces(Forces, femInput.AssembleInternalForces());
 		}
 
 		/// <summary>
@@ -396,7 +400,7 @@ namespace andrefmello91.FEMAnalysis
 			if (Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				return;
 
-			CurrentIteration.Stiffness += StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver);
+			CurrentIteration.Stiffness = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
 		}
 
 		/// <summary>
@@ -413,7 +417,7 @@ namespace andrefmello91.FEMAnalysis
 			var lastIt = LastIteration;
 
 			// Calculate increment from residual
-			var dUr = -curIt.Stiffness.Solve(lastIt.ResidualForces);
+			var dUr = (DisplacementVector) (-curIt.Stiffness.Solve(lastIt.ResidualForces));
 			curIt.IncrementDisplacements(dUr);
 
 			// Update displacements in grips and elements

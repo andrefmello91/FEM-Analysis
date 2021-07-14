@@ -2,7 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using andrefmello91.Extensions;
+using andrefmello91.OnPlaneComponents;
+using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
+using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -120,14 +124,18 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc cref="CalculateConvergence" />
-		internal static double CalculateConvergence<TQuantity, TUnit>(QuantityVector<TQuantity, TUnit> numerator, QuantityVector<TQuantity, TUnit> denominator)
-			where TQuantity : IQuantity<TUnit>
+		internal static double CalculateConvergence<TQuantity, TUnit>(QuantityVector<TQuantity, TUnit> numerator, QuantityVector<TQuantity, TUnit> denominator, IEnumerable<int>? constraintIndexes = null)
+			where TQuantity : struct, IQuantity<TUnit>
 			where TUnit : Enum
 		{
-			var unit = numerator.First().Unit;
+			var unit = numerator.Unit;
 
+			var dd = denominator.Unit.Equals(unit)
+				? denominator
+				: denominator.Convert(unit);
+			
 			return
-				CalculateConvergence(numerator.Simplified(), denominator.Convert(unit).Simplified());
+				CalculateConvergence(numerator.Values, dd.Values);
 		}
 
 		/// <summary>
@@ -142,7 +150,8 @@ namespace andrefmello91.FEMAnalysis
 			MonitoredIndex = monitoredIndex;
 
 			// Get force vector
-			Forces = FemInput.ForceVector * loadFactor;
+			if (!loadFactor.Approx(1))
+				Forces = (ForceVector) (Forces * loadFactor);
 
 			// Analysis by steps
 			StepAnalysis();
@@ -239,5 +248,78 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+		/// <summary>
+		///     Calculate the stiffness increment for nonlinear analysis.
+		/// </summary>
+		/// <param name="solver">The nonlinear solver.</param>
+		/// <returns>
+		///     The <see cref="andrefmello91.OnPlaneComponents.StiffnessMatrix" /> increment with current unit.
+		/// </returns>
+		/// <inheritdoc cref="TangentIncrement" />
+		public static StiffnessMatrix StiffnessIncrement(IIteration currentIteration, IIteration lastIteration, NonLinearSolver solver) =>
+			solver switch
+			{
+				NonLinearSolver.Secant => SecantIncrement(currentIteration, lastIteration),
+				_                      => TangentIncrement(currentIteration, lastIteration)
+			};
+
+		/// <summary>
+		///     Calculate the secant stiffness increment.
+		/// </summary>
+		/// <inheritdoc cref="TangentIncrement(andrefmello91.FEMAnalysis.IIteration, andrefmello91.FEMAnalysis.IIteration)" />
+		private static StiffnessMatrix SecantIncrement(IIteration currentIteration, IIteration lastIteration)
+		{
+			// Calculate the variation of displacements and residual as vectors
+			Vector<double>
+				dU = (currentIteration.Displacements - lastIteration.Displacements).Convert(LengthUnit.Millimeter),
+				dR = (currentIteration.ResidualForces - lastIteration.ResidualForces).Convert(ForceUnit.Newton);
+
+			var unit = currentIteration.Stiffness.Unit;
+
+			Matrix<double> stiffness = unit is ForcePerLengthUnit.NewtonPerMillimeter
+				? lastIteration.Stiffness
+				: lastIteration.Stiffness.Convert(ForcePerLengthUnit.NewtonPerMillimeter);
+
+			var inc = ((dR - stiffness * dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
+
+			var increment = new StiffnessMatrix(inc)
+			{
+				ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
+			};
+
+			return
+				unit is ForcePerLengthUnit.NewtonPerMillimeter
+					? increment
+					: (StiffnessMatrix) increment.Convert(unit);
+		}
+
+		/// <summary>
+		///     Calculate the tangent stiffness increment.
+		/// </summary>
+		/// <param name="currentIteration">The current iteration.</param>
+		/// <param name="lastIteration">The last solved iteration.</param>
+		/// <returns>
+		///     The <see cref="andrefmello91.FEMAnalysis.StiffnessMatrix" /> increment with current unit.
+		/// </returns>
+		private static StiffnessMatrix TangentIncrement(IIteration currentIteration, IIteration lastIteration)
+		{
+			// Get variations
+			var dF = (currentIteration.InternalForces - lastIteration.InternalForces).Convert(ForceUnit.Newton);
+			var dU = (currentIteration.Displacements - lastIteration.Displacements).Convert(LengthUnit.Millimeter);
+
+			var inc = dF.ToColumnMatrix() * dU.ToRowMatrix();
+
+			var unit = currentIteration.Stiffness.Unit;
+
+			var increment = new StiffnessMatrix(inc)
+			{
+				ConstraintIndex = currentIteration.Stiffness.ConstraintIndex
+			};
+
+			return
+				unit is ForcePerLengthUnit.NewtonPerMillimeter
+					? increment
+					: (StiffnessMatrix) increment.Convert(unit);
+		}
 	}
 }

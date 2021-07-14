@@ -1,4 +1,5 @@
 ﻿using andrefmello91.Extensions;
+using andrefmello91.OnPlaneComponents;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -33,7 +34,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     <see cref="IncrementFromResidual" /> + <see cref="LoadFactorIncrement" /> * <see cref="IncrementFromExternal" />
 		/// </returns>
-		public override DisplacementVector DisplacementIncrement => IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal;
+		public override DisplacementVector DisplacementIncrement => (DisplacementVector) (IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal);
 
 		#endregion
 
@@ -78,7 +79,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Add the displacement increment to displacement vector.
 		/// </summary>
-		public void UpdateDisplacements() => Displacements += DisplacementIncrement;
+		public void UpdateDisplacements() => Displacements = (DisplacementVector) (Displacements + DisplacementIncrement);
 
 		#region Interface Implementations
 

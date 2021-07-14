@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra.Double;
 #nullable disable
 
@@ -21,7 +22,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the external force <see cref="Vector" />.
 		/// </summary>
-		public ForceVector ForceVector { get; }
+		public ForceVector Forces { get; }
 
 		/// <summary>
 		///     Get the grips of the finite element model.
@@ -52,7 +53,7 @@ namespace andrefmello91.FEMAnalysis
 		public List<int> ConstraintIndex { get; }
 
 		/// <inheritdoc />
-		public ForceVector ForceVector => ForceVector.AssembleExternal(this);
+		public ForceVector Forces { get; }
 
 		/// <inheritdoc />
 		public List<IGrip> Grips { get; }
@@ -66,12 +67,12 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Constructors
 
-		/// <inheritdoc cref="FEMInput{IFiniteElement}(IEnumerable{IFiniteElement}, IEnumerable{IGrip})" />
+		/// <inheritdoc cref="FEMInput(IEnumerable{IFiniteElement}, IEnumerable{IGrip})" />
 		/// <remarks>
 		///     Grips are taken from <paramref name="elements" />.
 		/// </remarks>
 		public FEMInput(IEnumerable<IFiniteElement> elements)
-			: this(elements, elements.SelectMany(e => e.Grips).Distinct().OrderBy(g => g.Number).ToList())
+			: this(elements, elements.SelectMany(e => e.Grips).Distinct())
 		{
 		}
 
@@ -83,22 +84,23 @@ namespace andrefmello91.FEMAnalysis
 		public FEMInput(IEnumerable<IFiniteElement> elements, IEnumerable<IGrip> grips)
 			: base(elements)
 		{
-			Grips           = grips.ToList();
+			Grips           = grips.OrderBy(g => g.Number).ToList();
 			NumberOfDoFs    = 2 * Grips.Count;
 			ConstraintIndex = Grips.GetConstraintIndex().ToList();
+			Forces          = this.AssembleExternalForces(false);
 		}
 
 		#endregion
 
 		#region Methods
-
+		
 		#region Object override
 
 		/// <inheritdoc />
 		public override string ToString() =>
 			$"Number of elements: {Count}\n" +
 			$"Number of grips: {Grips.Count}\n" +
-			$"Force vector: \n{ForceVector}\n" +
+			$"Force vector: \n{Forces}\n" +
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
 
 		#endregion

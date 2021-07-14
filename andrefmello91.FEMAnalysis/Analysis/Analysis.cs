@@ -1,4 +1,5 @@
-﻿using MathNet.Numerics.LinearAlgebra.Double;
+﻿using andrefmello91.OnPlaneComponents;
+using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
 #nullable enable
 
@@ -25,7 +26,10 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public IFEMInput FemInput { get; }
 
-		/// <inheritdoc cref="IFEMInput.ForceVector" />
+		/// <inheritdoc cref="IFEMInput.Forces" />
+		/// <remarks>
+		///		Simplified by constrained DoFs.
+		/// </remarks>
 		public ForceVector Forces { get; protected set; }
 
 		/// <summary>
@@ -43,11 +47,10 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="femInput">The <see cref="IFEMInput" /> for finite element analysis.</param>
 		protected Analysis(IFEMInput femInput)
 		{
-			FemInput                      = femInput;
-			Displacements                 = DisplacementVector.Zero(FemInput.NumberOfDoFs);
-			Forces                        = FemInput.ForceVector;
-			GlobalStiffness               = StiffnessMatrix.Assemble(FemInput);
-			Displacements.ConstraintIndex = FemInput.ConstraintIndex;
+			FemInput        = femInput;
+			Displacements   = DisplacementVector.Zero(FemInput.NumberOfDoFs);
+			Forces          = FemInput.Forces.Simplified(FemInput.ConstraintIndex);
+			GlobalStiffness = femInput.AssembleStiffness();
 		}
 
 		#endregion
@@ -57,7 +60,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the <see cref="Vector" /> of support reactions.
 		/// </summary>
-		public ForceVector GetReactions() => GlobalStiffness * Displacements - Forces;
+		public ForceVector GetReactions() => (ForceVector) (GlobalStiffness * Displacements - Forces);
 
 		#region Object override
 

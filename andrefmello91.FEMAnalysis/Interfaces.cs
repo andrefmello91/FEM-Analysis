@@ -144,6 +144,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The internal force vector of this iteration.
 		/// </summary>
+		/// <inheritdoc cref="LoadStep.FullForceVector"/>
 		ForceVector InternalForces { get; }
 
 		/// <summary>
@@ -154,6 +155,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The residual force vector of this iteration.
 		/// </summary>
+		/// <inheritdoc cref="LoadStep.FullForceVector"/>
 		ForceVector ResidualForces { get; }
 
 		/// <summary>
@@ -168,7 +170,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Calculate the convergence of this iteration.
 		/// </summary>
-		/// <param name="appliedForces">The applied forces of the current step.</param>
+		/// <param name="appliedForces">The applied forces of the current step, simplified in constrained DoFs.</param>
 		/// <param name="initialIncrement">The displacement increment of the first iteration.</param>
 		void CalculateConvergence(ForceVector appliedForces, DisplacementVector initialIncrement);
 
@@ -201,8 +203,11 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update forces in this iteration.
 		/// </summary>
-		/// <param name="appliedForces">The vector of applied forces of the current step.</param>
-		/// <param name="internalForces">The vector of internal forces.</param>
+		/// <remarks>
+		///		Forces must be simplified in constrained DoFs.
+		/// </remarks>
+		/// <param name="appliedForces">The vector of applied forces of the current step, simplified in constrained DoFs.</param>
+		/// <param name="internalForces">The vector of internal forces, simplified in constrained DoFs.</param>
 		void UpdateForces(ForceVector appliedForces, ForceVector internalForces);
 
 		#endregion

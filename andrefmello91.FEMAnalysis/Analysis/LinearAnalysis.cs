@@ -1,4 +1,5 @@
 ﻿using andrefmello91.Extensions;
+using andrefmello91.OnPlaneComponents;
 #nullable enable
 
 namespace andrefmello91.FEMAnalysis
@@ -31,12 +32,11 @@ namespace andrefmello91.FEMAnalysis
 		public void Execute(double loadFactor = 1)
 		{
 			// Set force vector
-			var forces = loadFactor.Approx(1)
-				? Forces
-				: Forces * loadFactor;
+			if (!loadFactor.Approx(1))
+				Forces = (ForceVector) (Forces * loadFactor);
 
 			// Solve
-			Displacements = GlobalStiffness.Solve(forces);
+			Displacements = GlobalStiffness.Solve(Forces);
 
 			// Set displacements to grips
 			FemInput.Grips.SetDisplacements(Displacements);
