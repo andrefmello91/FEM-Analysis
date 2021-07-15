@@ -316,6 +316,9 @@ namespace andrefmello91.FEMAnalysis
 				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
 				
 			} while (!IterativeStop());
+			
+			if (!Stop && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
+				UpdateStiffness();
 		}
 
 
@@ -400,7 +403,7 @@ namespace andrefmello91.FEMAnalysis
 			if (Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				return;
 
-			CurrentIteration.Stiffness = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
+			CurrentIteration.Stiffness                 = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
 		}
 
 		/// <summary>

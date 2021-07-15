@@ -27,7 +27,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Default : 5
 		/// </remarks>
-		public int DesiredIterations { get; set; } = 5;
+		public int DesiredIterations { get; set; } = 10;
 
 		/// <inheritdoc />
 		public override double LoadFactorIncrement => AccumulatedLoadFactorIncrement(^1);
