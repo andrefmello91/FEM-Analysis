@@ -296,13 +296,11 @@ namespace andrefmello91.FEMAnalysis
 		private static StiffnessMatrix TangentIncrement(IIteration currentIteration, IIteration lastIteration)
 		{
 			// Get variations
-			var dF = currentIteration.InternalForces - lastIteration.InternalForces;
-			var dU = currentIteration.Displacements - lastIteration.Displacements;
-
-			var inc = dF.ToColumnMatrix() * dU.ToRowMatrix();
+			var dF = (ForceVector) (currentIteration.InternalForces - lastIteration.InternalForces);
+			var dU = (DisplacementVector) (currentIteration.Displacements - lastIteration.Displacements);
 
 			return
-				new StiffnessMatrix(inc, dF.Unit.Per(dU.Unit));
+				dF / dU;
 		}
 	}
 }
