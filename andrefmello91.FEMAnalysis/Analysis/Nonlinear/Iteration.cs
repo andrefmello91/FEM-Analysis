@@ -82,10 +82,11 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="residualForces">The residual force vector of this iteration.</param>
 		/// <param name="stiffness">The stiffness matrix of this iteration.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		public static IIteration From(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, bool simulate = false) => simulate switch
+		/// <param name="loadFactor">The load factor if <paramref name="simulate"/> is true.</param>
+		public static IIteration From(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, bool simulate = false, double loadFactor = 0) => simulate switch
 		{
 			false => new Iteration(displacements, residualForces, stiffness),
-			_     => new SimulationIteration(displacements, residualForces, stiffness)
+			_     => new SimulationIteration(displacements, residualForces, stiffness, loadFactor)
 		};
 
 		/// <summary>
@@ -96,7 +97,7 @@ namespace andrefmello91.FEMAnalysis
 		public static IIteration FromStepResult(LoadStep loadStep, bool simulate = false) => simulate switch
 		{
 			false => new Iteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness),
-			_     => new SimulationIteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness)
+			_     => new SimulationIteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness, loadStep.LoadFactor)
 		};
 
 		#region Interface Implementations

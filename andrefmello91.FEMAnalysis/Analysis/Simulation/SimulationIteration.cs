@@ -8,6 +8,7 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class SimulationIteration : Iteration, IIteration, ICloneable<SimulationIteration>
 	{
+		private double _loadFactorIncrement;
 
 		#region Properties
 
@@ -22,9 +23,22 @@ namespace andrefmello91.FEMAnalysis
 		public DisplacementVector IncrementFromResidual { get; private set; }
 
 		/// <summary>
+		///		The load factor of this iteration.
+		/// </summary>
+		public double LoadFactor { get; private set; }
+
+		/// <summary>
 		///     The load factor increment of this iteration.
 		/// </summary>
-		public double LoadFactorIncrement { get; set; }
+		public double LoadFactorIncrement
+		{
+			get => _loadFactorIncrement;
+			set
+			{
+				_loadFactorIncrement =  value;
+				LoadFactor           += value;
+			}
+		}
 
 		#region Interface Implementations
 
@@ -49,9 +63,10 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <inheritdoc />
-		internal SimulationIteration(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness)
+		internal SimulationIteration(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, double loadFactor)
 			: base(displacements, residualForces, stiffness)
 		{
+			LoadFactor = loadFactor;
 		}
 
 		#endregion
@@ -97,10 +112,11 @@ namespace andrefmello91.FEMAnalysis
 		IIteration ICloneable<IIteration>.Clone() => Clone();
 
 		/// <inheritdoc />
-		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone())
+		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone(), LoadFactor)
 		{
 			Number                = Number,
 			LoadFactorIncrement   = LoadFactorIncrement,
+			InternalForces        = InternalForces,
 			IncrementFromResidual = IncrementFromResidual,
 			IncrementFromExternal = IncrementFromExternal
 		};

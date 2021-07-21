@@ -38,7 +38,10 @@ namespace andrefmello91.FEMAnalysis
 		public int DesiredIterations { get; set; } = 10;
 
 		/// <inheritdoc />
-		public override double LoadFactorIncrement => AccumulatedLoadFactorIncrement(^1);
+		public override double LoadFactor => ((SimulationIteration) CurrentIteration).LoadFactor;
+
+		/// <inheritdoc />
+		public override double LoadFactorIncrement => LoadFactor - ((SimulationIteration) FirstIteration).LoadFactor;
 
 		/// <summary>
 		///     The required number of iterations for achieving convergence for this load step.
@@ -79,7 +82,8 @@ namespace andrefmello91.FEMAnalysis
 			// newStep.CurrentIteration.Number = 0;
 
 			// Update arc length
-			newStep.CalculateArcLength(lastStep);
+			newStep.ArcLength = lastStep.ArcLength;
+			// newStep.CalculateArcLength(lastStep);
 
 			return newStep;
 		}
@@ -94,11 +98,11 @@ namespace andrefmello91.FEMAnalysis
 		/// </returns>
 		internal static SimulationStep InitialStep(IFEMInput femInput, AnalysisParameters parameters, double arcLength = 0.1)
 		{
-			var step = (SimulationStep) From(femInput, StepIncrement(parameters.NumberOfSteps), parameters, 1, true);
+			var step = (SimulationStep) From(femInput, 0, parameters, 1, true);
 
 			// Set initial increment
 			var iteration = (SimulationIteration) step.CurrentIteration;
-			// iteration.LoadFactorIncrement = initialLoadFactor;
+			iteration.LoadFactorIncrement = 0.1;
 
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
@@ -113,7 +117,7 @@ namespace andrefmello91.FEMAnalysis
 			iteration.IncrementDisplacements(dUr, dUf, true);
 
 			// Calculate arc length
-			step.ArcLength = arcLength;
+			step.ArcLength = InitialArcLenght(iteration);
 
 			return step;
 		}
@@ -131,14 +135,20 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="finalIndex">The required final index to get the increment.</param>
 		public double AccumulatedLoadFactorIncrement(Index finalIndex)
 		{
-			var iterations = Iterations.Where(i => i.Number > 0).ToList();
+			var iterations = Iterations.Where(i => i.Number > 0).ToArray();
 
-			return iterations.Count < finalIndex.Value
-				? 0
-				: iterations.GetRange(0, finalIndex.Value + 1)
-					.Cast<SimulationIteration>()
-					.Select(i => i.LoadFactorIncrement)
-					.Sum();
+			double accL;
+
+			try
+			{
+				accL = ((SimulationIteration) iterations[finalIndex]).LoadFactor - ((SimulationIteration) FirstIteration).LoadFactor;
+			}
+			catch
+			{
+				accL = 0;
+			}
+			
+			return accL;
 		}
 
 		/// <inheritdoc />
@@ -224,84 +234,77 @@ namespace andrefmello91.FEMAnalysis
 			var dUr   = curIt.IncrementFromResidual;
 			var dS    = ArcLength;
 
-			switch ((int) curIt)
+			// Get accumulated increment until last iteration
+			var deltaU = AccumulatedDisplacementIncrement(^2);
+			var deltaF = AccumulatedLoadFactorIncrement(^2);
+
+			// Calculate coefficients
+			var ds2       = dS * dS;
+			var psi2F     = Psi * Psi * (FullForceVector.ToRowMatrix() * (Vector<double>) FullForceVector)[0];
+			var a1        = (dUf.ToRowMatrix() * (Vector<double>) dUf)[0] + psi2F;
+			var dUrPlusDu = dUr + deltaU;
+			var a2        = (dUrPlusDu.ToRowMatrix() * (Vector<double>) dUf)[0] + deltaF * psi2F;
+			var a3        = (dUrPlusDu.ToRowMatrix() * (Vector<double>) dUrPlusDu)[0] + deltaF * deltaF * psi2F - ds2;
+
+			// Calculate roots
+			var (r1, r2) = FindRoots.Quadratic(a3, 2 * a2, a1);
+			var d1 = r1.Real;
+			var d2 = r2.Real;
+
+			if (curIt <= 1)
 			{
-				// First iteration of any load step except the first
-				case 1 when Number > 1:
+				// Calculate stiffness determinant
+				var det = curIt.Stiffness.Determinant();
 
-					// Get stiffness determinant sign
-					var stiffness = CurrentIteration.Stiffness;
-					var sign = stiffness.Determinant() >= 0
-						? 1
-						: -1;
+				// Select the same sign
+				curIt.LoadFactorIncrement = d1 / det >= 0
+					? d1
+					: d2;
 
-					curIt.LoadFactorIncrement = sign * dS * (dUf.ToRowMatrix() * (Vector<double>) dUf)[0].Pow(-0.5);
-
-					return;
-
-				// Any other iteration
-				default:
-					// Get accumulated increment until last iteration
-					var deltaU = AccumulatedDisplacementIncrement(^2);
-					var deltaF = AccumulatedLoadFactorIncrement(^2);
-
-					// Calculate coefficients
-					var ds2       = dS * dS;
-					var psi2F     = Psi * Psi * (FullForceVector.ToRowMatrix() * (Vector<double>) FullForceVector)[0];
-					var a1        = (dUf.ToRowMatrix() * (Vector<double>) dUf)[0] + psi2F;
-					var dUrPlusDu = dUr + deltaU;
-					var a2        = (dUrPlusDu.ToRowMatrix() * (Vector<double>) dUf)[0] + 2 * deltaF * psi2F;
-					var a3        = (dUrPlusDu.ToRowMatrix() * (Vector<double>) dUrPlusDu)[0] + deltaF * deltaF * psi2F - ds2;
-
-					// Calculate roots
-					var (r1, r2) = FindRoots.Quadratic(a3, 2 * a2, a1);
-					var d1 = r1.Real;
-					var d2 = r2.Real;
-
-					if (deltaF.ApproxZero())
-					{
-						// Calculate stiffness determinant
-						var det = curIt.Stiffness.Determinant();
-						
-						// Select the same sign
-						curIt.LoadFactorIncrement = d1 / det >= 0
-							? d1
-							: d2;
-
-						return;
-					}
-					
-					// Calculate increments and products
-					var deltaU1 = deltaU + dUr + d1 * dUf;
-					var deltaU2 = deltaU + dUr + d2 * dUf;
-					var p1      = deltaU * deltaU1;
-					var p2      = deltaU * deltaU2;
-
-					// Check products
-					switch (p1)
-					{
-						case >= 0 when p2 < 0:
-							curIt.LoadFactorIncrement = d1;
-							return;
-
-						case < 0 when p2 >= 0:
-							curIt.LoadFactorIncrement = d2;
-							return;
-
-						default:
-						{
-							// Check linear solution
-							var ls = -a3 / a2;
-
-							// Set the closest value
-							curIt.LoadFactorIncrement = (ls - d1).Abs() <= (ls - d2).Abs()
-								? d1
-								: d2;
-
-							return;
-						}
-					}
+				return;
 			}
+
+			// Calculate displacement increments
+			var deltaF1 = deltaF + d1;
+			var deltaF2 = deltaF + d2;
+			var dUt     = curIt.Stiffness.Solve(FullForceVector);
+			var dU1     = -curIt.Stiffness.Solve((ForceVector) (curIt.InternalForces - deltaF1 * FullForceVector)) + d1 * dUt;
+			var dU2     = -curIt.Stiffness.Solve((ForceVector) (curIt.InternalForces - deltaF2 * FullForceVector)) + d2 * dUt;
+			var deltaU1 = deltaU + dU1;
+			var deltaU2 = deltaU + dU2;
+
+			// Calculate dot products
+			var dot1 = (deltaU1.ToRowMatrix() * (Vector<double>) deltaU)[0] + deltaF * deltaF1 * psi2F;
+			var dot2 = (deltaU2.ToRowMatrix() * (Vector<double>) deltaU)[0] + deltaF * deltaF2 * psi2F;
+
+			curIt.LoadFactorIncrement = dot1 >= dot2
+				? d1
+				: d2;
+
+			// // Check products
+			// switch (dot1)
+			// {
+			// 	case >= 0 when dot2 < 0:
+			// 		curIt.LoadFactorIncrement = d1;
+			// 		return;
+			//
+			// 	case < 0 when dot2 >= 0:
+			// 		curIt.LoadFactorIncrement = d2;
+			// 		return;
+			//
+			// 	default:
+			// 	{
+			// 		// Check linear solution
+			// 		var ls = -a3 / a2;
+			//
+			// 		// Set the closest value
+			// 		curIt.LoadFactorIncrement = (ls - d1).Abs() <= (ls - d2).Abs()
+			// 			? d1
+			// 			: d2;
+			//
+			// 		return;
+			// 	}
+			// }
 		}
 
 		/// <inheritdoc cref="LoadStep.UpdateDisplacements" />
