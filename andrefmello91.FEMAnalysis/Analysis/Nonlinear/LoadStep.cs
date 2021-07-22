@@ -16,6 +16,8 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Fields
 
+		private double _loadFactor;
+		
 		/// <summary>
 		///     The vector of full applied forces.
 		/// </summary>
@@ -99,7 +101,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The load factor of this step.
 		/// </summary>
-		public double LoadFactor { get; protected set; }
+		public virtual double LoadFactor => _loadFactor;
 
 		/// <summary>
 		///     The load factor increment of this step.
@@ -168,11 +170,11 @@ namespace andrefmello91.FEMAnalysis
 		{
 			Number               = number;
 			FullForceVector      = fullForceVector;
-			LoadFactor           = loadFactor;
+			_loadFactor          = loadFactor;
 			InitialDisplacements = initialDisplacements;
 			Parameters           = parameters;
 
-			Iterations.Add(Iteration.From(initialDisplacements, ForceVector.Zero(fullForceVector.Count), stiffness, simulate));
+			Iterations.Add(Iteration.From(initialDisplacements, ForceVector.Zero(fullForceVector.Count), stiffness, simulate, loadFactor));
 		}
 
 		#endregion
@@ -278,18 +280,27 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="finalIndex">The final index to consider increments.</param>
 		public DisplacementVector AccumulatedDisplacementIncrement(Index finalIndex)
 		{
-			var iterations = Iterations.Where(i => i.Number > 0).ToList();
+			var iterations = Iterations.Where(i => i.Number > 0).ToArray();
 
-			return iterations.Count < finalIndex.Value
-				? DisplacementVector.Zero(InitialDisplacements.Count)
-				: (DisplacementVector) (iterations[finalIndex].Displacements - InitialDisplacements);
+			DisplacementVector accD;
+			
+			try
+			{
+				accD = (DisplacementVector) (iterations[finalIndex].Displacements - InitialDisplacements);
+			}
+			catch
+			{
+				accD = DisplacementVector.Zero(InitialDisplacements.Count);
+			}
+
+			return accD;
 		}
 
 		/// <summary>
 		///     Increment forces in this step by a custom load factor increment.
 		/// </summary>
 		/// <param name="loadFactorIncrement">The increment of the load factor.</param>
-		public void IncrementLoad(double loadFactorIncrement) => LoadFactor += loadFactorIncrement;
+		public void IncrementLoad(double loadFactorIncrement) => _loadFactor += loadFactorIncrement;
 
 		/// <summary>
 		///     Iterate to find solution.

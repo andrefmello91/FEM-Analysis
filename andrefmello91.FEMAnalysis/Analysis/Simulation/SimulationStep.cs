@@ -27,10 +27,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Default : 5
 		/// </remarks>
-		public int DesiredIterations { get; set; } = 10;
+		public int DesiredIterations { get; set; } = 5;
 
 		/// <inheritdoc />
-		public override double LoadFactorIncrement => AccumulatedLoadFactorIncrement(^1);
+		public override double LoadFactor => ((SimulationIteration) CurrentIteration).LoadFactor;
+
+		/// <inheritdoc />
+		public override double LoadFactorIncrement => LoadFactor - ((SimulationIteration) FirstIteration).LoadFactor;
 
 		/// <summary>
 		///     The required number of iterations for achieving convergence for this load step.
@@ -85,11 +88,11 @@ namespace andrefmello91.FEMAnalysis
 		/// </returns>
 		internal static SimulationStep InitialStep(IFEMInput femInput, AnalysisParameters parameters)
 		{
-			var step = (SimulationStep) From(femInput, StepIncrement(parameters.NumberOfSteps), parameters, 1, true);
+			var step = (SimulationStep) From(femInput, 0, parameters, 1, true);
 
 			// Set initial increment
 			var iteration = (SimulationIteration) step.CurrentIteration;
-			iteration.LoadFactorIncrement = 0.1;
+			iteration.LoadFactorIncrement = 0.05;
 
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
@@ -104,7 +107,7 @@ namespace andrefmello91.FEMAnalysis
 			iteration.IncrementDisplacements(dUr, dUf, true);
 
 			// Calculate arc length
-			step.ArcLength = InitialArcLenght((SimulationIteration) step.CurrentIteration);
+			step.ArcLength = InitialArcLenght(iteration);
 
 			return step;
 		}
@@ -122,14 +125,20 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="finalIndex">The required final index to get the increment.</param>
 		public double AccumulatedLoadFactorIncrement(Index finalIndex)
 		{
-			var iterations = Iterations.Where(i => i.Number > 0).ToList();
+			var iterations = Iterations.Where(i => i.Number > 0).ToArray();
 
-			return iterations.Count < finalIndex.Value
-				? 0
-				: iterations.GetRange(0, finalIndex.Value + 1)
-					.Cast<SimulationIteration>()
-					.Select(i => i.LoadFactorIncrement)
-					.Sum();
+			double accL;
+
+			try
+			{
+				accL = ((SimulationIteration) iterations[finalIndex]).LoadFactor - ((SimulationIteration) FirstIteration).LoadFactor;
+			}
+			catch
+			{
+				accL = 0;
+			}
+			
+			return accL;
 		}
 
 		/// <inheritdoc />
@@ -146,7 +155,7 @@ namespace andrefmello91.FEMAnalysis
 			while (true)
 			{
 				// Increment step load factor
-				IncrementLoad(((SimulationIteration) CurrentIteration).LoadFactorIncrement);
+				// IncrementLoad(((SimulationIteration) CurrentIteration).LoadFactorIncrement);
 
 				// Update forces
 				UpdateForces(femInput);
@@ -247,9 +256,26 @@ namespace andrefmello91.FEMAnalysis
 					var d1 = r1.Real;
 					var d2 = r2.Real;
 
+					if (curIt <= 1)
+					{
+						// Calculate stiffness determinant
+						var det = curIt.Stiffness.Determinant();
+
+						// Select the same sign
+						curIt.LoadFactorIncrement = d1 / det >= 0
+							? d1
+							: d2;
+
+						return;
+					}
+					
 					// Calculate increments and products
-					var deltaU1 = deltaU + dUr + d1 * dUf;
-					var deltaU2 = deltaU + dUr + d2 * dUf;
+					var dF1     = curIt.LoadFactor + d1;
+					var dF2     = curIt.LoadFactor + d2;
+					var dU1     = -curIt.Stiffness.Solve((ForceVector) (curIt.InternalForces - dF1 * FullForceVector)) + d1 * dUf;
+					var dU2     = -curIt.Stiffness.Solve((ForceVector) (curIt.InternalForces - dF2 * FullForceVector)) + d2 * dUf;
+					var deltaU1 = deltaU + dU1;
+					var deltaU2 = deltaU + dU2;
 					var p1      = deltaU * deltaU1;
 					var p2      = deltaU * deltaU2;
 
