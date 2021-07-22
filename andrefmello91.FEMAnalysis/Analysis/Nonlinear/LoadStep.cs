@@ -304,17 +304,22 @@ namespace andrefmello91.FEMAnalysis
 			// Iterate
 			do
 			{
+				if (CurrentIteration.Number > 1)
+					UpdateStiffness();
+
 				// Add iteration
 				NewIteration();
 
 				// Update displacements, stiffness and forces
 				UpdateDisplacements(femInput);
-				UpdateStiffness();
+
+				// Update elements
+				UpdateElements(femInput);
 				UpdateForces(femInput);
 
 				// Calculate convergence
 				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
-				
+
 			} while (!IterativeStop());
 			
 			if (!Stop && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
@@ -385,14 +390,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update forces and calculate convergence.
 		/// </summary>
-		protected virtual void UpdateForces(IFEMInput femInput)
-		{
-			// Calculate element forces
-			femInput.CalculateForces();
-
-			// Update internal forces
-			CurrentIteration.UpdateForces(Forces, femInput.AssembleInternalForces());
-		}
+		protected void UpdateForces(IFEMInput femInput) => CurrentIteration.UpdateForces(Forces, femInput.AssembleInternalForces());
 
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
@@ -424,8 +422,8 @@ namespace andrefmello91.FEMAnalysis
 			curIt.IncrementDisplacements(dUr);
 
 			// Update displacements in grips and elements
-			femInput.Grips.SetDisplacements(curIt.Displacements);
-			femInput.UpdateDisplacements();
+			// femInput.Grips.SetDisplacements(curIt.Displacements);
+			// femInput.UpdateDisplacements();
 		}
 
 		#region Interface Implementations
