@@ -152,14 +152,8 @@ namespace andrefmello91.FEMAnalysis
 				iteration.Number = 0;
 
 			// Iterate
-			while (true)
+			do
 			{
-				// Increment step load factor
-				// IncrementLoad(((SimulationIteration) CurrentIteration).LoadFactorIncrement);
-
-				// Update forces
-				UpdateForces(femInput);
-
 				// Update stiffness
 				UpdateStiffness();
 
@@ -168,25 +162,21 @@ namespace andrefmello91.FEMAnalysis
 
 				// Update displacements
 				UpdateDisplacements();
-
-				// Update and Increment forces
+				
+				// Calculate increment
 				IterationIncrement();
 
 				// Update displacements in grips and elements
 				((SimulationIteration) CurrentIteration).UpdateDisplacements();
 
+				// Update elements and forces
+				UpdateElements(femInput);
+				UpdateForces(femInput);
+
 				// Calculate convergence
 				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
-
-				// Check convergence or stop criteria
-				var stop = IterativeStop();
 				
-				if (stop)
-					return;
-
-				// Update elements
-				UpdateElements(femInput);
-			}
+			} while (!IterativeStop());
 		}
 
 		/// <summary>
