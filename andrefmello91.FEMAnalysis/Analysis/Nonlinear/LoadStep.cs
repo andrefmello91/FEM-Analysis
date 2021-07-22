@@ -304,16 +304,16 @@ namespace andrefmello91.FEMAnalysis
 			// Iterate
 			do
 			{
-				if (CurrentIteration.Number > 1)
-					UpdateStiffness();
+				// Update stiffness
+				UpdateStiffness();
 
 				// Add iteration
 				NewIteration();
 
-				// Update displacements, stiffness and forces
-				UpdateDisplacements(femInput);
+				// Update displacements
+				UpdateDisplacements();
 
-				// Update elements
+				// Update elements and forces
 				UpdateElements(femInput);
 				UpdateForces(femInput);
 
@@ -398,7 +398,7 @@ namespace andrefmello91.FEMAnalysis
 		protected void UpdateStiffness()
 		{
 			// If analysis stopped or solver is modified newton raphson and step didn't converge yet
-			if (Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
+			if (CurrentIteration.Number <= 1 || Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				return;
 
 			CurrentIteration.Stiffness                 = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
@@ -412,7 +412,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update displacements.
 		/// </summary>
-		private void UpdateDisplacements(IFEMInput femInput)
+		private void UpdateDisplacements()
 		{
 			var curIt  = CurrentIteration;
 			var lastIt = LastIteration;
