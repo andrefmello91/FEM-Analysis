@@ -257,19 +257,8 @@ namespace andrefmello91.FEMAnalysis
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
 
-			// Calculate initial displacements
-			var dU = iteration.Stiffness.Solve(step.Forces);
-			iteration.IncrementDisplacements(dU);
-
-			// Update displacements in grips and elements
-			femInput.Grips.SetDisplacements(iteration.Displacements);
-			femInput.UpdateDisplacements();
-
-			// Calculate element forces
-			femInput.CalculateForces();
-
 			// Update internal forces
-			iteration.UpdateForces(step.Forces, femInput.AssembleInternalForces());
+			iteration.UpdateForces(step.Forces, ForceVector.Zero(femInput.NumberOfDoFs));
 
 			return step;
 		}
