@@ -13,7 +13,11 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class SimulationStep : LoadStep
 	{
-
+		/// <summary>
+		///		The initial load factor of this step.
+		/// </summary>
+		private double _initialLoadFactor;
+		
 		#region Properties
 
 		/// <summary>
@@ -27,13 +31,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <remarks>
 		///     Default : 5
 		/// </remarks>
-		public int DesiredIterations { get; set; } = 5;
+		public int DesiredIterations { get; set; } = 10;
 
 		/// <inheritdoc />
 		public override double LoadFactor => ((SimulationIteration) CurrentIteration).LoadFactor;
 
 		/// <inheritdoc />
-		public override double LoadFactorIncrement => LoadFactor - ((SimulationIteration) FirstIteration).LoadFactor;
+		public override double LoadFactorIncrement => LoadFactor - _initialLoadFactor;
 
 		/// <summary>
 		///     The required number of iterations for achieving convergence for this load step.
@@ -48,12 +52,14 @@ namespace andrefmello91.FEMAnalysis
 		internal SimulationStep(ForceVector fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0)
 			: base(fullForceVector, loadFactor, parameters, number, true)
 		{
+			_initialLoadFactor = loadFactor;
 		}
 
 		/// <inheritdoc />
 		internal SimulationStep(int number, ForceVector fullForceVector, double loadFactor, DisplacementVector initialDisplacements, StiffnessMatrix stiffness, AnalysisParameters parameters)
 			: base(number, fullForceVector, loadFactor, initialDisplacements, stiffness, parameters, true)
 		{
+			_initialLoadFactor = loadFactor;
 		}
 
 		#endregion
@@ -67,11 +73,6 @@ namespace andrefmello91.FEMAnalysis
 
 			// Set desired iterations
 			newStep.DesiredIterations = lastStep.DesiredIterations;
-
-			// Add last step final iteration
-			// newStep.Iterations.Clear();
-			// newStep.Iterations.Add(lastStep.CurrentIteration.Clone());
-			// newStep.CurrentIteration.Number = 0;
 
 			// Update arc length
 			newStep.CalculateArcLength(lastStep);
@@ -92,7 +93,7 @@ namespace andrefmello91.FEMAnalysis
 
 			// Set initial increment
 			var iteration = (SimulationIteration) step.CurrentIteration;
-			iteration.LoadFactorIncrement = 0.1;
+			iteration.LoadFactorIncrement = 0.3;
 
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
@@ -131,7 +132,7 @@ namespace andrefmello91.FEMAnalysis
 
 			try
 			{
-				accL = ((SimulationIteration) iterations[finalIndex]).LoadFactor - ((SimulationIteration) FirstIteration).LoadFactor;
+				accL = ((SimulationIteration) iterations[finalIndex]).LoadFactor - _initialLoadFactor;
 			}
 			catch
 			{
