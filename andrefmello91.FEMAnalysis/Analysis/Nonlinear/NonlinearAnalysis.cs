@@ -163,9 +163,6 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Generate an <see cref="FEMOutput" /> from analysis results.
 		/// </summary>
-		/// <returns>
-		///     null if no monitored index was provided.
-		/// </returns>
 		public FEMOutput GenerateOutput() => new(Steps);
 
 		/// <summary>
@@ -221,7 +218,7 @@ namespace andrefmello91.FEMAnalysis
 					goto CorrectResults;
 
 				// Set step results
-				CurrentStep.SetResults(MonitoredIndex);
+				SetStepResults(MonitoredIndex);
 
 				// break;
 
@@ -236,6 +233,9 @@ namespace andrefmello91.FEMAnalysis
 			CorrectResults:
 			CorrectResults();
 		}
+
+		/// <inheritdoc cref="LoadStep.SetResults"/>
+		protected virtual void SetStepResults(int? monitoredIndex) => CurrentStep.SetResults(MonitoredIndex);
 
 		#region Interface Implementations
 
