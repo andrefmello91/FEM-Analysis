@@ -104,9 +104,9 @@ namespace andrefmello91.FEMAnalysis
 		// /// <param name="initialIncrement">The displacement increment of the first iteration.</param>
 		// public void CalculateConvergence(DisplacementVector initialIncrement) =>
 		// 	DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
-		//
-		// /// <inheritdoc/>
-		// public override bool CheckConvergence(AnalysisParameters parameters) => base.CheckConvergence(parameters);
+		
+		/// <inheritdoc/>
+		public override bool CheckConvergence(AnalysisParameters parameters) => base.CheckConvergence(parameters) || DisplacementConvergence <= 1E-6;
 
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();
