@@ -280,7 +280,11 @@ namespace andrefmello91.FEMAnalysis
 		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
 
 		/// <inheritdoc cref="LoadStep.SetResults" />
-		protected virtual void SetStepResults(int? monitoredIndex) => CurrentStep.SetResults(monitoredIndex);
+		protected virtual void SetStepResults(int? monitoredIndex)
+		{
+			CurrentStep.SetResults(monitoredIndex);
+			Invoke(StepConverged, new StepEventArgs(CurrentStep));
+		}
 
 		/// <summary>
 		///     Execute step by step analysis.
@@ -302,7 +306,6 @@ namespace andrefmello91.FEMAnalysis
 
 				// Set step results
 				SetStepResults(MonitoredIndex);
-				Invoke(StepConverged, new StepEventArgs(CurrentStep));
 
 				// break;
 
