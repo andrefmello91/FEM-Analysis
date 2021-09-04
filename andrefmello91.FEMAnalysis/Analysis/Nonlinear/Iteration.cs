@@ -10,6 +10,34 @@ namespace andrefmello91.FEMAnalysis
 	public class Iteration : IIteration, ICloneable<Iteration>
 	{
 
+		#region Properties
+
+		/// <inheritdoc />
+		public double DisplacementConvergence { get; protected set; }
+
+		/// <inheritdoc />
+		public virtual DisplacementVector DisplacementIncrement { get; private set; }
+
+		/// <inheritdoc />
+		public DisplacementVector Displacements { get; protected set; }
+
+		/// <inheritdoc />
+		public double ForceConvergence { get; protected set; }
+
+		/// <inheritdoc />
+		public ForceVector InternalForces { get; set; }
+
+		/// <inheritdoc />
+		public int Number { get; set; }
+
+		/// <inheritdoc />
+		public ForceVector ResidualForces { get; private set; }
+
+		/// <inheritdoc />
+		public StiffnessMatrix Stiffness { get; set; }
+
+		#endregion
+
 		#region Constructors
 
 		/// <inheritdoc cref="From(int,bool)" />
@@ -68,40 +96,8 @@ namespace andrefmello91.FEMAnalysis
 			_     => new SimulationIteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness, loadStep.LoadFactor)
 		};
 
-		#endregion
-
-		#region Interface Implementations
-
 		/// <inheritdoc />
-		public double DisplacementConvergence { get; protected set; }
-
-		/// <inheritdoc />
-		public virtual DisplacementVector DisplacementIncrement { get; private set; }
-
-		/// <inheritdoc />
-		public DisplacementVector Displacements { get; protected set; }
-
-		/// <inheritdoc />
-		public double ForceConvergence { get; protected set; }
-
-		/// <inheritdoc />
-		public ForceVector InternalForces { get; set; }
-
-		/// <inheritdoc />
-		public int Number { get; set; }
-
-		/// <inheritdoc />
-		public ForceVector ResidualForces { get; private set; }
-
-		/// <inheritdoc />
-		public StiffnessMatrix Stiffness { get; set; }
-
-		#endregion
-
-		#region Interface Implementations
-
-		/// <inheritdoc />
-		IIteration ICloneable<IIteration>.Clone() => Clone();
+		public override string ToString() => $"Iteration {Number}";
 
 		/// <inheritdoc />
 		public Iteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone()) { Number = Number };
@@ -137,9 +133,12 @@ namespace andrefmello91.FEMAnalysis
 			ResidualForces = (ForceVector) (internalForces - appliedForces);
 		}
 
+		/// <inheritdoc />
+		IIteration ICloneable<IIteration>.Clone() => Clone();
+
 		#endregion
 
-		#region Object override
+		#region Operators
 
 		/// <summary>
 		///     Check the iteration number.
@@ -186,9 +185,6 @@ namespace andrefmello91.FEMAnalysis
 		///     True if the iteration number is smaller or equal to the right number.
 		/// </returns>
 		public static bool operator <=(Iteration left, int right) => left.Number <= right;
-
-		/// <inheritdoc />
-		public override string ToString() => $"Iteration {Number}";
 
 		#endregion
 

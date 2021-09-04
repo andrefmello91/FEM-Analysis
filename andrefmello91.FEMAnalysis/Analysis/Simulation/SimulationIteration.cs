@@ -45,8 +45,6 @@ namespace andrefmello91.FEMAnalysis
 			}
 		}
 
-		#region Interface Implementations
-
 		/// <summary>
 		///     The displacement increment vector of this iteration.
 		/// </summary>
@@ -54,8 +52,6 @@ namespace andrefmello91.FEMAnalysis
 		///     <see cref="IncrementFromResidual" /> + <see cref="LoadFactorIncrement" /> * <see cref="IncrementFromExternal" />
 		/// </returns>
 		public override DisplacementVector DisplacementIncrement => (DisplacementVector) (IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal);
-
-		#endregion
 
 		#endregion
 
@@ -99,9 +95,14 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public void UpdateDisplacements() => Displacements = (DisplacementVector) (Displacements + DisplacementIncrement);
 
-		#endregion
-
-		#region Interface Implementations
+		/// <inheritdoc />
+		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone(), LoadFactor)
+		{
+			Number                = Number,
+			InternalForces        = InternalForces,
+			IncrementFromResidual = IncrementFromResidual,
+			IncrementFromExternal = IncrementFromExternal
+		};
 
 		// /// <summary>
 		// ///     Calculate the convergence of this iteration.
@@ -115,15 +116,6 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();
-
-		/// <inheritdoc />
-		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone(), LoadFactor)
-		{
-			Number                = Number,
-			InternalForces        = InternalForces,
-			IncrementFromResidual = IncrementFromResidual,
-			IncrementFromExternal = IncrementFromExternal
-		};
 
 		#endregion
 

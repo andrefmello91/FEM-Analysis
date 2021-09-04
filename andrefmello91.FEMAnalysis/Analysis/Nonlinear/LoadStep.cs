@@ -342,6 +342,9 @@ namespace andrefmello91.FEMAnalysis
 			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
 		}
 
+		/// <inheritdoc />
+		public override string ToString() => $"Load step {Number}";
+
 		/// <summary>
 		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.
 		/// </summary>
@@ -426,19 +429,15 @@ namespace andrefmello91.FEMAnalysis
 			// femInput.UpdateDisplacements();
 		}
 
-		#endregion
-
-		#region Interface Implementations
+		/// <inheritdoc />
+		public IEnumerator<IIteration> GetEnumerator() => Iterations.GetEnumerator();
 
 		/// <inheritdoc />
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-		/// <inheritdoc />
-		public IEnumerator<IIteration> GetEnumerator() => Iterations.GetEnumerator();
-
 		#endregion
 
-		#region Object override
+		#region Operators
 
 		/// <summary>
 		///     Check the step number.
@@ -485,9 +484,6 @@ namespace andrefmello91.FEMAnalysis
 		///     True if the step number is smaller or equal to the right number.
 		/// </returns>
 		public static bool operator <=(LoadStep left, int right) => left.Number <= right;
-
-		/// <inheritdoc />
-		public override string ToString() => $"Load step {Number}";
 
 		#endregion
 

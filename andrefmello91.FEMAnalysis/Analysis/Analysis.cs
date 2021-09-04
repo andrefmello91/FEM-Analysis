@@ -62,8 +62,6 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public ForceVector GetReactions() => (ForceVector) (GlobalStiffness * Displacements - Forces);
 
-		#region Object override
-
 		/// <inheritdoc />
 		public override string ToString() =>
 			$"{FemInput}\n" +
@@ -71,8 +69,6 @@ namespace andrefmello91.FEMAnalysis
 			$"{GlobalStiffness}\n" +
 			"Displacement Vector:\n" +
 			$"{Displacements}";
-
-		#endregion
 
 		#endregion
 

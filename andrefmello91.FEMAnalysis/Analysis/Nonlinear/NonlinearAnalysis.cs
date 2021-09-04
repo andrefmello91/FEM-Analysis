@@ -291,15 +291,11 @@ namespace andrefmello91.FEMAnalysis
 			CorrectResults();
 		}
 
-		#endregion
-
-		#region Interface Implementations
+		/// <inheritdoc />
+		public IEnumerator<LoadStep> GetEnumerator() => Steps.GetEnumerator();
 
 		/// <inheritdoc />
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-		/// <inheritdoc />
-		public IEnumerator<LoadStep> GetEnumerator() => Steps.GetEnumerator();
 
 		#endregion
 
