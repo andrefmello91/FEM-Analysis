@@ -16,13 +16,11 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Fields
 
-		private double _loadFactor;
-		
 		/// <summary>
 		///     The vector of full applied forces.
 		/// </summary>
 		/// <remarks>
-		///		Simplified at constrained DoFs.
+		///     Simplified at constrained DoFs.
 		/// </remarks>
 		protected readonly ForceVector FullForceVector;
 
@@ -31,9 +29,21 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		protected readonly List<IIteration> Iterations = new();
 
+		private double _loadFactor;
+
 		#endregion
 
 		#region Properties
+
+		/// <summary>
+		///     Get the iteration at this index.
+		/// </summary>
+		public IIteration this[int index] => Iterations[index];
+
+		/// <summary>
+		///     Get the iteration at this index.
+		/// </summary>
+		public IIteration this[Index index] => Iterations[index];
 
 		/// <summary>
 		///     The status of this step. True if convergence was reached.
@@ -73,23 +83,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
-		/// <inheritdoc cref="FullForceVector"/>
+		/// <inheritdoc cref="FullForceVector" />
 		public ForceVector Forces => (ForceVector) (LoadFactor * FullForceVector);
 
 		/// <summary>
 		///     The displacement vector at the beginning of this step.
 		/// </summary>
 		public DisplacementVector InitialDisplacements { get; }
-
-		/// <summary>
-		///     Get the iteration at this index.
-		/// </summary>
-		public IIteration this[int index] => Iterations[index];
-
-		/// <summary>
-		///     Get the iteration at this index.
-		/// </summary>
-		public IIteration this[Index index] => Iterations[index];
 
 		/// <summary>
 		///     The results of the current solution (last solved iteration [i - 1]).
@@ -272,7 +272,7 @@ namespace andrefmello91.FEMAnalysis
 			var iterations = Iterations.Where(i => i.Number > 0).ToArray();
 
 			DisplacementVector accD;
-			
+
 			try
 			{
 				accD = (DisplacementVector) (iterations[finalIndex].Displacements - InitialDisplacements);
@@ -321,7 +321,7 @@ namespace andrefmello91.FEMAnalysis
 				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
 
 			} while (!IterativeStop());
-			
+
 			if (!Stop && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				UpdateStiffness();
 		}
@@ -401,7 +401,7 @@ namespace andrefmello91.FEMAnalysis
 			if (CurrentIteration.Number <= 1 || Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				return;
 
-			CurrentIteration.Stiffness                 = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
+			CurrentIteration.Stiffness = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
 		}
 
 		/// <summary>
@@ -425,6 +425,8 @@ namespace andrefmello91.FEMAnalysis
 			// femInput.Grips.SetDisplacements(curIt.Displacements);
 			// femInput.UpdateDisplacements();
 		}
+
+		#endregion
 
 		#region Interface Implementations
 
@@ -486,8 +488,6 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public override string ToString() => $"Load step {Number}";
-
-		#endregion
 
 		#endregion
 

@@ -45,26 +45,6 @@ namespace andrefmello91.FEMAnalysis
 	public class FEMInput : List<IFiniteElement>, IFEMInput
 	{
 
-		#region Properties
-
-		#region Interface Implementations
-
-		/// <inheritdoc />
-		public List<int> ConstraintIndex { get; }
-
-		/// <inheritdoc />
-		public ForceVector Forces { get; }
-
-		/// <inheritdoc />
-		public List<IGrip> Grips { get; }
-
-		/// <inheritdoc />
-		public int NumberOfDoFs { get; }
-
-		#endregion
-
-		#endregion
-
 		#region Constructors
 
 		/// <inheritdoc cref="FEMInput(IEnumerable{IFiniteElement}, IEnumerable{IGrip})" />
@@ -93,7 +73,7 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Methods
-		
+
 		#region Object override
 
 		/// <inheritdoc />
@@ -104,6 +84,22 @@ namespace andrefmello91.FEMAnalysis
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
 
 		#endregion
+
+		#endregion
+
+		#region Interface Implementations
+
+		/// <inheritdoc />
+		public List<int> ConstraintIndex { get; }
+
+		/// <inheritdoc />
+		public ForceVector Forces { get; }
+
+		/// <inheritdoc />
+		public List<IGrip> Grips { get; }
+
+		/// <inheritdoc />
+		public int NumberOfDoFs { get; }
 
 		#endregion
 

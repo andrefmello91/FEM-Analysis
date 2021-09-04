@@ -10,38 +10,6 @@ namespace andrefmello91.FEMAnalysis
 	public class Iteration : IIteration, ICloneable<Iteration>
 	{
 
-		#region Properties
-
-		#region Interface Implementations
-
-		/// <inheritdoc />
-		public double DisplacementConvergence { get; protected set; }
-
-		/// <inheritdoc />
-		public virtual DisplacementVector DisplacementIncrement { get; private set; }
-
-		/// <inheritdoc />
-		public DisplacementVector Displacements { get; protected set; }
-
-		/// <inheritdoc />
-		public double ForceConvergence { get; protected set; }
-
-		/// <inheritdoc />
-		public ForceVector InternalForces { get; set; }
-
-		/// <inheritdoc />
-		public int Number { get; set; }
-
-		/// <inheritdoc />
-		public ForceVector ResidualForces { get; private set; }
-
-		/// <inheritdoc />
-		public StiffnessMatrix Stiffness { get; set; }
-
-		#endregion
-
-		#endregion
-
 		#region Constructors
 
 		/// <inheritdoc cref="From(int,bool)" />
@@ -82,7 +50,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="residualForces">The residual force vector of this iteration.</param>
 		/// <param name="stiffness">The stiffness matrix of this iteration.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		/// <param name="loadFactor">The load factor if <paramref name="simulate"/> is true.</param>
+		/// <param name="loadFactor">The load factor if <paramref name="simulate" /> is true.</param>
 		public static IIteration From(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, bool simulate = false, double loadFactor = 0) => simulate switch
 		{
 			false => new Iteration(displacements, residualForces, stiffness),
@@ -99,6 +67,36 @@ namespace andrefmello91.FEMAnalysis
 			false => new Iteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness),
 			_     => new SimulationIteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness, loadStep.LoadFactor)
 		};
+
+		#endregion
+
+		#region Interface Implementations
+
+		/// <inheritdoc />
+		public double DisplacementConvergence { get; protected set; }
+
+		/// <inheritdoc />
+		public virtual DisplacementVector DisplacementIncrement { get; private set; }
+
+		/// <inheritdoc />
+		public DisplacementVector Displacements { get; protected set; }
+
+		/// <inheritdoc />
+		public double ForceConvergence { get; protected set; }
+
+		/// <inheritdoc />
+		public ForceVector InternalForces { get; set; }
+
+		/// <inheritdoc />
+		public int Number { get; set; }
+
+		/// <inheritdoc />
+		public ForceVector ResidualForces { get; private set; }
+
+		/// <inheritdoc />
+		public StiffnessMatrix Stiffness { get; set; }
+
+		#endregion
 
 		#region Interface Implementations
 
@@ -191,8 +189,6 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public override string ToString() => $"Iteration {Number}";
-
-		#endregion
 
 		#endregion
 

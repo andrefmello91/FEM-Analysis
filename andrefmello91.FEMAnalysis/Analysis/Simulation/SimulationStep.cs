@@ -4,7 +4,6 @@ using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
-using static andrefmello91.FEMAnalysis.NonlinearAnalysis;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -13,11 +12,16 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class SimulationStep : LoadStep
 	{
+
+		#region Fields
+
 		/// <summary>
-		///		The initial load factor of this step.
+		///     The initial load factor of this step.
 		/// </summary>
-		private double _initialLoadFactor;
-		
+		private readonly double _initialLoadFactor;
+
+		#endregion
+
 		#region Properties
 
 		/// <summary>
@@ -50,17 +54,13 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		internal SimulationStep(ForceVector fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0)
-			: base(fullForceVector, loadFactor, parameters, number, true)
-		{
+			: base(fullForceVector, loadFactor, parameters, number, true) =>
 			_initialLoadFactor = loadFactor;
-		}
 
 		/// <inheritdoc />
 		internal SimulationStep(int number, ForceVector fullForceVector, double loadFactor, DisplacementVector initialDisplacements, StiffnessMatrix stiffness, AnalysisParameters parameters)
-			: base(number, fullForceVector, loadFactor, initialDisplacements, stiffness, parameters, true)
-		{
+			: base(number, fullForceVector, loadFactor, initialDisplacements, stiffness, parameters, true) =>
 			_initialLoadFactor = loadFactor;
-		}
 
 		#endregion
 
@@ -138,7 +138,7 @@ namespace andrefmello91.FEMAnalysis
 			{
 				accL = 0;
 			}
-			
+
 			return accL;
 		}
 
@@ -163,7 +163,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Update displacements
 				UpdateDisplacements();
-				
+
 				// Calculate increment
 				IterationIncrement();
 
@@ -176,7 +176,7 @@ namespace andrefmello91.FEMAnalysis
 
 				// Calculate convergence
 				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
-				
+
 			} while (!IterativeStop());
 		}
 

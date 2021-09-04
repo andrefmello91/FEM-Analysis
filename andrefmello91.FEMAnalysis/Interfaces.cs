@@ -144,7 +144,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The internal force vector of this iteration.
 		/// </summary>
-		/// <inheritdoc cref="LoadStep.FullForceVector"/>
+		/// <inheritdoc cref="LoadStep.FullForceVector" />
 		ForceVector InternalForces { get; }
 
 		/// <summary>
@@ -155,7 +155,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The residual force vector of this iteration.
 		/// </summary>
-		/// <inheritdoc cref="LoadStep.FullForceVector"/>
+		/// <inheritdoc cref="LoadStep.FullForceVector" />
 		ForceVector ResidualForces { get; }
 
 		/// <summary>
@@ -204,7 +204,7 @@ namespace andrefmello91.FEMAnalysis
 		///     Update forces in this iteration.
 		/// </summary>
 		/// <remarks>
-		///		Forces must be simplified in constrained DoFs.
+		///     Forces must be simplified in constrained DoFs.
 		/// </remarks>
 		/// <param name="appliedForces">The vector of applied forces of the current step, simplified in constrained DoFs.</param>
 		/// <param name="internalForces">The vector of internal forces, simplified in constrained DoFs.</param>

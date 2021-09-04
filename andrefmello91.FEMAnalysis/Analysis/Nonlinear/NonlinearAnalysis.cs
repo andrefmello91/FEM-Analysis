@@ -6,7 +6,6 @@ using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra;
 using UnitsNet;
-using UnitsNet.Units;
 
 namespace andrefmello91.FEMAnalysis
 {
@@ -24,14 +23,14 @@ namespace andrefmello91.FEMAnalysis
 		protected readonly List<LoadStep> Steps = new();
 
 		/// <summary>
-		///     Set true to execute analysis until convergence is not achieved (structural failure).
-		/// </summary>
-		private bool _simulate;
-
-		/// <summary>
 		///     Field to store the DoF index for monitored displacements.
 		/// </summary>
 		protected int? MonitoredIndex;
+
+		/// <summary>
+		///     Set true to execute analysis until convergence is not achieved (structural failure).
+		/// </summary>
+		private bool _simulate;
 
 		#endregion
 
@@ -103,6 +102,21 @@ namespace andrefmello91.FEMAnalysis
 		public static double StepIncrement(int numberOfSteps) => 1D / numberOfSteps;
 
 		/// <summary>
+		///     Calculate the stiffness increment for nonlinear analysis.
+		/// </summary>
+		/// <param name="solver">The nonlinear solver.</param>
+		/// <returns>
+		///     The <see cref="andrefmello91.OnPlaneComponents.StiffnessMatrix" /> increment with current unit.
+		/// </returns>
+		/// <inheritdoc cref="TangentIncrement" />
+		public static StiffnessMatrix StiffnessIncrement(IIteration currentIteration, IIteration lastIteration, NonLinearSolver solver) =>
+			solver switch
+			{
+				NonLinearSolver.Secant => SecantIncrement(currentIteration, lastIteration),
+				_                      => TangentIncrement(currentIteration, lastIteration)
+			};
+
+		/// <summary>
 		///     Calculate the convergence.
 		/// </summary>
 		/// <param name="numerator">
@@ -133,9 +147,49 @@ namespace andrefmello91.FEMAnalysis
 			var dd = denominator.Unit.Equals(unit)
 				? denominator
 				: denominator.Convert(unit);
-			
+
 			return
 				CalculateConvergence(numerator.Values, dd.Values);
+		}
+
+		/// <summary>
+		///     Calculate the secant stiffness increment.
+		/// </summary>
+		/// <inheritdoc cref="TangentIncrement(andrefmello91.FEMAnalysis.IIteration, andrefmello91.FEMAnalysis.IIteration)" />
+		private static StiffnessMatrix SecantIncrement(IIteration currentIteration, IIteration lastIteration)
+		{
+			// Calculate the variation of displacements and residual as vectors
+			var dU = currentIteration.Displacements - lastIteration.Displacements;
+			var dR = currentIteration.ResidualForces - lastIteration.ResidualForces;
+
+			var unit = dR.Unit.Per(dU.Unit);
+
+			Matrix<double> stiffness = lastIteration.Stiffness.Unit == unit
+				? lastIteration.Stiffness
+				: lastIteration.Stiffness.Convert(unit);
+
+			var inc = ((dR - stiffness * (Vector<double>) dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
+
+			return
+				new StiffnessMatrix(inc, unit);
+		}
+
+		/// <summary>
+		///     Calculate the tangent stiffness increment.
+		/// </summary>
+		/// <param name="currentIteration">The current iteration.</param>
+		/// <param name="lastIteration">The last solved iteration.</param>
+		/// <returns>
+		///     The <see cref="StiffnessMatrix" /> increment with current unit.
+		/// </returns>
+		private static StiffnessMatrix TangentIncrement(IIteration currentIteration, IIteration lastIteration)
+		{
+			// Get variations
+			var dF = (ForceVector) (currentIteration.InternalForces - lastIteration.InternalForces);
+			var dU = (DisplacementVector) (currentIteration.Displacements - lastIteration.Displacements);
+
+			return
+				dF / dU;
 		}
 
 		/// <summary>
@@ -199,6 +253,9 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="incrementLoad">Increment load of the new step?</param>
 		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
 
+		/// <inheritdoc cref="LoadStep.SetResults" />
+		protected virtual void SetStepResults(int? monitoredIndex) => CurrentStep.SetResults(MonitoredIndex);
+
 		/// <summary>
 		///     Execute step by step analysis.
 		/// </summary>
@@ -227,15 +284,14 @@ namespace andrefmello91.FEMAnalysis
 
 				// Create step
 				NewStep();
-				
+
 			} while (_simulate || CurrentStep <= Parameters.NumberOfSteps);
 
 			CorrectResults:
 			CorrectResults();
 		}
 
-		/// <inheritdoc cref="LoadStep.SetResults"/>
-		protected virtual void SetStepResults(int? monitoredIndex) => CurrentStep.SetResults(MonitoredIndex);
+		#endregion
 
 		#region Interface Implementations
 
@@ -247,61 +303,5 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
-		#endregion
-
-		/// <summary>
-		///     Calculate the stiffness increment for nonlinear analysis.
-		/// </summary>
-		/// <param name="solver">The nonlinear solver.</param>
-		/// <returns>
-		///     The <see cref="andrefmello91.OnPlaneComponents.StiffnessMatrix" /> increment with current unit.
-		/// </returns>
-		/// <inheritdoc cref="TangentIncrement" />
-		public static StiffnessMatrix StiffnessIncrement(IIteration currentIteration, IIteration lastIteration, NonLinearSolver solver) =>
-			solver switch
-			{
-				NonLinearSolver.Secant => SecantIncrement(currentIteration, lastIteration),
-				_                      => TangentIncrement(currentIteration, lastIteration)
-			};
-
-		/// <summary>
-		///     Calculate the secant stiffness increment.
-		/// </summary>
-		/// <inheritdoc cref="TangentIncrement(andrefmello91.FEMAnalysis.IIteration, andrefmello91.FEMAnalysis.IIteration)" />
-		private static StiffnessMatrix SecantIncrement(IIteration currentIteration, IIteration lastIteration)
-		{
-			// Calculate the variation of displacements and residual as vectors
-			var dU = currentIteration.Displacements - lastIteration.Displacements;
-			var	dR = currentIteration.ResidualForces - lastIteration.ResidualForces;
-
-			var unit = dR.Unit.Per(dU.Unit);
-
-			Matrix<double> stiffness = lastIteration.Stiffness.Unit == unit
-				? lastIteration.Stiffness
-				: lastIteration.Stiffness.Convert(unit);
-
-			var inc = ((dR - stiffness * (Vector<double>) dU) / dU.Norm(2)).ToColumnMatrix() * dU.ToRowMatrix();
-
-			return
-				new StiffnessMatrix(inc, unit);
-		}
-
-		/// <summary>
-		///     Calculate the tangent stiffness increment.
-		/// </summary>
-		/// <param name="currentIteration">The current iteration.</param>
-		/// <param name="lastIteration">The last solved iteration.</param>
-		/// <returns>
-		///     The <see cref="StiffnessMatrix" /> increment with current unit.
-		/// </returns>
-		private static StiffnessMatrix TangentIncrement(IIteration currentIteration, IIteration lastIteration)
-		{
-			// Get variations
-			var dF = (ForceVector) (currentIteration.InternalForces - lastIteration.InternalForces);
-			var dU = (DisplacementVector) (currentIteration.Displacements - lastIteration.Displacements);
-
-			return
-				dF / dU;
-		}
 	}
 }

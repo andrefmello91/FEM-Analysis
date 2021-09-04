@@ -10,6 +10,9 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public struct MonitoredDisplacement : IEquatable<MonitoredDisplacement>, IComparable<MonitoredDisplacement>
 	{
+
+		#region Properties
+
 		/// <summary>
 		///     Get the displacement value, at current <see cref="LoadFactor" />.
 		/// </summary>
@@ -19,6 +22,10 @@ namespace andrefmello91.FEMAnalysis
 		///     Get the load factor associated to <see cref="Displacement" />.
 		/// </summary>
 		public double LoadFactor { get; }
+
+		#endregion
+
+		#region Constructors
 
 		/// <summary>
 		///     Monitored displacement constructor.
@@ -31,8 +38,14 @@ namespace andrefmello91.FEMAnalysis
 			LoadFactor   = loadFactor;
 		}
 
+		#endregion
+
+		#region Methods
+
 		/// <inheritdoc />
-		public bool Equals(MonitoredDisplacement other) => LoadFactor.Approx(other.LoadFactor, 1E-6) && Displacement.Approx(other.Displacement, PlaneDisplacement.Tolerance);
+		public override string ToString() =>
+			$"Displacement = {Displacement}\n" +
+			$"Load Factor = {LoadFactor:0.00}";
 
 		/// <inheritdoc />
 		public int CompareTo(MonitoredDisplacement other) =>
@@ -43,8 +56,9 @@ namespace andrefmello91.FEMAnalysis
 					: -1;
 
 		/// <inheritdoc />
-		public override string ToString() =>
-			$"Displacement = {Displacement}\n" +
-			$"Load Factor = {LoadFactor:0.00}";
+		public bool Equals(MonitoredDisplacement other) => LoadFactor.Approx(other.LoadFactor, 1E-6) && Displacement.Approx(other.Displacement, PlaneDisplacement.Tolerance);
+
+		#endregion
+
 	}
 }

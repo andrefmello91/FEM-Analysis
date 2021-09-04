@@ -28,7 +28,7 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="IFEMInput.Forces" />
 		/// <remarks>
-		///		Simplified by constrained DoFs.
+		///     Simplified by constrained DoFs.
 		/// </remarks>
 		public ForceVector Forces { get; protected set; }
 
