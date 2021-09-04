@@ -1,4 +1,5 @@
-﻿using andrefmello91.OnPlaneComponents;
+﻿using System;
+using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
 #nullable enable
@@ -39,6 +40,16 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+		/// <summary>
+		///     Event to execute when analysis is complete.
+		/// </summary>
+		public abstract event EventHandler? AnalysisComplete;
+
+		/// <summary>
+		///     Event to execute when analysis is aborted.
+		/// </summary>
+		public abstract event EventHandler? AnalysisAborted;
+
 		#region Constructors
 
 		/// <summary>
@@ -61,6 +72,16 @@ namespace andrefmello91.FEMAnalysis
 		///     Calculate the <see cref="Vector" /> of support reactions.
 		/// </summary>
 		public ForceVector GetReactions() => (ForceVector) (GlobalStiffness * Displacements - Forces);
+
+		/// <summary>
+		///     Invoke the event.
+		/// </summary>
+		/// <param name="handler">The handler.</param>
+		protected void Invoke(EventHandler? handler) => handler?.Invoke(this, EventArgs.Empty);
+
+		/// <inheritdoc cref="Invoke" />
+		protected void Invoke<TEventArgs>(EventHandler<TEventArgs>? handler, TEventArgs? eventArgs) where TEventArgs : EventArgs =>
+			handler.Invoke(this, eventArgs);
 
 		/// <inheritdoc />
 		public override string ToString() =>

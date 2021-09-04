@@ -1,4 +1,5 @@
-﻿using andrefmello91.Extensions;
+﻿using System;
+using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 #nullable enable
 
@@ -49,9 +50,17 @@ namespace andrefmello91.FEMAnalysis
 
 			// Set Reactions
 			FemInput.Grips.SetReactions(GetReactions());
+
+			// Invoke complete event
+			Invoke(AnalysisComplete);
 		}
 
 		#endregion
 
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisComplete;
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisAborted;
 	}
 }

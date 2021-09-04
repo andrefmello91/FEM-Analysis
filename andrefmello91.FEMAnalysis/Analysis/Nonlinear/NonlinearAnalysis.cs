@@ -254,7 +254,7 @@ namespace andrefmello91.FEMAnalysis
 		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
 
 		/// <inheritdoc cref="LoadStep.SetResults" />
-		protected virtual void SetStepResults(int? monitoredIndex) => CurrentStep.SetResults(MonitoredIndex);
+		protected virtual void SetStepResults(int? monitoredIndex) => CurrentStep.SetResults(monitoredIndex);
 
 		/// <summary>
 		///     Execute step by step analysis.
@@ -276,11 +276,12 @@ namespace andrefmello91.FEMAnalysis
 
 				// Set step results
 				SetStepResults(MonitoredIndex);
+				Invoke(StepConverged, new StepEventArgs(CurrentStep));
 
 				// break;
 
 				if (!_simulate && CurrentStep >= Parameters.NumberOfSteps)
-					return;
+					goto AnalysisComplete;
 
 				// Create step
 				NewStep();
@@ -288,7 +289,17 @@ namespace andrefmello91.FEMAnalysis
 			} while (_simulate || CurrentStep <= Parameters.NumberOfSteps);
 
 			CorrectResults:
-			CorrectResults();
+			{
+				Invoke(StepAborted, new StepEventArgs(CurrentStep));
+				Invoke(AnalysisAborted);
+				CorrectResults();
+				return;
+			}
+
+			AnalysisComplete:
+			{
+				Invoke(AnalysisComplete);
+			}
 		}
 
 		/// <inheritdoc />
@@ -299,5 +310,26 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisComplete;
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisAborted;
+
+		/// <summary>
+		///     Event to execute when the current load step converges.
+		/// </summary>
+		/// <remarks>
+		///     The converged step is passed to event args.
+		/// </remarks>
+		public event EventHandler<StepEventArgs>? StepConverged;
+
+		/// <summary>
+		///     Event to execute when the current load step is aborted.
+		/// </summary>
+		/// <remarks>
+		///     The aborted step is passed to event args.
+		/// </remarks>
+		public event EventHandler<StepEventArgs>? StepAborted;
 	}
 }
