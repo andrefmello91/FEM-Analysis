@@ -40,15 +40,19 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
-		/// <summary>
-		///     Event to execute when analysis is complete.
-		/// </summary>
-		public abstract event EventHandler? AnalysisComplete;
+		#region Events
 
 		/// <summary>
 		///     Event to execute when analysis is aborted.
 		/// </summary>
 		public abstract event EventHandler? AnalysisAborted;
+
+		/// <summary>
+		///     Event to execute when analysis is complete.
+		/// </summary>
+		public abstract event EventHandler? AnalysisComplete;
+
+		#endregion
 
 		#region Constructors
 
@@ -73,6 +77,14 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public ForceVector GetReactions() => (ForceVector) (GlobalStiffness * Displacements - Forces);
 
+		/// <inheritdoc />
+		public override string ToString() =>
+			$"{FemInput}\n" +
+			"Global Stiffness:\n" +
+			$"{GlobalStiffness}\n" +
+			"Displacement Vector:\n" +
+			$"{Displacements}";
+
 		/// <summary>
 		///     Invoke the event.
 		/// </summary>
@@ -82,14 +94,6 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="Invoke" />
 		protected void Invoke<TEventArgs>(EventHandler<TEventArgs>? handler, TEventArgs? eventArgs) where TEventArgs : EventArgs =>
 			handler.Invoke(this, eventArgs);
-
-		/// <inheritdoc />
-		public override string ToString() =>
-			$"{FemInput}\n" +
-			"Global Stiffness:\n" +
-			$"{GlobalStiffness}\n" +
-			"Displacement Vector:\n" +
-			$"{Displacements}";
 
 		#endregion
 

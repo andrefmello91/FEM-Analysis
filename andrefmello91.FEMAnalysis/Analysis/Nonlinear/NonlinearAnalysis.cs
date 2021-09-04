@@ -71,6 +71,32 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+		#region Events
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisAborted;
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisComplete;
+
+		/// <summary>
+		///     Event to execute when the current load step is aborted.
+		/// </summary>
+		/// <remarks>
+		///     The aborted step is passed to event args.
+		/// </remarks>
+		public event EventHandler<StepEventArgs>? StepAborted;
+
+		/// <summary>
+		///     Event to execute when the current load step converges.
+		/// </summary>
+		/// <remarks>
+		///     The converged step is passed to event args.
+		/// </remarks>
+		public event EventHandler<StepEventArgs>? StepConverged;
+
+		#endregion
+
 		#region Constructors
 
 		/// <summary>
@@ -310,26 +336,5 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
-		/// <inheritdoc />
-		public override event EventHandler? AnalysisComplete;
-
-		/// <inheritdoc />
-		public override event EventHandler? AnalysisAborted;
-
-		/// <summary>
-		///     Event to execute when the current load step converges.
-		/// </summary>
-		/// <remarks>
-		///     The converged step is passed to event args.
-		/// </remarks>
-		public event EventHandler<StepEventArgs>? StepConverged;
-
-		/// <summary>
-		///     Event to execute when the current load step is aborted.
-		/// </summary>
-		/// <remarks>
-		///     The aborted step is passed to event args.
-		/// </remarks>
-		public event EventHandler<StepEventArgs>? StepAborted;
 	}
 }

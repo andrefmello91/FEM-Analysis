@@ -11,6 +11,16 @@ namespace andrefmello91.FEMAnalysis
 	public class LinearAnalysis : Analysis
 	{
 
+		#region Events
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisAborted;
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisComplete;
+
+		#endregion
+
 		#region Constructors
 
 		/// <summary>
@@ -57,10 +67,5 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
-		/// <inheritdoc />
-		public override event EventHandler? AnalysisComplete;
-
-		/// <inheritdoc />
-		public override event EventHandler? AnalysisAborted;
 	}
 }
