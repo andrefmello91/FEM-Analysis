@@ -92,8 +92,8 @@ namespace andrefmello91.FEMAnalysis
 		protected void Invoke(EventHandler? handler) => handler?.Invoke(this, EventArgs.Empty);
 
 		/// <inheritdoc cref="Invoke" />
-		protected void Invoke<TEventArgs>(EventHandler<TEventArgs>? handler, TEventArgs? eventArgs) where TEventArgs : EventArgs =>
-			handler.Invoke(this, eventArgs);
+		protected void Invoke<TEventArgs>(EventHandler<TEventArgs>? handler, TEventArgs eventArgs) where TEventArgs : EventArgs =>
+			handler?.Invoke(this, eventArgs);
 
 		#endregion
 
