@@ -43,6 +43,18 @@ namespace andrefmello91.FEMAnalysis
 		public LoadStep this[Index index] => Steps[index];
 
 		/// <summary>
+		///     The current step result.
+		/// </summary>
+		public LoadStep CurrentStep => Steps[^1];
+
+		/// <summary>
+		///     The last step result.
+		/// </summary>
+		public LoadStep LastStep => Steps.Count > 1
+			? Steps[^2]
+			: CurrentStep;
+
+		/// <summary>
 		///     The analysis parameters.
 		/// </summary>
 		public AnalysisParameters Parameters { get; }
@@ -56,18 +68,6 @@ namespace andrefmello91.FEMAnalysis
 		///     Get/set the stop message.
 		/// </summary>
 		public string StopMessage { get; protected set; } = string.Empty;
-
-		/// <summary>
-		///     The current step result.
-		/// </summary>
-		protected LoadStep CurrentStep => Steps[^1];
-
-		/// <summary>
-		///     The last step result.
-		/// </summary>
-		protected LoadStep LastStep => Steps.Count > 1
-			? Steps[^2]
-			: CurrentStep;
 
 		#endregion
 
@@ -103,19 +103,25 @@ namespace andrefmello91.FEMAnalysis
 		///     Nonlinear analysis constructor with default parameters.
 		/// </summary>
 		/// <param name="nonlinearInput">The finite element input>.</param>
-		public NonlinearAnalysis(IFEMInput nonlinearInput)
-			: this(nonlinearInput, AnalysisParameters.Default)
+		/// <param name="monitoredIndex">The index of a degree of freedom to monitor, if wanted.</param>
+		/// <param name="simulate">Execute the analysis until convergence is not reached.</param>
+		public NonlinearAnalysis(IFEMInput nonlinearInput, int? monitoredIndex = null, bool simulate = false)
+			: this(nonlinearInput, AnalysisParameters.Default, monitoredIndex, simulate)
 		{
 		}
 
 		/// <summary>
 		///     Nonlinear analysis constructor.
 		/// </summary>
-		/// <inheritdoc cref="NonlinearAnalysis(IFEMInput)" />
 		/// <param name="parameters">The analysis parameters.</param>
-		public NonlinearAnalysis(IFEMInput nonlinearInput, AnalysisParameters parameters)
-			: base(nonlinearInput) =>
-			Parameters = parameters;
+		/// <inheritdoc cref="NonlinearAnalysis(IFEMInput, int?, bool)" />
+		public NonlinearAnalysis(IFEMInput nonlinearInput, AnalysisParameters parameters, int? monitoredIndex = null, bool simulate = false)
+			: base(nonlinearInput)
+		{
+			Parameters     = parameters;
+			MonitoredIndex = monitoredIndex;
+			_simulate      = simulate;
+		}
 
 		#endregion
 
@@ -221,23 +227,63 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Execute the full analysis.
 		/// </summary>
-		/// <inheritdoc cref="StepAnalysis" />
-		/// <param name="monitoredIndex">The index of a degree of freedom to monitor, if wanted.</param>
 		/// <param name="loadFactor">The load factor to multiply <see cref="Analysis.Forces" /> (default: 1).</param>
-		public void Execute(int? monitoredIndex = null, bool simulate = false, double loadFactor = 1)
+		public void Execute(double loadFactor = 1)
 		{
-			_simulate      = simulate;
-			MonitoredIndex = monitoredIndex;
-
 			// Get force vector
 			if (!loadFactor.Approx(1))
 				Forces = (ForceVector) (Forces * loadFactor);
 
 			// Analysis by steps
-			StepAnalysis();
+			while (true)
+			{
+				// Add new step
+				ExecuteStep();
+
+				if (Stop || !_simulate && CurrentStep >= Parameters.NumberOfSteps)
+					return;
+			}
+		}
+
+		/// <summary>
+		///		Add a load step and execute it.
+		/// </summary>
+		/// <remarks>
+		///		Load step is not executed when analysis is aborted or complete.
+		/// </remarks>
+		public void ExecuteStep()
+		{
+			// Check conditions
+			if (Steps.Any() && (Stop || !_simulate && CurrentStep >= Parameters.NumberOfSteps))
+				return;
+
+			// Add new step
+			NewStep();
+
+			// Iterate
+			CurrentStep.Iterate(FemInput);
+
+			// Verify if convergence was not reached
+			if (Stop)
+			{
+				Invoke(StepAborted, new StepEventArgs(CurrentStep));
+				Invoke(AnalysisAborted);
+				CorrectResults();
+				return;
+			}
+
+			// Set step results
+			SetStepResults(MonitoredIndex);
+
+			// Check if analysis is done
+			if (_simulate || CurrentStep <= Parameters.NumberOfSteps)
+				return;
 
 			// Set Reactions
 			FemInput.Grips.SetReactions(GetReactions());
+
+			// Invoke analysis complete event
+			Invoke(AnalysisComplete);
 		}
 
 		/// <summary>
@@ -258,6 +304,9 @@ namespace andrefmello91.FEMAnalysis
 
 			// Calculate element forces
 			FemInput.CalculateForces();
+
+			// Set Reactions
+			FemInput.Grips.SetReactions(GetReactions());
 		}
 
 		/// <inheritdoc cref="LoadStep.SetResults" />
@@ -265,47 +314,6 @@ namespace andrefmello91.FEMAnalysis
 		{
 			CurrentStep.SetResults(monitoredIndex);
 			Invoke(StepConverged, new StepEventArgs(CurrentStep));
-		}
-
-		/// <summary>
-		///     Execute step by step analysis.
-		/// </summary>
-		protected void StepAnalysis()
-		{
-			// Step-by-step analysis
-			while (true)
-			{
-				// Add new step
-				NewStep();
-
-				// Iterate
-				CurrentStep.Iterate(FemInput);
-
-				// Verify if convergence was not reached
-				if (Stop)
-					goto CorrectResults;
-
-				// Set step results
-				SetStepResults(MonitoredIndex);
-
-				// break;
-
-				if (!_simulate && CurrentStep >= Parameters.NumberOfSteps)
-					goto AnalysisComplete;
-			}
-
-			CorrectResults:
-			{
-				Invoke(StepAborted, new StepEventArgs(CurrentStep));
-				Invoke(AnalysisAborted);
-				CorrectResults();
-				return;
-			}
-
-			AnalysisComplete:
-			{
-				Invoke(AnalysisComplete);
-			}
 		}
 
 		/// <summary>
