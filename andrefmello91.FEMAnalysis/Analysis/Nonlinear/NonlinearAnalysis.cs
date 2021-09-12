@@ -219,7 +219,7 @@ namespace andrefmello91.FEMAnalysis
 		}
 
 		/// <summary>
-		///     Execute the analysis.
+		///     Execute the full analysis.
 		/// </summary>
 		/// <inheritdoc cref="StepAnalysis" />
 		/// <param name="monitoredIndex">The index of a degree of freedom to monitor, if wanted.</param>
@@ -260,25 +260,6 @@ namespace andrefmello91.FEMAnalysis
 			FemInput.CalculateForces();
 		}
 
-		/// <summary>
-		///     Initiate fields.
-		/// </summary>
-		protected virtual void InitialStep()
-		{
-			// Do the initial step
-			var step = LoadStep.InitialStep(FemInput, Parameters, _simulate);
-
-			// Initiate lists solution values
-			Steps.Clear();
-			Steps.Add(step);
-		}
-
-		/// <summary>
-		///     Create a new load step.
-		/// </summary>
-		/// <param name="incrementLoad">Increment load of the new step?</param>
-		protected void NewStep(bool incrementLoad = true) => Steps.Add(LoadStep.FromLastStep(CurrentStep, incrementLoad));
-
 		/// <inheritdoc cref="LoadStep.SetResults" />
 		protected virtual void SetStepResults(int? monitoredIndex)
 		{
@@ -289,14 +270,14 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Execute step by step analysis.
 		/// </summary>
-		protected virtual void StepAnalysis()
+		protected void StepAnalysis()
 		{
-			// Initiate solution values
-			InitialStep();
-
 			// Step-by-step analysis
-			do
+			while (true)
 			{
+				// Add new step
+				NewStep();
+
 				// Iterate
 				CurrentStep.Iterate(FemInput);
 
@@ -311,11 +292,7 @@ namespace andrefmello91.FEMAnalysis
 
 				if (!_simulate && CurrentStep >= Parameters.NumberOfSteps)
 					goto AnalysisComplete;
-
-				// Create step
-				NewStep();
-
-			} while (_simulate || CurrentStep <= Parameters.NumberOfSteps);
+			}
 
 			CorrectResults:
 			{
@@ -330,6 +307,15 @@ namespace andrefmello91.FEMAnalysis
 				Invoke(AnalysisComplete);
 			}
 		}
+
+		/// <summary>
+		///     Create a new load step.
+		/// </summary>
+		/// <param name="incrementLoad">Increment load of the new step?</param>
+		private void NewStep(bool incrementLoad = true) =>
+			Steps.Add(Steps.Any()
+				? LoadStep.FromLastStep(CurrentStep, incrementLoad)
+				: LoadStep.InitialStep(FemInput, Parameters, _simulate));
 
 		/// <inheritdoc />
 		public IEnumerator<LoadStep> GetEnumerator() => Steps.GetEnumerator();
