@@ -243,14 +243,11 @@ namespace andrefmello91.FEMAnalysis
 		/// <returns>
 		///     The initial <see cref="LoadStep" />.
 		/// </returns>
-		public static LoadStep InitialStep(IFEMInput femInput, AnalysisParameters parameters, bool simulate = false)
+		public static LoadStep InitialStep(IFEMInput femInput, AnalysisParameters parameters)
 		{
-			if (simulate)
-				return SimulationStep.InitialStep(femInput, parameters);
-
 			var lf = StepIncrement(parameters.NumberOfSteps);
 
-			var step = From(femInput, lf, parameters, 1, simulate);
+			var step = From(femInput, lf, parameters, 1);
 
 			var iteration = step.CurrentIteration;
 

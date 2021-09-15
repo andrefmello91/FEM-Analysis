@@ -294,7 +294,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Correct results from last step after not achieving convergence.
 		/// </summary>
-		protected void CorrectResults()
+		protected virtual void CorrectResults()
 		{
 			StopMessage = $"Convergence not reached at {CurrentStep}";
 
@@ -323,7 +323,7 @@ namespace andrefmello91.FEMAnalysis
 		private void NewStep(bool incrementLoad = true) =>
 			Steps.Add(Steps.Any()
 				? LoadStep.FromLastStep(CurrentStep, incrementLoad)
-				: LoadStep.InitialStep(FemInput, Parameters, _simulate));
+				: LoadStep.InitialStep(FemInput, Parameters));
 
 		/// <inheritdoc />
 		public IEnumerator<LoadStep> GetEnumerator() => Steps.GetEnumerator();
