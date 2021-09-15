@@ -8,7 +8,12 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class SimulationIteration : Iteration, IIteration, ICloneable<SimulationIteration>
 	{
+
+		#region Fields
+
 		private double _loadFactorIncrement;
+
+		#endregion
 
 		#region Properties
 
@@ -23,7 +28,7 @@ namespace andrefmello91.FEMAnalysis
 		public DisplacementVector IncrementFromResidual { get; private set; }
 
 		/// <summary>
-		///		The load factor of this iteration.
+		///     The load factor of this iteration.
 		/// </summary>
 		public double LoadFactor { get; private set; }
 
@@ -40,8 +45,6 @@ namespace andrefmello91.FEMAnalysis
 			}
 		}
 
-		#region Interface Implementations
-
 		/// <summary>
 		///     The displacement increment vector of this iteration.
 		/// </summary>
@@ -49,8 +52,6 @@ namespace andrefmello91.FEMAnalysis
 		///     <see cref="IncrementFromResidual" /> + <see cref="LoadFactorIncrement" /> * <see cref="IncrementFromExternal" />
 		/// </returns>
 		public override DisplacementVector DisplacementIncrement => (DisplacementVector) (IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal);
-
-		#endregion
 
 		#endregion
 
@@ -64,10 +65,8 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		internal SimulationIteration(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, double loadFactor)
-			: base(displacements, residualForces, stiffness)
-		{
+			: base(displacements, residualForces, stiffness) =>
 			LoadFactor = loadFactor;
-		}
 
 		#endregion
 
@@ -96,7 +95,14 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public void UpdateDisplacements() => Displacements = (DisplacementVector) (Displacements + DisplacementIncrement);
 
-		#region Interface Implementations
+		/// <inheritdoc />
+		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone(), LoadFactor)
+		{
+			Number                = Number,
+			InternalForces        = InternalForces,
+			IncrementFromResidual = IncrementFromResidual,
+			IncrementFromExternal = IncrementFromExternal
+		};
 
 		// /// <summary>
 		// ///     Calculate the convergence of this iteration.
@@ -104,24 +110,12 @@ namespace andrefmello91.FEMAnalysis
 		// /// <param name="initialIncrement">The displacement increment of the first iteration.</param>
 		// public void CalculateConvergence(DisplacementVector initialIncrement) =>
 		// 	DisplacementConvergence = NonlinearAnalysis.CalculateConvergence(DisplacementIncrement, initialIncrement);
-		//
-		// /// <inheritdoc/>
-		// public override bool CheckConvergence(AnalysisParameters parameters) => base.CheckConvergence(parameters);
+
+		/// <inheritdoc />
+		public override bool CheckConvergence(AnalysisParameters parameters) => base.CheckConvergence(parameters) || DisplacementConvergence <= 1E-6;
 
 		/// <inheritdoc />
 		IIteration ICloneable<IIteration>.Clone() => Clone();
-
-		/// <inheritdoc />
-		public new SimulationIteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone(), LoadFactor)
-		{
-			Number                = Number,
-			LoadFactorIncrement   = LoadFactorIncrement,
-			InternalForces        = InternalForces,
-			IncrementFromResidual = IncrementFromResidual,
-			IncrementFromExternal = IncrementFromExternal
-		};
-
-		#endregion
 
 		#endregion
 

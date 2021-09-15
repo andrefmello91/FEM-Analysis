@@ -47,8 +47,6 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Properties
 
-		#region Interface Implementations
-
 		/// <inheritdoc />
 		public List<int> ConstraintIndex { get; }
 
@@ -60,8 +58,6 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public int NumberOfDoFs { get; }
-
-		#endregion
 
 		#endregion
 
@@ -93,8 +89,6 @@ namespace andrefmello91.FEMAnalysis
 		#endregion
 
 		#region Methods
-		
-		#region Object override
 
 		/// <inheritdoc />
 		public override string ToString() =>
@@ -102,8 +96,6 @@ namespace andrefmello91.FEMAnalysis
 			$"Number of grips: {Grips.Count}\n" +
 			$"Force vector: \n{Forces}\n" +
 			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
-
-		#endregion
 
 		#endregion
 

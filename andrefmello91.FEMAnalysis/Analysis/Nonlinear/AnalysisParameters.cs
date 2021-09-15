@@ -25,13 +25,13 @@
 		///     <para>ForceTolerance: 1E-3</para>
 		///     <para>DisplacementTolerance: 1E-8</para>
 		/// </remarks>
-		public static AnalysisParameters Default { get; } = new(NonLinearSolver.NewtonRaphson, 50, 10000, 2, 1E-3, 1E-8);
+		public static AnalysisParameters Default { get; } = new(NonLinearSolver.NewtonRaphson, 50, 2000, 2, 1E-3, 1E-6);
 
 		/// <summary>
 		///     Get/set the convergence tolerance for displacement increments.
 		/// </summary>
 		/// <remarks>
-		///     Default: 1E-8
+		///     Default: 1E-6
 		/// </remarks>
 		public double DisplacementTolerance { get; set; } = DisplacementTolerance;
 
@@ -47,7 +47,7 @@
 		///     Get/set the maximum number of iterations.
 		/// </summary>
 		/// <remarks>
-		///     Default: 10000
+		///     Default: 2000
 		/// </remarks>
 		public int MaxIterations { get; set; } = MaxIterations;
 

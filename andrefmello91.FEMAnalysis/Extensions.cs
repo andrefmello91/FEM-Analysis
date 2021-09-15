@@ -17,6 +17,124 @@ namespace andrefmello91.FEMAnalysis
 		#region Methods
 
 		/// <summary>
+		///     Assemble the global displacement vector.
+		/// </summary>
+		public static DisplacementVector AssembleDisplacements(this IFEMInput femInput)
+		{
+			return
+				new DisplacementVector(femInput.Grips.Select(x => x.Displacement));
+
+			// // Initialize the force vector
+			// var d = DisplacementVector.Zero(NumberOfDoFs);
+			//
+			// // Read the nodes data
+			// foreach (var grip in Grips)
+			// {
+			// 	// Get DoF indexes
+			// 	var index = grip.DoFIndex;
+			// 	int
+			// 		i = index[0],
+			// 		j = index[1];
+			//
+			// 	// Set to force vector
+			// 	d[i] = grip.Displacement.X;
+			// 	d[j] = grip.Displacement.Y;
+			// }
+			//
+			// return d;
+		}
+
+		/// <summary>
+		///     Assemble the global external force vector.
+		/// </summary>
+		/// <param name="simplify">Simplify the vector at constraint indexes?</param>
+		public static ForceVector AssembleExternalForces(this IFEMInput femInput, bool simplify = true)
+		{
+			var forces = new ForceVector(femInput.Grips.Select(x => x.Force));
+
+			return simplify
+				? forces.Simplified(femInput.ConstraintIndex)
+				: forces;
+
+			// // Initialize the force vector
+			// var f = ForceVector.Zero(NumberOfDoFs);
+			//
+			// // Read the nodes data
+			// foreach (var grip in Grips)
+			// {
+			// 	// Get DoF indexes
+			// 	var index = grip.DoFIndex;
+			// 	int
+			// 		i = index[0],
+			// 		j = index[1];
+			//
+			// 	// Set to force vector
+			// 	f[i] = grip.Force.X;
+			// 	f[j] = grip.Force.Y;
+			// }
+			//
+			// return f;
+		}
+
+		/// <summary>
+		///     Assemble the global internal force vector.
+		/// </summary>
+		/// <inheritdoc cref="AssembleExternalForces" />
+		public static ForceVector AssembleInternalForces(this IFEMInput femInput, bool simplify = true)
+		{
+			var fi = ForceVector.Zero(femInput.NumberOfDoFs);
+
+			foreach (var element in femInput)
+			{
+				var dofIndex = element.DoFIndex;
+
+				for (var i = 0; i < dofIndex.Length; i++)
+				{
+					// DoF index
+					var j = dofIndex[i];
+
+					// Add values
+					fi[j] += element.Forces[i];
+				}
+			}
+
+			return simplify
+				? (ForceVector) fi.Simplified(femInput.ConstraintIndex, (double?) null)
+				: fi;
+		}
+
+
+		/// <summary>
+		///     Assemble the global stiffness matrix.
+		/// </summary>
+		public static StiffnessMatrix AssembleStiffness(this IFEMInput femInput)
+		{
+			var stiffness = StiffnessMatrix.Zero(femInput.NumberOfDoFs);
+			stiffness.ConstraintIndex = femInput.ConstraintIndex;
+
+			foreach (var element in femInput)
+			{
+				var dofIndex = element.DoFIndex;
+
+				for (var i = 0; i < dofIndex.Length; i++)
+				{
+					// Global index
+					var k = dofIndex[i];
+
+					for (var j = 0; j < dofIndex.Length; j++)
+					{
+						// Global index
+						var l = dofIndex[j];
+
+						stiffness[k, l] += element.Stiffness[i, j];
+					}
+				}
+			}
+
+			return stiffness;
+		}
+
+		/// <summary>
 		///     Calculate forces in each element in this collection after updating displacements in grips.
 		/// </summary>
 		/// <inheritdoc cref="IFiniteElement.CalculateForces" />
@@ -63,6 +181,13 @@ namespace andrefmello91.FEMAnalysis
 					yield return j;
 			}
 		}
+
+		/// <summary>
+		///     Assemble the element displacement vector from it's grips.
+		/// </summary>
+		/// <param name="element">The finite element.</param>
+		public static DisplacementVector GetDisplacements(this IFiniteElement element) =>
+			new(element.Grips.Select(g => g.Displacement));
 
 		/// <summary>
 		///     Get the displacement <see cref="Vector" /> from this element's grips.
@@ -160,131 +285,6 @@ namespace andrefmello91.FEMAnalysis
 		{
 			foreach (var element in elements)
 				element.UpdateStiffness();
-		}
-
-		/// <summary>
-		///     Assemble the element displacement vector from it's grips.
-		/// </summary>
-		/// <param name="element">The finite element.</param>
-		public static DisplacementVector GetDisplacements(this IFiniteElement element) =>
-			new(element.Grips.Select(g => g.Displacement));
-		
-		
-		/// <summary>
-		///     Assemble the global stiffness matrix.
-		/// </summary>
-		public static StiffnessMatrix AssembleStiffness(this IFEMInput femInput)
-		{
-			var stiffness = StiffnessMatrix.Zero(femInput.NumberOfDoFs);
-			stiffness.ConstraintIndex = femInput.ConstraintIndex;
-
-			foreach (var element in femInput)
-			{
-				var dofIndex = element.DoFIndex;
-
-				for (var i = 0; i < dofIndex.Length; i++)
-				{
-					// Global index
-					var k = dofIndex[i];
-
-					for (var j = 0; j < dofIndex.Length; j++)
-					{
-						// Global index
-						var l = dofIndex[j];
-
-						stiffness[k, l] += element.Stiffness[i, j];
-					}
-				}
-			}
-
-			return stiffness;
-		}
-
-		/// <summary>
-		///     Assemble the global displacement vector.
-		/// </summary>
-		public static DisplacementVector AssembleDisplacements(this IFEMInput femInput)
-		{
-			return
-				new (femInput.Grips.Select(x => x.Displacement));
-
-			// // Initialize the force vector
-			// var d = DisplacementVector.Zero(NumberOfDoFs);
-			//
-			// // Read the nodes data
-			// foreach (var grip in Grips)
-			// {
-			// 	// Get DoF indexes
-			// 	var index = grip.DoFIndex;
-			// 	int
-			// 		i = index[0],
-			// 		j = index[1];
-			//
-			// 	// Set to force vector
-			// 	d[i] = grip.Displacement.X;
-			// 	d[j] = grip.Displacement.Y;
-			// }
-			//
-			// return d;
-		}
-
-		/// <summary>
-		///     Assemble the global external force vector.
-		/// </summary>
-		/// <param name="simplify">Simplify the vector at constraint indexes?</param>
-		public static ForceVector AssembleExternalForces(this IFEMInput femInput, bool simplify = true)
-		{
-			var forces = new ForceVector(femInput.Grips.Select(x => x.Force));
-			
-			return simplify
-				? forces.Simplified(femInput.ConstraintIndex)
-				: forces;
-			
-			// // Initialize the force vector
-			// var f = ForceVector.Zero(NumberOfDoFs);
-			//
-			// // Read the nodes data
-			// foreach (var grip in Grips)
-			// {
-			// 	// Get DoF indexes
-			// 	var index = grip.DoFIndex;
-			// 	int
-			// 		i = index[0],
-			// 		j = index[1];
-			//
-			// 	// Set to force vector
-			// 	f[i] = grip.Force.X;
-			// 	f[j] = grip.Force.Y;
-			// }
-			//
-			// return f;
-		}
-
-		/// <summary>
-		///     Assemble the global internal force vector.
-		/// </summary>
-		/// <inheritdoc cref="AssembleExternalForces" />
-		public static ForceVector AssembleInternalForces(this IFEMInput femInput, bool simplify = true)
-		{
-			var fi = ForceVector.Zero(femInput.NumberOfDoFs);
-
-			foreach (var element in femInput)
-			{
-				var dofIndex = element.DoFIndex;
-
-				for (var i = 0; i < dofIndex.Length; i++)
-				{
-					// DoF index
-					var j = dofIndex[i];
-
-					// Add values
-					fi[j] += element.Forces[i];
-				}
-			}
-
-			return simplify
-				? (ForceVector) fi.Simplified(femInput.ConstraintIndex, (double?) null)
-				: fi;
 		}
 
 		#endregion

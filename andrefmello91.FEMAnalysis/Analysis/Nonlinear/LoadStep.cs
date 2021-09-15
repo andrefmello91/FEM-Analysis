@@ -16,13 +16,11 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Fields
 
-		private double _loadFactor;
-		
 		/// <summary>
 		///     The vector of full applied forces.
 		/// </summary>
 		/// <remarks>
-		///		Simplified at constrained DoFs.
+		///     Simplified at constrained DoFs.
 		/// </remarks>
 		protected readonly ForceVector FullForceVector;
 
@@ -31,9 +29,21 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		protected readonly List<IIteration> Iterations = new();
 
+		private double _loadFactor;
+
 		#endregion
 
 		#region Properties
+
+		/// <summary>
+		///     Get the iteration at this index.
+		/// </summary>
+		public IIteration this[int index] => Iterations[index];
+
+		/// <summary>
+		///     Get the iteration at this index.
+		/// </summary>
+		public IIteration this[Index index] => Iterations[index];
 
 		/// <summary>
 		///     The status of this step. True if convergence was reached.
@@ -73,23 +83,13 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     The force vector of this step.
 		/// </summary>
-		/// <inheritdoc cref="FullForceVector"/>
+		/// <inheritdoc cref="FullForceVector" />
 		public ForceVector Forces => (ForceVector) (LoadFactor * FullForceVector);
 
 		/// <summary>
 		///     The displacement vector at the beginning of this step.
 		/// </summary>
 		public DisplacementVector InitialDisplacements { get; }
-
-		/// <summary>
-		///     Get the iteration at this index.
-		/// </summary>
-		public IIteration this[int index] => Iterations[index];
-
-		/// <summary>
-		///     Get the iteration at this index.
-		/// </summary>
-		public IIteration this[Index index] => Iterations[index];
 
 		/// <summary>
 		///     The results of the current solution (last solved iteration [i - 1]).
@@ -257,19 +257,8 @@ namespace andrefmello91.FEMAnalysis
 			// Get the initial stiffness and force vector simplified
 			iteration.Stiffness = femInput.AssembleStiffness();
 
-			// Calculate initial displacements
-			var dU = iteration.Stiffness.Solve(step.Forces);
-			iteration.IncrementDisplacements(dU);
-
-			// Update displacements in grips and elements
-			femInput.Grips.SetDisplacements(iteration.Displacements);
-			femInput.UpdateDisplacements();
-
-			// Calculate element forces
-			femInput.CalculateForces();
-
 			// Update internal forces
-			iteration.UpdateForces(step.Forces, femInput.AssembleInternalForces());
+			iteration.UpdateForces(step.Forces, ForceVector.Zero(femInput.NumberOfDoFs));
 
 			return step;
 		}
@@ -283,7 +272,7 @@ namespace andrefmello91.FEMAnalysis
 			var iterations = Iterations.Where(i => i.Number > 0).ToArray();
 
 			DisplacementVector accD;
-			
+
 			try
 			{
 				accD = (DisplacementVector) (iterations[finalIndex].Displacements - InitialDisplacements);
@@ -315,19 +304,24 @@ namespace andrefmello91.FEMAnalysis
 			// Iterate
 			do
 			{
+				// Update stiffness
+				UpdateStiffness();
+
 				// Add iteration
 				NewIteration();
 
-				// Update displacements, stiffness and forces
-				UpdateDisplacements(femInput);
-				UpdateStiffness();
+				// Update displacements
+				UpdateDisplacements();
+
+				// Update elements and forces
+				UpdateElements(femInput);
 				UpdateForces(femInput);
 
 				// Calculate convergence
 				CurrentIteration.CalculateConvergence(Forces, FirstIteration.DisplacementIncrement);
-				
+
 			} while (!IterativeStop());
-			
+
 			if (!Stop && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				UpdateStiffness();
 		}
@@ -347,6 +341,9 @@ namespace andrefmello91.FEMAnalysis
 			// Set to step
 			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
 		}
+
+		/// <inheritdoc />
+		public override string ToString() => $"Load step {Number}";
 
 		/// <summary>
 		///     Check if iterative procedure must stop by achieving convergence or achieving the maximum number of iterations.
@@ -396,14 +393,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update forces and calculate convergence.
 		/// </summary>
-		protected virtual void UpdateForces(IFEMInput femInput)
-		{
-			// Calculate element forces
-			femInput.CalculateForces();
-
-			// Update internal forces
-			CurrentIteration.UpdateForces(Forces, femInput.AssembleInternalForces());
-		}
+		protected void UpdateForces(IFEMInput femInput) => CurrentIteration.UpdateForces(Forces, femInput.AssembleInternalForces());
 
 		/// <summary>
 		///     Calculate the secant stiffness <see cref="Matrix{T}" /> of current iteration.
@@ -411,10 +401,10 @@ namespace andrefmello91.FEMAnalysis
 		protected void UpdateStiffness()
 		{
 			// If analysis stopped or solver is modified newton raphson and step didn't converge yet
-			if (Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
+			if (CurrentIteration.Number <= 1 || Stop || !Converged && Parameters.Solver is NonLinearSolver.ModifiedNewtonRaphson)
 				return;
 
-			CurrentIteration.Stiffness                 = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
+			CurrentIteration.Stiffness = (StiffnessMatrix) (CurrentIteration.Stiffness + StiffnessIncrement(CurrentIteration, LastIteration, Parameters.Solver));
 		}
 
 		/// <summary>
@@ -425,7 +415,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Update displacements.
 		/// </summary>
-		private void UpdateDisplacements(IFEMInput femInput)
+		private void UpdateDisplacements()
 		{
 			var curIt  = CurrentIteration;
 			var lastIt = LastIteration;
@@ -435,21 +425,19 @@ namespace andrefmello91.FEMAnalysis
 			curIt.IncrementDisplacements(dUr);
 
 			// Update displacements in grips and elements
-			femInput.Grips.SetDisplacements(curIt.Displacements);
-			femInput.UpdateDisplacements();
+			// femInput.Grips.SetDisplacements(curIt.Displacements);
+			// femInput.UpdateDisplacements();
 		}
-
-		#region Interface Implementations
-
-		/// <inheritdoc />
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		/// <inheritdoc />
 		public IEnumerator<IIteration> GetEnumerator() => Iterations.GetEnumerator();
 
+		/// <inheritdoc />
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
 		#endregion
 
-		#region Object override
+		#region Operators
 
 		/// <summary>
 		///     Check the step number.
@@ -496,11 +484,6 @@ namespace andrefmello91.FEMAnalysis
 		///     True if the step number is smaller or equal to the right number.
 		/// </returns>
 		public static bool operator <=(LoadStep left, int right) => left.Number <= right;
-
-		/// <inheritdoc />
-		public override string ToString() => $"Load step {Number}";
-
-		#endregion
 
 		#endregion
 

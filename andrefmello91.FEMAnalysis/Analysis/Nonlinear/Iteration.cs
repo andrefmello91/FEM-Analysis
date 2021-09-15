@@ -12,8 +12,6 @@ namespace andrefmello91.FEMAnalysis
 
 		#region Properties
 
-		#region Interface Implementations
-
 		/// <inheritdoc />
 		public double DisplacementConvergence { get; protected set; }
 
@@ -37,8 +35,6 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public StiffnessMatrix Stiffness { get; set; }
-
-		#endregion
 
 		#endregion
 
@@ -82,7 +78,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="residualForces">The residual force vector of this iteration.</param>
 		/// <param name="stiffness">The stiffness matrix of this iteration.</param>
 		/// <param name="simulate">Set true if the performed analysis is a simulation.</param>
-		/// <param name="loadFactor">The load factor if <paramref name="simulate"/> is true.</param>
+		/// <param name="loadFactor">The load factor if <paramref name="simulate" /> is true.</param>
 		public static IIteration From(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, bool simulate = false, double loadFactor = 0) => simulate switch
 		{
 			false => new Iteration(displacements, residualForces, stiffness),
@@ -100,10 +96,8 @@ namespace andrefmello91.FEMAnalysis
 			_     => new SimulationIteration(loadStep.FinalDisplacements, ForceVector.Zero(loadStep.FinalDisplacements.Count), loadStep.Stiffness, loadStep.LoadFactor)
 		};
 
-		#region Interface Implementations
-
 		/// <inheritdoc />
-		IIteration ICloneable<IIteration>.Clone() => Clone();
+		public override string ToString() => $"Iteration {Number}";
 
 		/// <inheritdoc />
 		public Iteration Clone() => new((DisplacementVector) Displacements.Clone(), (ForceVector) ResidualForces.Clone(), (StiffnessMatrix) Stiffness.Clone()) { Number = Number };
@@ -118,7 +112,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public virtual bool CheckConvergence(AnalysisParameters parameters) =>
 			Number >= parameters.MinIterations &&
-			ForceConvergence <= parameters.ForceTolerance;
+			ForceConvergence <= parameters.ForceTolerance && DisplacementConvergence <= parameters.DisplacementTolerance;
 
 		/// <inheritdoc />
 		public bool CheckStopCondition(AnalysisParameters parameters) =>
@@ -139,9 +133,12 @@ namespace andrefmello91.FEMAnalysis
 			ResidualForces = (ForceVector) (internalForces - appliedForces);
 		}
 
+		/// <inheritdoc />
+		IIteration ICloneable<IIteration>.Clone() => Clone();
+
 		#endregion
 
-		#region Object override
+		#region Operators
 
 		/// <summary>
 		///     Check the iteration number.
@@ -188,11 +185,6 @@ namespace andrefmello91.FEMAnalysis
 		///     True if the iteration number is smaller or equal to the right number.
 		/// </returns>
 		public static bool operator <=(Iteration left, int right) => left.Number <= right;
-
-		/// <inheritdoc />
-		public override string ToString() => $"Iteration {Number}";
-
-		#endregion
 
 		#endregion
 

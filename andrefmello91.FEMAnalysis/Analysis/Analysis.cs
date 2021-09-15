@@ -1,4 +1,5 @@
-﻿using andrefmello91.OnPlaneComponents;
+﻿using System;
+using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnitsNet.Units;
 #nullable enable
@@ -28,7 +29,7 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc cref="IFEMInput.Forces" />
 		/// <remarks>
-		///		Simplified by constrained DoFs.
+		///     Simplified by constrained DoFs.
 		/// </remarks>
 		public ForceVector Forces { get; protected set; }
 
@@ -36,6 +37,20 @@ namespace andrefmello91.FEMAnalysis
 		///     Get/set global stiffness <see cref="Matrix" />.
 		/// </summary>
 		public StiffnessMatrix GlobalStiffness { get; protected set; }
+
+		#endregion
+
+		#region Events
+
+		/// <summary>
+		///     Event to execute when analysis is aborted.
+		/// </summary>
+		public abstract event EventHandler? AnalysisAborted;
+
+		/// <summary>
+		///     Event to execute when analysis is complete.
+		/// </summary>
+		public abstract event EventHandler? AnalysisComplete;
 
 		#endregion
 
@@ -62,8 +77,6 @@ namespace andrefmello91.FEMAnalysis
 		/// </summary>
 		public ForceVector GetReactions() => (ForceVector) (GlobalStiffness * Displacements - Forces);
 
-		#region Object override
-
 		/// <inheritdoc />
 		public override string ToString() =>
 			$"{FemInput}\n" +
@@ -72,7 +85,15 @@ namespace andrefmello91.FEMAnalysis
 			"Displacement Vector:\n" +
 			$"{Displacements}";
 
-		#endregion
+		/// <summary>
+		///     Invoke the event.
+		/// </summary>
+		/// <param name="handler">The handler.</param>
+		protected void Invoke(EventHandler? handler) => handler?.Invoke(this, EventArgs.Empty);
+
+		/// <inheritdoc cref="Invoke" />
+		protected void Invoke<TEventArgs>(EventHandler<TEventArgs>? handler, TEventArgs eventArgs) where TEventArgs : EventArgs =>
+			handler?.Invoke(this, eventArgs);
 
 		#endregion
 

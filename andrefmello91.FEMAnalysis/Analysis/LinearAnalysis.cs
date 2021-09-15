@@ -1,4 +1,5 @@
-﻿using andrefmello91.Extensions;
+﻿using System;
+using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 #nullable enable
 
@@ -9,6 +10,16 @@ namespace andrefmello91.FEMAnalysis
 	/// </summary>
 	public class LinearAnalysis : Analysis
 	{
+
+		#region Events
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisAborted;
+
+		/// <inheritdoc />
+		public override event EventHandler? AnalysisComplete;
+
+		#endregion
 
 		#region Constructors
 
@@ -49,6 +60,9 @@ namespace andrefmello91.FEMAnalysis
 
 			// Set Reactions
 			FemInput.Grips.SetReactions(GetReactions());
+
+			// Invoke complete event
+			Invoke(AnalysisComplete);
 		}
 
 		#endregion
