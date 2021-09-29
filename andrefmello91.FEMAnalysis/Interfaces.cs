@@ -19,6 +19,11 @@ namespace andrefmello91.FEMAnalysis
 		int[] DoFIndex { get; }
 
 		/// <summary>
+		///     The name of this element.
+		/// </summary>
+		string Name { get; }
+
+		/// <summary>
 		///     Get/set the number of this element.
 		/// </summary>
 		/// <remarks>
@@ -209,6 +214,30 @@ namespace andrefmello91.FEMAnalysis
 		/// <param name="appliedForces">The vector of applied forces of the current step, simplified in constrained DoFs.</param>
 		/// <param name="internalForces">The vector of internal forces, simplified in constrained DoFs.</param>
 		void UpdateForces(ForceVector appliedForces, ForceVector internalForces);
+
+		#endregion
+
+	}
+
+	/// <summary>
+	///     Generic interface for monitored values.
+	/// </summary>
+	/// <typeparam name="TStruct">The monitored type.</typeparam>
+	public interface IMonitoredValue<TStruct> : IEquatable<IMonitoredValue<TStruct>>, IComparable<IMonitoredValue<TStruct>>
+		where TStruct : struct
+	{
+
+		#region Properties
+
+		/// <summary>
+		///     The load factor associated to value.
+		/// </summary>
+		double LoadFactor { get; }
+
+		/// <summary>
+		///     The monitored value.
+		/// </summary>
+		TStruct Value { get; }
 
 		#endregion
 
