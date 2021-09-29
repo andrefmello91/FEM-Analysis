@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics.Data.Text;
@@ -14,10 +13,16 @@ namespace andrefmello91.FEMAnalysis
 	public class FEMOutput : List<MonitoredDisplacement>
 	{
 
+		#region Fields
+
+		private readonly List<ElementMonitor> _monitors;
+
+		#endregion
+
 		#region Properties
 
 		/// <summary>
-		///     Values of calcultated step results.
+		///     Values of calculated step results.
 		/// </summary>
 		public List<LoadStep> LoadStepResults { get; }
 
@@ -29,12 +34,15 @@ namespace andrefmello91.FEMAnalysis
 		///     Output data constructor.
 		/// </summary>
 		/// <param name="loadStepResults">The values of step results.</param>
-		public FEMOutput([NotNull] IEnumerable<LoadStep> loadStepResults)
+		/// <param name="elementMonitors">The element monitors.</param>
+		public FEMOutput(IEnumerable<LoadStep> loadStepResults, IEnumerable<ElementMonitor> elementMonitors)
 			: base(loadStepResults.Where(ls => ls.MonitoredDisplacement.HasValue).Select(ls => ls.MonitoredDisplacement!.Value))
 		{
 			LoadStepResults = loadStepResults
 				.Where(ls => ls.Converged)
 				.ToList();
+
+			_monitors = elementMonitors.ToList();
 		}
 
 		#endregion
@@ -70,6 +78,10 @@ namespace andrefmello91.FEMAnalysis
 
 			// Export
 			DelimitedWriter.Write(fullPath, result, delimiter, headers);
+
+			// Export monitors
+			foreach (var monitor in _monitors)
+				monitor.Export(outputPath, fileName, delimiter);
 		}
 
 		#endregion

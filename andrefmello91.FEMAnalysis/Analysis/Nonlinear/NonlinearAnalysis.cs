@@ -289,7 +289,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Generate an <see cref="FEMOutput" /> from analysis results.
 		/// </summary>
-		public FEMOutput GenerateOutput() => new(Steps);
+		public FEMOutput GenerateOutput() => new(Steps, FemInput.MonitoredElements.Select(e => e.Monitor!));
 
 		/// <summary>
 		///     Correct results from last step after not achieving convergence.

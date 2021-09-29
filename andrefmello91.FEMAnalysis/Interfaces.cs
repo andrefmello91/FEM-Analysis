@@ -119,6 +119,38 @@ namespace andrefmello91.FEMAnalysis
 	}
 
 	/// <summary>
+	///     Interface for monitored elements.
+	/// </summary>
+	public interface IMonitoredElement
+	{
+
+		#region Properties
+
+		/// <summary>
+		///     The element monitor.
+		/// </summary>
+		ElementMonitor? Monitor { get; }
+
+		/// <summary>
+		///     Get/set monitoring of this element.
+		/// </summary>
+		public bool Monitored { get; set; }
+
+		#endregion
+
+		#region Methods
+
+		/// <summary>
+		///     Add the monitored values to monitor for the current load factor.
+		/// </summary>
+		/// <param name="loadFactor">The current load factor.</param>
+		void AddValue(double loadFactor);
+
+		#endregion
+
+	}
+
+	/// <summary>
 	///     Interface for iterations.
 	/// </summary>
 	public interface IIteration : ICloneable<IIteration>
@@ -241,5 +273,9 @@ namespace andrefmello91.FEMAnalysis
 
 		#endregion
 
+	}
+
+	public interface IElementMonitor
+	{
 	}
 }

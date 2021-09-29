@@ -17,22 +17,27 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Get the index of constrained degrees of freedom.
 		/// </summary>
-		public List<int> ConstraintIndex { get; }
+		List<int> ConstraintIndex { get; }
 
 		/// <summary>
 		///     Get the external force <see cref="Vector" />.
 		/// </summary>
-		public ForceVector Forces { get; }
+		ForceVector Forces { get; }
 
 		/// <summary>
 		///     Get the grips of the finite element model.
 		/// </summary>
-		public List<IGrip> Grips { get; }
+		List<IGrip> Grips { get; }
+
+		/// <summary>
+		///     The monitored elements.
+		/// </summary>
+		IEnumerable<IMonitoredElement> MonitoredElements { get; }
 
 		/// <summary>
 		///     Get the number of degrees of freedom (DoFs).
 		/// </summary>
-		public int NumberOfDoFs { get; }
+		int NumberOfDoFs { get; }
 
 		#endregion
 
@@ -55,6 +60,16 @@ namespace andrefmello91.FEMAnalysis
 
 		/// <inheritdoc />
 		public List<IGrip> Grips { get; }
+
+		/// <summary>
+		///     The monitored elements.
+		/// </summary>
+		public IEnumerable<IMonitoredElement> MonitoredElements => this
+			.Where(e => e is IMonitoredElement { Monitored: true })
+			.Cast<IMonitoredElement>()
+			.Concat(Grips
+				.Where(e => e is IMonitoredElement { Monitored: true })
+				.Cast<IMonitoredElement>());
 
 		/// <inheritdoc />
 		public int NumberOfDoFs { get; }
