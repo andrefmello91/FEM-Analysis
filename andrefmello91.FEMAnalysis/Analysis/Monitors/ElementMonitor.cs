@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using andrefmello91.Extensions;
 using MathNet.Numerics.Data.Text;
@@ -75,7 +76,7 @@ namespace andrefmello91.FEMAnalysis
 			var fullPath = $"{outputPath.TrimEnd('\u002F', '\u005C')}/{fileName}_{Name}.csv";
 
 			// Export
-			DelimitedWriter.Write(fullPath, result, delimiter, Labels);
+			DelimitedWriter.Write(fullPath, result, delimiter, Labels, formatProvider: CultureInfo.CurrentCulture);
 		}
 
 		#endregion

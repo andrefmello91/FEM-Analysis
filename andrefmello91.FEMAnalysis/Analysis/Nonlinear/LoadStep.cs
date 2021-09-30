@@ -327,7 +327,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <summary>
 		///     Set step results after achieving convergence.
 		/// </summary>
-		public void SetResults(int? monitoredIndex = null)
+		public void SetResults(IFEMInput femInput, int? monitoredIndex = null)
 		{
 			if (!monitoredIndex.HasValue)
 				return;
@@ -337,6 +337,9 @@ namespace andrefmello91.FEMAnalysis
 
 			// Set to step
 			MonitoredDisplacement = new MonitoredDisplacement(disp, LoadFactor);
+
+			foreach (var element in femInput.MonitoredElements)
+				element.AddValue(LoadFactor);
 		}
 
 		/// <inheritdoc />

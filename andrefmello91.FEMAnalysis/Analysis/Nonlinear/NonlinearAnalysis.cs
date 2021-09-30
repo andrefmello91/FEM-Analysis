@@ -312,7 +312,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc cref="LoadStep.SetResults" />
 		protected virtual void SetStepResults(int? monitoredIndex)
 		{
-			CurrentStep.SetResults(monitoredIndex);
+			CurrentStep.SetResults(FemInput, monitoredIndex);
 			Invoke(StepConverged, new StepEventArgs(CurrentStep));
 		}
 
