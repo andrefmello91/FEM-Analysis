@@ -1,5 +1,4 @@
-﻿using System;
-using andrefmello91.Extensions;
+﻿using andrefmello91.Extensions;
 using andrefmello91.OnPlaneComponents;
 
 namespace andrefmello91.FEMAnalysis
@@ -113,7 +112,7 @@ namespace andrefmello91.FEMAnalysis
 		/// <inheritdoc />
 		public virtual bool CheckConvergence(AnalysisParameters parameters) =>
 			Number >= parameters.MinIterations &&
-			(Math.Max(ForceConvergence, DisplacementConvergence) <= parameters.ForceTolerance ||
+			(ForceConvergence <= parameters.ForceTolerance ||
 			 DisplacementConvergence <= parameters.DisplacementTolerance);
 
 		/// <inheritdoc />
