@@ -4,115 +4,114 @@ using andrefmello91.OnPlaneComponents;
 using MathNet.Numerics.LinearAlgebra.Double;
 #nullable disable
 
-namespace andrefmello91.FEMAnalysis
+namespace andrefmello91.FEMAnalysis;
+
+/// <summary>
+///     Finite element input class.
+/// </summary>
+public interface IFEMInput : IEnumerable<IFiniteElement>
 {
-	/// <summary>
-	///     Finite element input class.
-	/// </summary>
-	public interface IFEMInput : IEnumerable<IFiniteElement>
-	{
 
-		#region Properties
-
-		/// <summary>
-		///     Get the index of constrained degrees of freedom.
-		/// </summary>
-		List<int> ConstraintIndex { get; }
-
-		/// <summary>
-		///     Get the external force <see cref="Vector" />.
-		/// </summary>
-		ForceVector Forces { get; }
-
-		/// <summary>
-		///     Get the grips of the finite element model.
-		/// </summary>
-		List<IGrip> Grips { get; }
-
-		/// <summary>
-		///     The monitored elements.
-		/// </summary>
-		IEnumerable<IMonitoredElement> MonitoredElements { get; }
-
-		/// <summary>
-		///     Get the number of degrees of freedom (DoFs).
-		/// </summary>
-		int NumberOfDoFs { get; }
-
-		#endregion
-
-	}
+	#region Properties
 
 	/// <summary>
-	///     Default finite element input class.
+	///     Get the index of constrained degrees of freedom.
 	/// </summary>
-	/// <inheritdoc cref="IFEMInput{TFiniteElement}" />
-	public class FEMInput : List<IFiniteElement>, IFEMInput
-	{
+	List<int> ConstraintIndex { get; }
 
-		#region Properties
+	/// <summary>
+	///     Get the external force <see cref="Vector" />.
+	/// </summary>
+	ForceVector Forces { get; }
 
-		/// <inheritdoc />
-		public List<int> ConstraintIndex { get; }
+	/// <summary>
+	///     Get the grips of the finite element model.
+	/// </summary>
+	List<IGrip> Grips { get; }
 
-		/// <inheritdoc />
-		public ForceVector Forces { get; }
+	/// <summary>
+	///     The monitored elements.
+	/// </summary>
+	IEnumerable<IMonitoredElement> MonitoredElements { get; }
 
-		/// <inheritdoc />
-		public List<IGrip> Grips { get; }
+	/// <summary>
+	///     Get the number of degrees of freedom (DoFs).
+	/// </summary>
+	int NumberOfDoFs { get; }
 
-		/// <summary>
-		///     The monitored elements.
-		/// </summary>
-		public IEnumerable<IMonitoredElement> MonitoredElements => this
+	#endregion
+
+}
+
+/// <summary>
+///     Default finite element input class.
+/// </summary>
+/// <inheritdoc cref="IFEMInput{TFiniteElement}" />
+public class FEMInput : List<IFiniteElement>, IFEMInput
+{
+
+	#region Properties
+
+	/// <inheritdoc />
+	public List<int> ConstraintIndex { get; }
+
+	/// <inheritdoc />
+	public ForceVector Forces { get; }
+
+	/// <inheritdoc />
+	public List<IGrip> Grips { get; }
+
+	/// <summary>
+	///     The monitored elements.
+	/// </summary>
+	public IEnumerable<IMonitoredElement> MonitoredElements => this
+		.Where(e => e is IMonitoredElement { Monitored: true })
+		.Cast<IMonitoredElement>()
+		.Concat(Grips
 			.Where(e => e is IMonitoredElement { Monitored: true })
-			.Cast<IMonitoredElement>()
-			.Concat(Grips
-				.Where(e => e is IMonitoredElement { Monitored: true })
-				.Cast<IMonitoredElement>());
+			.Cast<IMonitoredElement>());
 
-		/// <inheritdoc />
-		public int NumberOfDoFs { get; }
+	/// <inheritdoc />
+	public int NumberOfDoFs { get; }
 
-		#endregion
+	#endregion
 
-		#region Constructors
+	#region Constructors
 
-		/// <inheritdoc cref="FEMInput(IEnumerable{IFiniteElement}, IEnumerable{IGrip})" />
-		/// <remarks>
-		///     Grips are taken from <paramref name="elements" />.
-		/// </remarks>
-		public FEMInput(IEnumerable<IFiniteElement> elements)
-			: this(elements, elements.SelectMany(e => e.Grips).Distinct())
-		{
-		}
-
-		/// <summary>
-		///     Input Data constructor.
-		/// </summary>
-		/// <param name="elements">The collection containing all distinct <see cref="IFiniteElement" />'s in the model.</param>
-		/// <param name="grips">The collection containing all distinct <see cref="IGrip" />'s in the model.</param>
-		public FEMInput(IEnumerable<IFiniteElement> elements, IEnumerable<IGrip> grips)
-			: base(elements)
-		{
-			Grips           = grips.OrderBy(g => g.Number).ToList();
-			NumberOfDoFs    = 2 * Grips.Count;
-			ConstraintIndex = Grips.GetConstraintIndex().ToList();
-			Forces          = this.AssembleExternalForces(false);
-		}
-
-		#endregion
-
-		#region Methods
-
-		/// <inheritdoc />
-		public override string ToString() =>
-			$"Number of elements: {Count}\n" +
-			$"Number of grips: {Grips.Count}\n" +
-			$"Force vector: \n{Forces}\n" +
-			$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
-
-		#endregion
-
+	/// <inheritdoc cref="FEMInput(IEnumerable{IFiniteElement}, IEnumerable{IGrip})" />
+	/// <remarks>
+	///     Grips are taken from <paramref name="elements" />.
+	/// </remarks>
+	public FEMInput(IEnumerable<IFiniteElement> elements)
+		: this(elements, elements.SelectMany(e => e.Grips).Distinct())
+	{
 	}
+
+	/// <summary>
+	///     Input Data constructor.
+	/// </summary>
+	/// <param name="elements">The collection containing all distinct <see cref="IFiniteElement" />'s in the model.</param>
+	/// <param name="grips">The collection containing all distinct <see cref="IGrip" />'s in the model.</param>
+	public FEMInput(IEnumerable<IFiniteElement> elements, IEnumerable<IGrip> grips)
+		: base(elements)
+	{
+		Grips           = grips.OrderBy(g => g.Number).ToList();
+		NumberOfDoFs    = 2 * Grips.Count;
+		ConstraintIndex = Grips.GetConstraintIndex().ToList();
+		Forces          = this.AssembleExternalForces(false);
+	}
+
+	#endregion
+
+	#region Methods
+
+	/// <inheritdoc />
+	public override string ToString() =>
+		$"Number of elements: {Count}\n" +
+		$"Number of grips: {Grips.Count}\n" +
+		$"Force vector: \n{Forces}\n" +
+		$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
+
+	#endregion
+
 }
