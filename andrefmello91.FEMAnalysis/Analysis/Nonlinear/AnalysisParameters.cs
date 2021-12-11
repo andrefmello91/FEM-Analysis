@@ -19,13 +19,13 @@ public record AnalysisParameters(NonLinearSolver Solver, int NumberOfSteps, int 
 	/// </summary>
 	/// <remarks>
 	///     Solver: <see cref="NonLinearSolver.NewtonRaphson" />.
-	///     <para>NumberOfSteps: 50.</para>
-	///     <para>MaxIterations: 10000.</para>
+	///     <para>NumberOfSteps: 100.</para>
+	///     <para>MaxIterations: 2000.</para>
 	///     <para>MinIterations: 2.</para>
 	///     <para>ForceTolerance: 1E-3</para>
-	///     <para>DisplacementTolerance: 1E-8</para>
+	///     <para>DisplacementTolerance: 1E-4</para>
 	/// </remarks>
-	public static AnalysisParameters Default { get; } = new(NonLinearSolver.NewtonRaphson, 50, 2000, 2, 1E-3, 1E-6);
+	public static AnalysisParameters Default { get; } = new(NonLinearSolver.NewtonRaphson, 100, 2000, 2, 1E-3, 1E-4);
 
 	/// <summary>
 	///     Get/set the convergence tolerance for displacement increments.
