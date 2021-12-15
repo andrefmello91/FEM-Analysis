@@ -73,7 +73,7 @@ public class LoadStep : IEnumerable<IIteration>
 	/// <summary>
 	///     Get the first iteration of the current step.
 	/// </summary>
-	public IIteration FirstIteration => Iterations.Find(i => i.Number == 1)!;
+	public IIteration FirstIteration { get; }
 
 	/// <summary>
 	///     The force convergence of this step.
@@ -173,8 +173,8 @@ public class LoadStep : IEnumerable<IIteration>
 		_loadFactor          = loadFactor;
 		InitialDisplacements = initialDisplacements;
 		Parameters           = parameters;
-
-		Iterations.Add(Iteration.From(initialDisplacements, ForceVector.Zero(fullForceVector.Count), stiffness, simulate, loadFactor));
+		FirstIteration       = Iteration.From(initialDisplacements, ForceVector.Zero(fullForceVector.Count), stiffness, simulate, loadFactor);
+		Iterations.Add(FirstIteration);
 	}
 
 	#endregion
@@ -376,6 +376,10 @@ public class LoadStep : IEnumerable<IIteration>
 
 		// Increase iteration count
 		CurrentIteration.Number++;
+
+		// Free space and maintain only last 10 iterations
+		if (Iterations.Count > 10)
+			Iterations.RemoveAt(0);
 	}
 
 	/// <summary>
