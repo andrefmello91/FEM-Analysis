@@ -9,8 +9,8 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
         <Description>Implementation of linear and nonlinear analysis of static problems by Finite Element Method.</Description>
-        <RepositoryUrl>https://github.com/andrefmello91/FEMAnalysis</RepositoryUrl>
-        <PackageProjectUrl>https://github.com/andrefmello91/FEMAnalysis</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/andrefmello91/FEM-Analysis</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/andrefmello91/FEM-Analysis</PackageProjectUrl>
         <AssemblyName>andrefmello91.FEMAnalysis</AssemblyName>
         <RootNamespace>andrefmello91.FEMAnalysis</RootNamespace>
     </PropertyGroup>
