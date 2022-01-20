@@ -13,3 +13,13 @@ This library uses:
 - [OnPlaneComponents](https://github.com/andrefmello91/On-Plane-Components) for stress and strain transformations;
 
 - [Extensions](https://github.com/andrefmello91/Extensions) for some numeric extensions.
+
+## Usage
+
+### Package reference:
+
+`<PackageReference Include="andrefmello91.FEMAnalysis" Version="1.X.X" />`
+
+### .NET CLI:
+
+`dotnet add package andrefmello91.FEMAnalysis --version 1.X.X`
