@@ -9,13 +9,7 @@ namespace andrefmello91.FEMAnalysis;
 public class SimulationIteration : Iteration, IIteration, ICloneable<SimulationIteration>
 {
 
-	#region Fields
-
 	private double _loadFactorIncrement;
-
-	#endregion
-
-	#region Properties
 
 	/// <summary>
 	///     The displacement increment vector from external forces of this iteration.
@@ -53,10 +47,6 @@ public class SimulationIteration : Iteration, IIteration, ICloneable<SimulationI
 	/// </returns>
 	public override DisplacementVector DisplacementIncrement => (DisplacementVector) (IncrementFromResidual + LoadFactorIncrement * IncrementFromExternal);
 
-	#endregion
-
-	#region Constructors
-
 	/// <inheritdoc />
 	internal SimulationIteration(int numberOfDoFs)
 		: base(numberOfDoFs)
@@ -67,10 +57,6 @@ public class SimulationIteration : Iteration, IIteration, ICloneable<SimulationI
 	internal SimulationIteration(DisplacementVector displacements, ForceVector residualForces, StiffnessMatrix stiffness, double loadFactor)
 		: base(displacements, residualForces, stiffness) =>
 		LoadFactor = loadFactor;
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Increment displacements of this iteration.
@@ -116,7 +102,4 @@ public class SimulationIteration : Iteration, IIteration, ICloneable<SimulationI
 
 	/// <inheritdoc />
 	IIteration ICloneable<IIteration>.Clone() => Clone();
-
-	#endregion
-
 }

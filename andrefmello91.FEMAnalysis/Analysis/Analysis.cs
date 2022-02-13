@@ -12,8 +12,6 @@ namespace andrefmello91.FEMAnalysis;
 public abstract class Analysis
 {
 
-	#region Properties
-
 	/// <summary>
 	///     Get/set the displacement <see cref="Vector" />.
 	/// </summary>
@@ -38,10 +36,6 @@ public abstract class Analysis
 	/// </summary>
 	public StiffnessMatrix GlobalStiffness { get; protected set; }
 
-	#endregion
-
-	#region Events
-
 	/// <summary>
 	///     Event to execute when analysis is aborted.
 	/// </summary>
@@ -51,10 +45,6 @@ public abstract class Analysis
 	///     Event to execute when analysis is complete.
 	/// </summary>
 	public abstract event EventHandler? AnalysisComplete;
-
-	#endregion
-
-	#region Constructors
 
 	/// <summary>
 	///     Base analysis constructor.
@@ -67,10 +57,6 @@ public abstract class Analysis
 		Forces          = FemInput.Forces.Simplified(FemInput.ConstraintIndex);
 		GlobalStiffness = femInput.AssembleStiffness();
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Calculate the <see cref="Vector" /> of support reactions.
@@ -94,7 +80,4 @@ public abstract class Analysis
 	/// <inheritdoc cref="Invoke" />
 	protected void Invoke<TEventArgs>(EventHandler<TEventArgs>? handler, TEventArgs eventArgs) where TEventArgs : EventArgs =>
 		handler?.Invoke(this, eventArgs);
-
-	#endregion
-
 }

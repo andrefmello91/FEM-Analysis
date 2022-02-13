@@ -12,8 +12,6 @@
 public record AnalysisParameters(NonLinearSolver Solver, int NumberOfSteps, int MaxIterations, int MinIterations, double ForceTolerance, double DisplacementTolerance)
 {
 
-	#region Properties
-
 	/// <summary>
 	///     Get the default analysis parameters.
 	/// </summary>
@@ -71,7 +69,4 @@ public record AnalysisParameters(NonLinearSolver Solver, int NumberOfSteps, int 
 	///     The nonlinear equation solver.
 	/// </summary>
 	public NonLinearSolver Solver { get; set; } = Solver;
-
-	#endregion
-
 }

@@ -14,8 +14,6 @@ namespace andrefmello91.FEMAnalysis;
 public class LoadStep : IEnumerable<IIteration>
 {
 
-	#region Fields
-
 	/// <summary>
 	///     The vector of full applied forces.
 	/// </summary>
@@ -30,10 +28,6 @@ public class LoadStep : IEnumerable<IIteration>
 	protected readonly List<IIteration> Iterations = new();
 
 	private double _loadFactor;
-
-	#endregion
-
-	#region Properties
 
 	/// <summary>
 	///     Get the iteration at this index.
@@ -143,10 +137,6 @@ public class LoadStep : IEnumerable<IIteration>
 	/// </remarks>
 	public bool Stop { get; private set; }
 
-	#endregion
-
-	#region Constructors
-
 	/// <summary>
 	///     Create a step object.
 	/// </summary>
@@ -176,10 +166,6 @@ public class LoadStep : IEnumerable<IIteration>
 		FirstIteration       = Iteration.From(initialDisplacements, ForceVector.Zero(fullForceVector.Count), stiffness, simulate, loadFactor);
 		Iterations.Add(FirstIteration);
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Create a load step for a nonlinear analysis procedure.
@@ -439,10 +425,6 @@ public class LoadStep : IEnumerable<IIteration>
 	/// <inheritdoc />
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-	#endregion
-
-	#region Operators
-
 	/// <summary>
 	///     Check the step number.
 	/// </summary>
@@ -488,7 +470,4 @@ public class LoadStep : IEnumerable<IIteration>
 	///     True if the step number is smaller or equal to the right number.
 	/// </returns>
 	public static bool operator <=(LoadStep left, int right) => left.Number <= right;
-
-	#endregion
-
 }

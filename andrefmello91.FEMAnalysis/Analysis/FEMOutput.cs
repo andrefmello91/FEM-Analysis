@@ -13,22 +13,12 @@ namespace andrefmello91.FEMAnalysis;
 public class FEMOutput : List<MonitoredDisplacement>
 {
 
-	#region Fields
-
 	private readonly List<ElementMonitor> _monitors;
-
-	#endregion
-
-	#region Properties
 
 	/// <summary>
 	///     Values of calculated step results.
 	/// </summary>
 	public List<LoadStep> LoadStepResults { get; }
-
-	#endregion
-
-	#region Constructors
 
 	/// <summary>
 	///     Output data constructor.
@@ -44,10 +34,6 @@ public class FEMOutput : List<MonitoredDisplacement>
 
 		_monitors = elementMonitors.ToList();
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Export output data to a csv file.
@@ -83,7 +69,4 @@ public class FEMOutput : List<MonitoredDisplacement>
 		foreach (var monitor in _monitors)
 			monitor.Export(outputPath, fileName, delimiter);
 	}
-
-	#endregion
-
 }

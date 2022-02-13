@@ -13,16 +13,10 @@ namespace andrefmello91.FEMAnalysis;
 public class SimulationStep : LoadStep
 {
 
-	#region Fields
-
 	/// <summary>
 	///     The initial load factor of this step.
 	/// </summary>
 	private readonly double _initialLoadFactor;
-
-	#endregion
-
-	#region Properties
 
 	/// <summary>
 	///     The Arc-Length calculated for this load step.
@@ -48,10 +42,6 @@ public class SimulationStep : LoadStep
 	/// </summary>
 	public int RequiredIterations => Iterations.Count(i => i.Number > 0);
 
-	#endregion
-
-	#region Constructors
-
 	/// <inheritdoc />
 	internal SimulationStep(ForceVector fullForceVector, double loadFactor, AnalysisParameters parameters, int number = 0)
 		: base(fullForceVector, loadFactor, parameters, number, true) =>
@@ -61,10 +51,6 @@ public class SimulationStep : LoadStep
 	internal SimulationStep(int number, ForceVector fullForceVector, double loadFactor, DisplacementVector initialDisplacements, StiffnessMatrix stiffness, AnalysisParameters parameters)
 		: base(number, fullForceVector, loadFactor, initialDisplacements, stiffness, parameters, true) =>
 		_initialLoadFactor = loadFactor;
-
-	#endregion
-
-	#region Methods
 
 	/// <inheritdoc cref="LoadStep.FromLastStep" />
 	public static SimulationStep FromLastStep(SimulationStep lastStep)
@@ -293,7 +279,4 @@ public class SimulationStep : LoadStep
 		var dUf = curIt.Stiffness.Solve(FullForceVector);
 		curIt.IncrementDisplacements(dUr, dUf);
 	}
-
-	#endregion
-
 }

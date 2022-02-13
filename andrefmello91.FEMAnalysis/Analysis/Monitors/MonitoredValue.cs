@@ -9,17 +9,11 @@ namespace andrefmello91.FEMAnalysis;
 public struct MonitoredValue : IMonitoredValue<double>, IEquatable<MonitoredValue>, IComparable<MonitoredValue>
 {
 
-	#region Properties
-
 	/// <inheritdoc />
 	public double LoadFactor { get; }
 
 	/// <inheritdoc />
 	public double Value { get; }
-
-	#endregion
-
-	#region Constructors
 
 	/// <summary>
 	///     Monitored value constructor.
@@ -31,10 +25,6 @@ public struct MonitoredValue : IMonitoredValue<double>, IEquatable<MonitoredValu
 		Value      = value;
 		LoadFactor = loadFactor;
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <inheritdoc />
 	public override string ToString() =>
@@ -59,7 +49,4 @@ public struct MonitoredValue : IMonitoredValue<double>, IEquatable<MonitoredValu
 
 	/// <inheritdoc />
 	bool IEquatable<IMonitoredValue<double>>.Equals(IMonitoredValue<double>? other) => other is MonitoredValue mv && Equals(mv);
-
-	#endregion
-
 }

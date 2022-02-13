@@ -14,8 +14,6 @@ namespace andrefmello91.FEMAnalysis;
 public static class Extensions
 {
 
-	#region Methods
-
 	/// <summary>
 	///     Assemble the global displacement vector.
 	/// </summary>
@@ -244,7 +242,4 @@ public static class Extensions
 		foreach (var element in elements)
 			element.UpdateStiffness();
 	}
-
-	#endregion
-
 }

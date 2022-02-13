@@ -13,13 +13,7 @@ namespace andrefmello91.FEMAnalysis;
 public abstract class ElementMonitor
 {
 
-	#region Fields
-
 	protected readonly List<IVectorTransformable> Values = new();
-
-	#endregion
-
-	#region Properties
 
 	/// <summary>
 	///     The name of this monitor.
@@ -31,10 +25,6 @@ public abstract class ElementMonitor
 	/// </summary>
 	protected string[] Labels { get; }
 
-	#endregion
-
-	#region Constructors
-
 	/// <summary>
 	///     Create an element monitor.
 	/// </summary>
@@ -45,10 +35,6 @@ public abstract class ElementMonitor
 		Name   = name;
 		Labels = labels;
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Add the monitored value for the current load factor.
@@ -77,7 +63,4 @@ public abstract class ElementMonitor
 		// Export
 		DelimitedWriter.Write(fullPath, result, delimiter, Labels, formatProvider: CultureInfo.CurrentCulture);
 	}
-
-	#endregion
-
 }

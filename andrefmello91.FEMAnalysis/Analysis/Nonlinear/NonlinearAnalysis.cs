@@ -15,8 +15,6 @@ namespace andrefmello91.FEMAnalysis;
 public class NonlinearAnalysis : Analysis, IEnumerable<LoadStep>
 {
 
-	#region Fields
-
 	/// <summary>
 	///     The list of step results.
 	/// </summary>
@@ -31,10 +29,6 @@ public class NonlinearAnalysis : Analysis, IEnumerable<LoadStep>
 	///     Field to store the DoF index for monitored displacements.
 	/// </summary>
 	protected int? MonitoredIndex;
-
-	#endregion
-
-	#region Properties
 
 	/// <inheritdoc cref="List{T}.this[int]" />
 	public LoadStep this[int index] => Steps[index];
@@ -69,10 +63,6 @@ public class NonlinearAnalysis : Analysis, IEnumerable<LoadStep>
 	/// </summary>
 	public string StopMessage { get; protected set; } = string.Empty;
 
-	#endregion
-
-	#region Events
-
 	/// <inheritdoc />
 	public override event EventHandler? AnalysisAborted;
 
@@ -94,10 +84,6 @@ public class NonlinearAnalysis : Analysis, IEnumerable<LoadStep>
 	///     The converged step is passed to event args.
 	/// </remarks>
 	public event EventHandler<StepEventArgs>? StepConverged;
-
-	#endregion
-
-	#region Constructors
 
 	/// <summary>
 	///     Nonlinear analysis constructor with default parameters.
@@ -122,10 +108,6 @@ public class NonlinearAnalysis : Analysis, IEnumerable<LoadStep>
 		MonitoredIndex = monitoredIndex;
 		_simulate      = simulate;
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Get the step increment.
@@ -330,7 +312,4 @@ public class NonlinearAnalysis : Analysis, IEnumerable<LoadStep>
 
 	/// <inheritdoc />
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-	#endregion
-
 }

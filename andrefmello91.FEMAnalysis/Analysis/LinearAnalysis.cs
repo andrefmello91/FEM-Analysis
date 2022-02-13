@@ -11,17 +11,11 @@ namespace andrefmello91.FEMAnalysis;
 public class LinearAnalysis : Analysis
 {
 
-	#region Events
-
 	/// <inheritdoc />
 	public override event EventHandler? AnalysisAborted;
 
 	/// <inheritdoc />
 	public override event EventHandler? AnalysisComplete;
-
-	#endregion
-
-	#region Constructors
 
 	/// <summary>
 	///     Linear analysis constructor.
@@ -31,10 +25,6 @@ public class LinearAnalysis : Analysis
 		: base(femInput)
 	{
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Execute the analysis.
@@ -64,7 +54,4 @@ public class LinearAnalysis : Analysis
 		// Invoke complete event
 		Invoke(AnalysisComplete);
 	}
-
-	#endregion
-
 }

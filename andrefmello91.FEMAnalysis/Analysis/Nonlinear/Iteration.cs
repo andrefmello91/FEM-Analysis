@@ -9,8 +9,6 @@ namespace andrefmello91.FEMAnalysis;
 public class Iteration : IIteration, ICloneable<Iteration>
 {
 
-	#region Properties
-
 	/// <inheritdoc />
 	public double DisplacementConvergence { get; protected set; }
 
@@ -35,10 +33,6 @@ public class Iteration : IIteration, ICloneable<Iteration>
 	/// <inheritdoc />
 	public StiffnessMatrix Stiffness { get; set; }
 
-	#endregion
-
-	#region Constructors
-
 	/// <inheritdoc cref="From(int,bool)" />
 	protected Iteration(int numberOfDoFs)
 		: this(DisplacementVector.Zero(numberOfDoFs), ForceVector.Zero(numberOfDoFs), StiffnessMatrix.Zero(numberOfDoFs))
@@ -54,10 +48,6 @@ public class Iteration : IIteration, ICloneable<Iteration>
 		InternalForces        = ForceVector.Zero(displacements.Count);
 		DisplacementIncrement = DisplacementVector.Zero(displacements.Count);
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <summary>
 	///     Create an iteration object.
@@ -136,10 +126,6 @@ public class Iteration : IIteration, ICloneable<Iteration>
 	/// <inheritdoc />
 	IIteration ICloneable<IIteration>.Clone() => Clone();
 
-	#endregion
-
-	#region Operators
-
 	/// <summary>
 	///     Check the iteration number.
 	/// </summary>
@@ -185,7 +171,4 @@ public class Iteration : IIteration, ICloneable<Iteration>
 	///     True if the iteration number is smaller or equal to the right number.
 	/// </returns>
 	public static bool operator <=(Iteration left, int right) => left.Number <= right;
-
-	#endregion
-
 }

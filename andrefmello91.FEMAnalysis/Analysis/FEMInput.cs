@@ -12,8 +12,6 @@ namespace andrefmello91.FEMAnalysis;
 public interface IFEMInput : IEnumerable<IFiniteElement>
 {
 
-	#region Properties
-
 	/// <summary>
 	///     Get the index of constrained degrees of freedom.
 	/// </summary>
@@ -38,9 +36,6 @@ public interface IFEMInput : IEnumerable<IFiniteElement>
 	///     Get the number of degrees of freedom (DoFs).
 	/// </summary>
 	int NumberOfDoFs { get; }
-
-	#endregion
-
 }
 
 /// <summary>
@@ -49,8 +44,6 @@ public interface IFEMInput : IEnumerable<IFiniteElement>
 /// <inheritdoc cref="IFEMInput{TFiniteElement}" />
 public class FEMInput : List<IFiniteElement>, IFEMInput
 {
-
-	#region Properties
 
 	/// <inheritdoc />
 	public List<int> ConstraintIndex { get; }
@@ -73,10 +66,6 @@ public class FEMInput : List<IFiniteElement>, IFEMInput
 
 	/// <inheritdoc />
 	public int NumberOfDoFs { get; }
-
-	#endregion
-
-	#region Constructors
 
 	/// <inheritdoc cref="FEMInput(IEnumerable{IFiniteElement}, IEnumerable{IGrip})" />
 	/// <remarks>
@@ -101,17 +90,10 @@ public class FEMInput : List<IFiniteElement>, IFEMInput
 		Forces          = this.AssembleExternalForces(false);
 	}
 
-	#endregion
-
-	#region Methods
-
 	/// <inheritdoc />
 	public override string ToString() =>
 		$"Number of elements: {Count}\n" +
 		$"Number of grips: {Grips.Count}\n" +
 		$"Force vector: \n{Forces}\n" +
 		$"Constraint Index: {ConstraintIndex.Select(i => i.ToString()).Aggregate((i, f) => $"{i} - {f}")}";
-
-	#endregion
-
 }

@@ -11,8 +11,6 @@ namespace andrefmello91.FEMAnalysis;
 public struct MonitoredDisplacement : IMonitoredValue<Length>, IEquatable<MonitoredDisplacement>, IComparable<MonitoredDisplacement>
 {
 
-	#region Properties
-
 	/// <summary>
 	///     Get the displacement value, at current <see cref="LoadFactor" />.
 	/// </summary>
@@ -26,10 +24,6 @@ public struct MonitoredDisplacement : IMonitoredValue<Length>, IEquatable<Monito
 	/// <inheritdoc />
 	Length IMonitoredValue<Length>.Value => Displacement;
 
-	#endregion
-
-	#region Constructors
-
 	/// <summary>
 	///     Monitored displacement constructor.
 	/// </summary>
@@ -40,10 +34,6 @@ public struct MonitoredDisplacement : IMonitoredValue<Length>, IEquatable<Monito
 		Displacement = displacement;
 		LoadFactor   = loadFactor;
 	}
-
-	#endregion
-
-	#region Methods
 
 	/// <inheritdoc />
 	public override string ToString() =>
@@ -69,12 +59,5 @@ public struct MonitoredDisplacement : IMonitoredValue<Length>, IEquatable<Monito
 	/// <inheritdoc />
 	bool IEquatable<IMonitoredValue<Length>>.Equals(IMonitoredValue<Length>? other) => other is MonitoredDisplacement md && Equals(md);
 
-	#endregion
-
-	#region Operators
-
 	public static implicit operator MonitoredValue(MonitoredDisplacement monitoredDisplacement) => new(monitoredDisplacement.Displacement.Value, monitoredDisplacement.LoadFactor);
-
-	#endregion
-
 }

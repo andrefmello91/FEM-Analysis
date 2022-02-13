@@ -10,8 +10,6 @@ namespace andrefmello91.FEMAnalysis;
 public interface INumberedElement
 {
 
-	#region Properties
-
 	/// <summary>
 	///     Get the index of degrees of freedom of this element.
 	/// </summary>
@@ -29,9 +27,6 @@ public interface INumberedElement
 	///     Enumeration starts at 1.
 	/// </remarks>
 	int Number { get; set; }
-
-	#endregion
-
 }
 
 /// <summary>
@@ -39,8 +34,6 @@ public interface INumberedElement
 /// </summary>
 public interface IGrip : INumberedElement, IEquatable<IGrip>, IComparable<IGrip>
 {
-
-	#region Properties
 
 	/// <summary>
 	///     Get the <see cref="Constraint" /> in this grip.
@@ -61,9 +54,6 @@ public interface IGrip : INumberedElement, IEquatable<IGrip>, IComparable<IGrip>
 	///     Get the <see cref="PlaneForce" /> reaction in this grip, in case it's constrained.
 	/// </summary>
 	PlaneForce Reaction { get; set; }
-
-	#endregion
-
 }
 
 /// <summary>
@@ -71,8 +61,6 @@ public interface IGrip : INumberedElement, IEquatable<IGrip>, IComparable<IGrip>
 /// </summary>
 public interface IFiniteElement : INumberedElement, IEquatable<IFiniteElement>, IComparable<IFiniteElement>
 {
-
-	#region Properties
 
 	/// <summary>
 	///     Get the displacement vector, in global coordinate system.
@@ -94,10 +82,6 @@ public interface IFiniteElement : INumberedElement, IEquatable<IFiniteElement>, 
 	/// </summary>
 	StiffnessMatrix Stiffness { get; }
 
-	#endregion
-
-	#region Methods
-
 	/// <summary>
 	///     Calculate forces in this element after updating displacements at each grip.
 	/// </summary>
@@ -112,9 +96,6 @@ public interface IFiniteElement : INumberedElement, IEquatable<IFiniteElement>, 
 	///     Update stiffness of this element.
 	/// </summary>
 	void UpdateStiffness();
-
-	#endregion
-
 }
 
 /// <summary>
@@ -122,8 +103,6 @@ public interface IFiniteElement : INumberedElement, IEquatable<IFiniteElement>, 
 /// </summary>
 public interface IMonitoredElement
 {
-
-	#region Properties
 
 	/// <summary>
 	///     The element monitor.
@@ -135,18 +114,11 @@ public interface IMonitoredElement
 	/// </summary>
 	public bool Monitored { get; set; }
 
-	#endregion
-
-	#region Methods
-
 	/// <summary>
 	///     Add the monitored values to monitor for the current load factor.
 	/// </summary>
 	/// <param name="loadFactor">The current load factor.</param>
 	void AddValue(double loadFactor);
-
-	#endregion
-
 }
 
 /// <summary>
@@ -154,8 +126,6 @@ public interface IMonitoredElement
 /// </summary>
 public interface IIteration : ICloneable<IIteration>
 {
-
-	#region Properties
 
 	/// <summary>
 	///     The displacement convergence of this iteration.
@@ -199,10 +169,6 @@ public interface IIteration : ICloneable<IIteration>
 	/// </summary>
 	StiffnessMatrix Stiffness { get; set; }
 
-	#endregion
-
-	#region Methods
-
 	/// <summary>
 	///     Calculate the convergence of this iteration.
 	/// </summary>
@@ -245,9 +211,6 @@ public interface IIteration : ICloneable<IIteration>
 	/// <param name="appliedForces">The vector of applied forces of the current step, simplified in constrained DoFs.</param>
 	/// <param name="internalForces">The vector of internal forces, simplified in constrained DoFs.</param>
 	void UpdateForces(ForceVector appliedForces, ForceVector internalForces);
-
-	#endregion
-
 }
 
 /// <summary>
@@ -258,8 +221,6 @@ public interface IMonitoredValue<TStruct> : IEquatable<IMonitoredValue<TStruct>>
 	where TStruct : struct
 {
 
-	#region Properties
-
 	/// <summary>
 	///     The load factor associated to value.
 	/// </summary>
@@ -269,9 +230,6 @@ public interface IMonitoredValue<TStruct> : IEquatable<IMonitoredValue<TStruct>>
 	///     The monitored value.
 	/// </summary>
 	TStruct Value { get; }
-
-	#endregion
-
 }
 
 public interface IElementMonitor

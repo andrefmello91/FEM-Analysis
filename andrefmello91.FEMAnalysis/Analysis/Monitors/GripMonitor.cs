@@ -11,22 +11,12 @@ namespace andrefmello91.FEMAnalysis;
 public class GripMonitor : ElementMonitor
 {
 
-	#region Fields
-
 	private readonly LengthUnit _unit;
-
-	#endregion
-
-	#region Constructors
 
 	/// <inheritdoc />
 	public GripMonitor(string name, LengthUnit displacementUnit = LengthUnit.Millimeter)
 		: base(name, Label(displacementUnit)) =>
 		_unit = displacementUnit;
-
-	#endregion
-
-	#region Methods
 
 	private static string[] Label(LengthUnit displacementUnit)
 	{
@@ -49,22 +39,14 @@ public class GripMonitor : ElementMonitor
 		Values.Add(new MonitoredValue(loadFactor, grip.Displacement, _unit));
 	}
 
-	#endregion
-
 	private class MonitoredValue : IVectorTransformable
 	{
-
-		#region Properties
 
 		public double LoadFactor { get; }
 
 		public double Ux { get; }
 
 		public double Uy { get; }
-
-		#endregion
-
-		#region Constructors
 
 		public MonitoredValue(double loadFactor, PlaneDisplacement displacement, LengthUnit unit = LengthUnit.Millimeter)
 		{
@@ -73,10 +55,6 @@ public class GripMonitor : ElementMonitor
 			Uy         = displacement.Y.As(unit);
 		}
 
-		#endregion
-
-		#region Methods
-
 		/// <inheritdoc />
 		public Vector<double> AsVector() => new[]
 		{
@@ -84,8 +62,5 @@ public class GripMonitor : ElementMonitor
 			Ux,
 			Uy
 		}.ToVector();
-
-		#endregion
-
 	}
 }
