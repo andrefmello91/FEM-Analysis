@@ -19,30 +19,7 @@ public static class Extensions
 	/// <summary>
 	///     Assemble the global displacement vector.
 	/// </summary>
-	public static DisplacementVector AssembleDisplacements(this IFEMInput femInput)
-	{
-		return
-			new DisplacementVector(femInput.Grips.Select(x => x.Displacement));
-
-		// // Initialize the force vector
-		// var d = DisplacementVector.Zero(NumberOfDoFs);
-		//
-		// // Read the nodes data
-		// foreach (var grip in Grips)
-		// {
-		// 	// Get DoF indexes
-		// 	var index = grip.DoFIndex;
-		// 	int
-		// 		i = index[0],
-		// 		j = index[1];
-		//
-		// 	// Set to force vector
-		// 	d[i] = grip.Displacement.X;
-		// 	d[j] = grip.Displacement.Y;
-		// }
-		//
-		// return d;
-	}
+	public static DisplacementVector AssembleDisplacements(this IFEMInput femInput) => new(femInput.Grips.Select(x => x.Displacement));
 
 	/// <summary>
 	///     Assemble the global external force vector.
@@ -55,25 +32,6 @@ public static class Extensions
 		return simplify
 			? forces.Simplified(femInput.ConstraintIndex)
 			: forces;
-
-		// // Initialize the force vector
-		// var f = ForceVector.Zero(NumberOfDoFs);
-		//
-		// // Read the nodes data
-		// foreach (var grip in Grips)
-		// {
-		// 	// Get DoF indexes
-		// 	var index = grip.DoFIndex;
-		// 	int
-		// 		i = index[0],
-		// 		j = index[1];
-		//
-		// 	// Set to force vector
-		// 	f[i] = grip.Force.X;
-		// 	f[j] = grip.Force.Y;
-		// }
-		//
-		// return f;
 	}
 
 	/// <summary>
